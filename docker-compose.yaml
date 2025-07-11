@@ -1,0 +1,42 @@
+services:
+  postgres:
+    image: postgres:latest
+    container_name: Postgres_container
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: nhomec123
+      POSTGRES_DB: ecommerce_db
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    volumes:
+        - ./BE/src/Repository/db_data/postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    ports:
+      - "5432:5432"
+  rabbitmq:
+    image: rabbitmq:4.1-management
+    container_name: rabbitmq-stream
+    ports:
+      - "5672:5672"      # AMQP
+      - "15672:15672"    # Web UI
+      - "5552:5552"      # RabbitMQ Stream
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=admin
+      - RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS=-rabbitmq_stream advertised_host localhost
+    volumes:
+      - ./BE/src/Repository/db_data/rabbitmq_data:/var/lib/rabbitmq
+      - ./BE/src/Repository/logs/rabbitmq-log:/var/log/rabbitmq
+    healthcheck:
+      test: ["CMD-SHELL", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
