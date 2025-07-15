@@ -1,4 +1,22 @@
 services:
+  redis:
+      image: redis:latest
+      ports:
+        - "6379:6379"  
+      container_name: redis_container
+      logging:
+        driver: "json-file"
+        options:
+          max-size: "10m"
+          max-file: "3"
+      volumes:
+        - ./BE/src/Repository/db_data/redis_data:/data
+      healthcheck:
+        test: ["CMD", "redis-cli", "ping"]
+        interval: 30s
+        timeout: 10s
+        retries: 3
+        start_period: 10s    
   postgres:
     image: postgres:latest
     container_name: Postgres_container
@@ -21,6 +39,7 @@ services:
       start_period: 10s
     ports:
       - "5432:5432"
+  
   rabbitmq:
     image: rabbitmq:4.1-management
     container_name: rabbitmq-stream
