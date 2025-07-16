@@ -3,7 +3,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 import redis
 # create db connection
-SQLALCHEMY_DATABASE_URL = 'postgresql://customer:customer@localhost:5432/ecommerce_db'
+SQLALCHEMY_DATABASE_URL = 'postgresql://customer:customer@postgres:5432/ecommerce_db'
 
 #Create engine
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
@@ -25,7 +25,7 @@ def get_db():
 # REDIS
 
 def get_redis():
-    r = redis.Redis(host='localhost',port=6379,db=0)
+    r = redis.Redis(host='redis',port=6379,db=0)
     try:
         yield r
     finally:

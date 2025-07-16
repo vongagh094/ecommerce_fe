@@ -4,12 +4,13 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
-
+import  useWebsocket  from "@/hooks/use-Websocket"
 interface BookingPanelProps {
   currentBid: number
   lowestOffer: number
   timeLeft: string
 }
+// Function to call the API to fetch received bids
 const Call_Received_bid = async () => {
   try {
 
@@ -26,6 +27,7 @@ const Call_Received_bid = async () => {
     console.error("Error fetching received bids:", error)
   }
 }
+// Function to handle the bid submission
 const handleBid = async (bidAmount:string) => {
   // Validation
   if (!bidAmount || isNaN(parseFloat(bidAmount))) {
@@ -57,9 +59,16 @@ const handleBid = async (bidAmount:string) => {
     await Call_Received_bid()
   }
 }
-export function BookingPanel({ currentBid, lowestOffer, timeLeft }: BookingPanelProps) {
 
+//Function to listen to the WebSocket for bid updates
+// Function to render the booking panel
+export function BookingPanel({ currentBid, lowestOffer, timeLeft }: BookingPanelProps) {
+  console.log("BookingPanel rendered")
   const [bidAmount, setBidAmount] = useState("")
+
+    // Using the WebSocket hook to get the highest bid for a specific auction
+  const highestBid = useWebsocket("22222222-2222-2222-2222-222222222222")
+  console.log(highestBid)
   const formatPrice = (price: number) => {
     return `₫ ${price.toLocaleString()}`
   }
@@ -93,7 +102,7 @@ export function BookingPanel({ currentBid, lowestOffer, timeLeft }: BookingPanel
           <div className="space-y-3">
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Current highest bid</span>
-              <span className="font-semibold">{formatPrice(currentBid)}</span>
+              <span className="font-semibold">{formatPrice(highestBid || currentBid)}</span>
             </div>
 
             <div className="flex justify-between items-center">
@@ -114,7 +123,7 @@ export function BookingPanel({ currentBid, lowestOffer, timeLeft }: BookingPanel
               <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₫</span>
               <Input
                 type="text"
-                value={bidAmount}
+                value={bidAmount} // here need to update when web socket changes
                 onChange={(e) => setBidAmount(e.target.value)}
                 placeholder="Choose your bid here"
                 className="pl-8"

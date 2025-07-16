@@ -46,3 +46,6 @@ next-env.d.ts
 /BE/src/Repository/db_data
 /BE/src/services/__pycache__
 /BE/src/controllers/Python_Server_Biddings/__pycache__
+*.pyc
+/Repository
+/ws-server/node_modules

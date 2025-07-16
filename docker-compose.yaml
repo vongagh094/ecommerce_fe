@@ -10,13 +10,34 @@ services:
           max-size: "10m"
           max-file: "3"
       volumes:
-        - ./BE/src/Repository/db_data/redis_data:/data
+        - ./Repository/db_data/redis_data:/data
       healthcheck:
         test: ["CMD", "redis-cli", "ping"]
         interval: 30s
         timeout: 10s
         retries: 3
-        start_period: 10s    
+        start_period: 10s 
+
+  bidding-server:
+    build: ./BE
+    ports:
+        - "8000:8000" 
+    container_name: bidding-python-server
+    environment:
+      - REDIS_HOST=redis
+    depends_on:
+      - redis
+
+  ws-server:
+    build: ./ws-server
+    container_name: ws_server_container
+    ports:
+      - "8080:8080"
+    environment:
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - redis
+         
   postgres:
     image: postgres:latest
     container_name: Postgres_container
@@ -30,7 +51,7 @@ services:
         max-size: "10m"
         max-file: "3"
     volumes:
-        - ./BE/src/Repository/db_data/postgres_data:/var/lib/postgresql/data
+        - ./Repository/db_data/postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 30s
@@ -50,10 +71,10 @@ services:
     environment:
       - RABBITMQ_DEFAULT_USER=admin
       - RABBITMQ_DEFAULT_PASS=admin
-      - RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS=-rabbitmq_stream advertised_host localhost
+      - RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS=-rabbitmq_stream advertised_host rabbitmq
     volumes:
-      - ./BE/src/Repository/db_data/rabbitmq_data:/var/lib/rabbitmq
-      - ./BE/src/Repository/logs/rabbitmq-log:/var/log/rabbitmq
+      - ./Repository/db_data/rabbitmq_data:/var/lib/rabbitmq
+      - ./Repository/logs/rabbitmq-log:/var/log/rabbitmq
     healthcheck:
       test: ["CMD-SHELL", "rabbitmq-diagnostics", "ping"]
       interval: 30s
