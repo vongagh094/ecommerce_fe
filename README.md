@@ -1,8 +1,22 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-## Getting Started
+## Pre-requisites
+* Docker and Docker Compose installed on your machine.
+* Node.js 18 or higher installed on your machine.
+* Python 3.10 or higher installed on your machine.
 
-First, run the development server:
+## Getting Started
+### Step 1: Clone the repository
+### Step 2: Install dependencies
+### Step 3: Set up services on docker
+```bash
+./dbup
+```
+- Remove services if you want to reset the database:
+```bash
+./dbdown
+```
+### Step 4: Run the development server
 
 ```bash
 npm run dev
