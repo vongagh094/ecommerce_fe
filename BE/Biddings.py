@@ -1,7 +1,7 @@
 from fastapi import FastAPI,Depends
 from src.services.COR import setup_cors
-from src.models.models import Bids,BidsDTO
-from src.Repository.database import get_db,get_redis
+from src.models.models import Bids,BidsDTO,Auction
+from src.Repository.database import get_db,get_redis,host_rabbitmq
 from sqlalchemy.orm import Session
 from rstream import (
     Producer,
@@ -30,8 +30,23 @@ receive_count= 0
 MAX_RECEIVE_COUNT = 1
 
 
-def Udpate_highest_bid_auction_psql(current_):
-    pass
+def Udpate_highest_bid_auction_psql(auction_id,new_bid,db:Session):
+    try:
+
+        auction = db.query(Auction).filter(Auction.id == auction_id).first()
+        if auction:
+            if new_bid > (auction.current_highest_bid or 0):
+                auction.current_highest_bid = new_bid
+                db.commit()
+                db.refresh(auction)
+                print("Update current_highest_bid for auction table")
+            else:
+                print("The new bid is less than old one")
+        else:
+            print("The auction is not exsist")
+    except Exception as e:
+        print (f'Error Update current highest bid: {e}')
+    
 def Update_Db(bid_data: dict, db: Session):
     try:
         # Tìm bản ghi đã tồn tại
@@ -52,17 +67,24 @@ def Update_Db(bid_data: dict, db: Session):
             return existing_bid
         else:
             # Insert mới
-            bid_model_data = {
-                "auction_id": bid_data.get("auction_id"),
-                "user_id": bid_data.get("user_id"),
-                "bid_amount": bid_data.get("bid_amount"),
-                "bid_time": bid_data.get("bid_time"),
-                "is_winning_bid": bid_data.get("is_winning_bid", False),
-                "auto_bid_max": bid_data.get("auto_bid_max"),
-                "status": bid_data.get("status", "active")
-            }
+            # bid_model_data = {
+            #     "auction_id": bid_data.get("auction_id"),
+            #     "user_id": bid_data.get("user_id"),
+            #     "bid_amount": bid_data.get("bid_amount"),
+            #     "bid_time": bid_data.get("bid_time"),
+            #     "is_winning_bid": bid_data.get("is_winning_bid", False),
+            #     "auto_bid_max": bid_data.get("auto_bid_max"),
+            #     "status": bid_data.get("status", "active")
+            # }
 
-            new_bid = Bids(**bid_model_data)
+            new_bid = Bids()
+            new_bid.auction_id = bid_data.get("auction_id")
+            new_bid.user_id = bid_data.get("user_id")
+            new_bid.bid_amount = bid_data.get("bid_amount")
+            new_bid.bid_time = bid_data.get("bid_time")
+            new_bid.is_winning_bid = bid_data.get("is_winnign_bid",False)
+            new_bid.auto_bid_max = bid_data.get("auto_bid_max")
+            new_bid.status =bid_data.get("status","activate")
             db.add(new_bid)
             db.commit()
             db.refresh(new_bid)
@@ -108,8 +130,6 @@ def Update_highest_bid_redis(current_bid,auction_id:str,max_retries = 3):
                     # Update highest bid in redis
                     r.set(auction_id,current_bid)
 
-                    # Update highest bid in auction table on postgresdb
-                    Udpate_highest_bid_auction_psql(current_bid)
                     return 
                 else:
                     print(f"Bid {current_bid} is not higher than current highest {highest_bid}")
@@ -147,7 +167,10 @@ async def call_back(msg:AMQPMessage, message_context:MessageContext):
         #update Db bid
         db = next(get_db())
         saved_bid = Update_Db(bid_data,db)
-
+        if saved_bid:
+            Udpate_highest_bid_auction_psql(bid_data.get("auction_id"), 
+                                            bid_data.get("bid_amount"),
+                                            db)
         #update highest bid on redis
         Update_highest_bid_redis(bid_data.get("bid_amount"),bid_data.get("auction_id"))
 
@@ -165,7 +188,7 @@ async def call_back(msg:AMQPMessage, message_context:MessageContext):
 async def sending_bid(bid: BidsDTO):
     try:
         # Create a stream if it doesn't exist
-        async with Producer("rabbitmq",username="admin",password="admin") as producer:
+        async with Producer(host_rabbitmq,username="admin",password="admin") as producer:
             await producer.create_stream(STREAM_NAME,exists_ok=True, arguments={"max-length-bytes": STREAM_RETENTION})
             # Get the message from the path
             amqp_meassage = AMQPMessage(
@@ -187,7 +210,7 @@ async def receiving_bid():
     global receive_count
     receive_count = 0
     # Create a consumer to receive messages from the stream
-    consumer = Consumer(host="rabbitmq", username="admin", password="admin")
+    consumer = Consumer(host_rabbitmq, username="admin", password="admin")
     await consumer.create_stream(STREAM_NAME,exists_ok=True,arguments={"max-length-bytes": STREAM_RETENTION})
 
     # Starting to read message

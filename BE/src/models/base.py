@@ -2,7 +2,7 @@ import uuid
 from sqlalchemy import Column, DateTime, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy import func 
-from src.Repository.database import Base
+from ..Repository.database import Base
 
 class BasicModel(Base):
     __abstract__ = True

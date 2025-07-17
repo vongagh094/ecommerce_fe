@@ -42,8 +42,8 @@ const handleBid = async (bidAmount:string) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        user_id: "11111111-1111-1111-1111-111111111111",
-        auction_id: "22222222-2222-2222-2222-222222222222",
+        user_id: "11111111-1111-1111-1111-111111111111", // Replace with actual user ID
+        auction_id: "22222222-2222-2222-2222-222222222222", // Replace with actual auction ID
         bid_amount: parseFloat(bidAmount),
         bid_time: new Date().toISOString(),
         created_at: new Date().toISOString()

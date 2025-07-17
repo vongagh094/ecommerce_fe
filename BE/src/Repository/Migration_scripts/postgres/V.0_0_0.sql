@@ -14,7 +14,7 @@ INSERT INTO users ( id,username, email, password) VALUES
 
 CREATE TABLE auctions(
                          id UUID PRIMARY KEY,
-                         product_id INT,
+                         property_id INT,
                          check_in_date TIMESTAMP ,
                          check_out_date TIMESTAMP,
                          starting_price DECIMAL(10, 2),
@@ -58,7 +58,8 @@ CREATE TABLE bid_events (
                             FOREIGN KEY (auction_id) REFERENCES auctions(id) ON DELETE CASCADE,
                             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
-INSERT INTO auctions (id, product_id, check_in_date, check_out_date, starting_price, current_highest_bid, bid_increment, minimum_bid, auction_start_time, auction_end_time, status, winner_user_id, total_bids)
+INSERT INTO auctions (id, property_id, check_in_date, check_out_date, starting_price, current_highest_bid, bid_increment, minimum_bid, auction_start_time, auction_end_time, status, winner_user_id, total_bids)
 VALUES
     ('22222222-2222-2222-2222-222222222222', 1, '2023-10-01 10:00:00', '2023-10-05 10:00:00', 100.00, 0.00, 5.00, 10.00, '2023-10-01 09:00:00', '2023-10-05 09:00:00', 'active', NULL, 0);
 GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA public TO customer;
+
