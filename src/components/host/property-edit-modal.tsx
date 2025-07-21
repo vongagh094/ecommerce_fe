@@ -1,17 +1,11 @@
 "use client"
 
 import { useState } from "react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-
-interface PropertyEditSection {
-  id: string
-  title: string
-  type: "text" | "textarea" | "amenities" | "bedrooms"
-  content: any
-}
+import type { PropertyEditSection } from "@/types/host"
 
 interface PropertyEditModalProps {
   isOpen: boolean
@@ -21,83 +15,83 @@ interface PropertyEditModalProps {
 }
 
 export function PropertyEditModal({ isOpen, onClose, section, onSave }: PropertyEditModalProps) {
-  const [editedContent, setEditedContent] = useState(section?.content || "")
+  const [content, setContent] = useState(section?.content || "")
 
   const handleSave = () => {
     if (section) {
-      onSave(section.id, editedContent)
+      onSave(section.id, content)
       onClose()
     }
   }
 
   const handleCancel = () => {
-    setEditedContent(section?.content || "")
+    setContent(section?.content || "")
     onClose()
   }
 
   if (!section) return null
 
-  const renderEditField = () => {
+  const renderInput = () => {
     switch (section.type) {
       case "text":
-        return <Input value={editedContent} onChange={(e) => setEditedContent(e.target.value)} className="w-full" />
+        return (
+          <Input
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder={`Enter ${section.title.toLowerCase()}`}
+            className="w-full"
+          />
+        )
       case "textarea":
         return (
           <Textarea
-            value={editedContent}
-            onChange={(e) => setEditedContent(e.target.value)}
-            className="w-full min-h-32"
-            rows={6}
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder={`Enter ${section.title.toLowerCase()}`}
+            className="w-full min-h-[120px]"
           />
         )
       case "amenities":
         return (
-          <div className="space-y-4">
-            <p className="text-sm text-gray-600">Edit amenities (one per line):</p>
-            <Textarea
-              value={Array.isArray(editedContent) ? editedContent.join("\n") : editedContent}
-              onChange={(e) => setEditedContent(e.target.value.split("\n").filter((item) => item.trim()))}
-              className="w-full min-h-32"
-              rows={6}
-              placeholder="Wifi&#10;Kitchen&#10;Free Parking&#10;Pool"
-            />
-          </div>
+          <Textarea
+            value={Array.isArray(content) ? content.join("\n") : content}
+            onChange={(e) => setContent(e.target.value.split("\n").filter((item) => item.trim()))}
+            placeholder="Enter amenities (one per line)"
+            className="w-full min-h-[120px]"
+          />
         )
       case "bedrooms":
         return (
           <div className="space-y-4">
-            <p className="text-sm text-gray-600">Edit bedroom information:</p>
             <Input
-              value={editedContent}
-              onChange={(e) => setEditedContent(e.target.value)}
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder="e.g., 1 double bed"
               className="w-full"
-              placeholder="1 double bed"
             />
           </div>
         )
       default:
-        return <Input value={editedContent} onChange={(e) => setEditedContent(e.target.value)} className="w-full" />
+        return <Input value={content} onChange={(e) => setContent(e.target.value)} className="w-full" />
     }
   }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Edit {section.title}</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
-          <div>{renderEditField()}</div>
+        <div className="space-y-4 py-4">{renderInput()}</div>
 
-          <div className="flex items-center justify-end space-x-4">
-            <Button variant="outline" onClick={handleCancel} className="px-6 bg-transparent">
-              Cancel
-            </Button>
-            <Button onClick={handleSave} className="bg-cyan-400 hover:bg-cyan-500 text-white px-6">
-              Save
-            </Button>
-          </div>
+        <div className="flex justify-end space-x-2">
+          <Button variant="outline" onClick={handleCancel}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave} className="bg-cyan-600 hover:bg-cyan-700">
+            Save
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

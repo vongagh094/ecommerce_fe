@@ -6,21 +6,21 @@ import { SalesOverviewChart } from "@/components/host/dashboard/sales-overview-c
 import { MetricCards } from "@/components/host/dashboard/metric-cards"
 
 export default function HostDashboard() {
-  const { stats, chartData, loading, error } = useDashboardData()
+  const { data, loading, error } = useDashboardData()
 
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="animate-pulse">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="bg-gray-200 rounded-2xl h-32"></div>
+              <div key={i} className="h-24 bg-gray-200 rounded-2xl"></div>
             ))}
           </div>
-          <div className="bg-gray-200 rounded-2xl h-96 mb-8"></div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="bg-gray-200 rounded-2xl h-32"></div>
+          <div className="h-80 bg-gray-200 rounded-2xl mb-8"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {[...Array(2)].map((_, i) => (
+              <div key={i} className="h-24 bg-gray-200 rounded-2xl"></div>
             ))}
           </div>
         </div>
@@ -28,30 +28,25 @@ export default function HostDashboard() {
     )
   }
 
-  if (error) {
+  if (error || !data) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-800">{error}</p>
+        <div className="text-center">
+          <p className="text-red-600">Error loading dashboard data</p>
         </div>
       </div>
     )
-  }
-
-  if (!stats || !chartData) {
-    return null
   }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Stats Cards */}
-      <StatsCards stats={stats} />
-
-      {/* Sales Overview Chart */}
-      <SalesOverviewChart data={chartData.salesOverview} />
-
-      {/* Metric Cards */}
-      <MetricCards data={chartData} />
+      <StatsCards stats={data.stats} />
+      <SalesOverviewChart data={data.chartData} />
+      <MetricCards
+        bidConversion={data.bidConversion}
+        occupancyRatio={data.occupancyRatio}
+        occupancyChange={data.occupancyChange}
+      />
     </div>
   )
 }
