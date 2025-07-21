@@ -20,6 +20,14 @@ export function HostHeader() {
 
   const isActive = (path: string) => pathname === path
 
+  const navigationItems = [
+    { path: "/host/dashboard", label: "Dashboard" },
+    { path: "/host/messages", label: "Messages" },
+    { path: "/host/properties", label: "Your properties" },
+    { path: "/host/bid-manager", label: "Bid Manager" },
+    { path: "/host/booking-manager", label: "Booking Manager" },
+  ]
+
   return (
     <header className="bg-white border-b sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -27,39 +35,21 @@ export function HostHeader() {
           {/* Logo */}
           <Link href="/host" className="flex items-center">
             <h1 className="text-2xl font-bold text-blue-800 font-serif">Sky-high</h1>
-            <p className="text-xs text-gray-500 ml-2 mt-1">YOUR HOLIDAY</p>
           </Link>
 
           {/* Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
-            <Link
-              href="/host"
-              className={`font-medium pb-1 ${
-                isActive("/host") ? "text-gray-900 border-b-2 border-gray-900" : "text-gray-600 hover:text-gray-900"
-              }`}
-            >
-              Messages
-            </Link>
-            <Link
-              href="/host/properties"
-              className={`font-medium pb-1 ${
-                isActive("/host/properties")
-                  ? "text-gray-900 border-b-2 border-gray-900"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
-            >
-              Your properties
-            </Link>
-            <Link
-              href="/host/incomes"
-              className={`font-medium pb-1 ${
-                isActive("/host/incomes")
-                  ? "text-gray-900 border-b-2 border-gray-900"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
-            >
-              Incomes
-            </Link>
+            {navigationItems.map((item) => (
+              <Link
+                key={item.path}
+                href={item.path}
+                className={`font-medium pb-1 transition-colors ${
+                  isActive(item.path) ? "text-gray-900 border-b-2 border-gray-900" : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                {item.label}
+              </Link>
+            ))}
           </nav>
 
           {/* Right Side */}

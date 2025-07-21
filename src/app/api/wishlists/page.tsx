@@ -417,6 +417,15 @@ export default function WishlistsPage() {
           </div>
         )}
 
+        {/* <WishlistModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          wishlists={wishlists}
+          selectedProperty={selectedProperty}
+          onRemoveProperty={handleRemoveProperty}
+          selectedWishlistId={selectedWishlistId}
+        /> */}
+
         <Dialog open={isMessageModalOpen} onOpenChange={setIsMessageModalOpen}>
           <DialogContent>
             <DialogHeader>

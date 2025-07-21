@@ -15,17 +15,37 @@ export function HostProfile() {
   const [showLoginModal, setShowLoginModal] = useState(false)
   const [showSignupModal, setShowSignupModal] = useState(false)
 
-  const handleContactHost = () => {
+  const handleContactHost = async () => {
     if (!isLoggedIn) {
       setShowLoginModal(true)
       return
     }
-    // Redirect to messages page
-    router.push("/dashboard/messages")
+
+    const guestId = 1
+    const hostId = 3
+    const propertyId = 1
+
+    try {
+      const response = await fetch("/api/chat/conversation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ host_id: hostId, guest_id: guestId, property_id: propertyId }),
+      })
+
+      if (response.ok) {
+        const { conversationId } = await response.json()
+        // Chuyển hướng đến trang tin nhắn với conversationId
+        router.push(`/dashboard/messages?conversationId=${conversationId}`)
+      } else {
+        console.error("Lỗi khi tạo conversation:", await response.json())
+      }
+    } catch (error) {
+      console.error("Lỗi khi tạo conversation:", error)
+    }
   }
 
+  // Xử lý đăng nhập
   const handleLogin = () => {
-    // Simulate user data - in real app this would come from the login form
     const userData = {
       id: "1",
       name: "Moni Roy",

@@ -12,7 +12,7 @@ export default function HomePage() {
       <SearchSection />
       <CategoryFilters />
       <HeroSection />
-      <PropertyGrid />
+      {/* <PropertyGrid /> */}
       <InspirationSection />
       <Footer />
       <AiChatBubble />
