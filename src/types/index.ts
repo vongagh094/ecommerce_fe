@@ -37,15 +37,6 @@ export interface Booking {
   updatedAt: Date
 }
 
-export interface Message {
-  id: string
-  senderId: string
-  receiverId: string
-  content: string
-  isRead: boolean
-  createdAt: Date
-}
-
 export interface Review {
   id: string
   propertyId: string
@@ -53,4 +44,46 @@ export interface Review {
   rating: number
   comment: string
   createdAt: Date
+}
+
+export interface Conversation {
+  id: number;
+  property_id: number | null;
+  guest_id: number;
+  host_id: number;
+  last_message_at: string | null;
+  is_archived: boolean;
+  property_title?: string;
+  other_user: User;
+  has_unread: boolean;
+}
+
+export interface Message {
+  id: number;
+  conversation_id: number;
+  sender_id: number;
+  message_text: string;
+  sent_at: string;
+  is_read: boolean;
+  sender: User;
+}
+
+export interface Notification {
+  id: number;
+  type: string | null;
+  user_id: number | null;
+  title: string;
+  message: string;
+  data: any;
+  is_read: boolean;
+  is_pushed: boolean;
+  created: string;
+}
+
+export interface Subscription {
+  id: number;
+  endpoint: string;
+  device_id: string;
+  active: boolean;
+  timestamp: string;
 }
