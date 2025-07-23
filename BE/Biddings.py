@@ -67,16 +67,6 @@ def Update_Db(bid_data: dict, db: Session):
             return existing_bid
         else:
             # Insert mới
-            # bid_model_data = {
-            #     "auction_id": bid_data.get("auction_id"),
-            #     "user_id": bid_data.get("user_id"),
-            #     "bid_amount": bid_data.get("bid_amount"),
-            #     "bid_time": bid_data.get("bid_time"),
-            #     "is_winning_bid": bid_data.get("is_winning_bid", False),
-            #     "auto_bid_max": bid_data.get("auto_bid_max"),
-            #     "status": bid_data.get("status", "active")
-            # }
-
             new_bid = Bids()
             new_bid.auction_id = bid_data.get("auction_id")
             new_bid.user_id = bid_data.get("user_id")
@@ -145,7 +135,6 @@ def Update_highest_bid_redis(current_bid,auction_id:str,max_retries = 3):
     print("Failed to acquire lock after retries.")
     return False
 
-
 # callback function to handle publish confirmation
 async def on_publish_confirm(status: ConfirmationStatus):
     if status.is_confirmed:
@@ -167,12 +156,16 @@ async def call_back(msg:AMQPMessage, message_context:MessageContext):
         #update Db bid
         db = next(get_db())
         saved_bid = Update_Db(bid_data,db)
+
+        #update auction current highest bid
         if saved_bid:
             Udpate_highest_bid_auction_psql(bid_data.get("auction_id"), 
                                             bid_data.get("bid_amount"),
                                             db)
         #update highest bid on redis
         Update_highest_bid_redis(bid_data.get("bid_amount"),bid_data.get("auction_id"))
+
+        # Send a message to all biders 
 
     except Exception as e:
         print(f"Error in updating db: {e}")

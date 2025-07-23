@@ -203,7 +203,9 @@ CREATE TABLE IF NOT EXISTS bid_events (
                                           previous_amount DECIMAL(10, 2),
                                           event_data JSONB,
                                           event_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                                          processed BOOLEAN DEFAULT FALSE
+                                          processed BOOLEAN DEFAULT FALSE,
+                                          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- =============================================================================
