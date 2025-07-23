@@ -185,6 +185,8 @@ CREATE TABLE IF NOT EXISTS bids (
                                     is_winning_bid BOOLEAN DEFAULT FALSE,
                                     auto_bid_max DECIMAL(10, 2),
                                     status VARCHAR(50) DEFAULT 'ACTIVE',
+                                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
     -- Constraints
                                     CONSTRAINT check_bid_amount CHECK (bid_amount > 0),
