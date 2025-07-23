@@ -1,5 +1,3 @@
-CREATE USER customer WITH PASSWORD 'customer';
-GRANT CONNECT ON DATABASE ecommerce_db to customer;
 -- Complete PostgreSQL Database Initialization Script
 -- Airbnb Auction Platform - Full Database Schema
 -- This script creates ALL tables from the Mermaid ERD diagram + Additional Admin Tables
@@ -7,6 +5,12 @@ GRANT CONNECT ON DATABASE ecommerce_db to customer;
 -- Drop and recreate schema
 DROP SCHEMA IF EXISTS public CASCADE;
 CREATE SCHEMA public;
+
+-- create user customer
+CREATE USER customer WITH PASSWORD 'customer';
+GRANT CONNECT ON DATABASE ecommerce_db to customer;
+GRANT USAGE ON SCHEMA public TO customer;
+
 
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -616,5 +620,6 @@ DO $$
         RAISE NOTICE 'Created % tables with full relationships and indexes',
             (SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public');
     END $$;
-GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA public TO customer;
 
+-- =============================================================================
+GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA public TO customer;
