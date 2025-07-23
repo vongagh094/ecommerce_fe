@@ -26,3 +26,13 @@ export function slugify(text: string): string {
     .replace(/[^\w ]+/g, "")
     .replace(/ +/g, "-")
 }
+
+export const validationBidAmount = (
+    bidAmount: string,
+    minimum_bid: number
+) : string | null => {
+    if (!bidAmount) return "Bid amount is required"
+    if (isNaN(parseFloat(bidAmount))) return "Invalid bid amount"
+    if (parseFloat(bidAmount) <= minimum_bid) return "Bid amount must be greater than 0"
+    return null
+}
