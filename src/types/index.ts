@@ -126,3 +126,9 @@ export interface Subscription {
   active: boolean;
   timestamp: string;
 }
+ export interface LazyLoadProperty {
+  auction_id:string
+  user_id: string;
+  bid_amount: number;
+  bid_time:string;
+ }

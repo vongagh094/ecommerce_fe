@@ -16,8 +16,8 @@ export function BookingPanel({ currentBid, lowestOffer, timeLeft }: BookingPanel
   const [bidAmount, setBidAmount] = useState<string>("")
 
   const bidData = {
-    user_id : '1',
-    auction_id: "22222222-2222-2222-2222-222222222222",
+    user_id : '1', // thay ở đây bằng user_id của người dùng đăng nhập
+    auction_id: "22222222-2222-2222-2222-222222222222", // thay ở đây bằng auction_id của phiên đấu giá
     bid_amount: bidAmount ,
     bid_time: new Date().toISOString(),
     created_at: new Date().toISOString(),
