@@ -50,6 +50,44 @@ const sampleReviews = [
 export function PropertyReviews({ reviews }: PropertyReviewsProps) {
   return (
     <div className="border-t pt-8">
+      <div className="mb-8 p-6 bg-gray-50 rounded-lg">
+        <h3 className="text-lg font-semibold mb-4">Write your review</h3>
+
+        {/* Rating Selection */}
+        <div className="flex items-center mb-4">
+          <span className="mr-3 text-gray-700">Your rating:</span>
+          <div className="flex">
+            {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                    key={star}
+                    // onClick={() => setSelectedRating(star)}
+                    className="focus:outline-none"
+                >
+                  <Star
+                      className={`h-6 w-6 ${star <= 4 ? 'text-yellow-500 fill-current' : 'text-gray-300'}`}
+                  />
+                </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Review Textarea */}
+        <textarea
+            className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            // rows="4"
+            placeholder="Share your experience..."
+            // value={reviewText}
+            // onChange={(e) => setReviewText(e.target.value)}
+        />
+
+        {/* Submit Button */}
+        <button
+            className="mt-4 px-6 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors"
+            // onClick={handleSubmitReview}
+        >
+          Submit Review
+        </button>
+      </div>
       <div className="flex items-center space-x-2 mb-8">
         <Star className="h-5 w-5 fill-current text-gray-900" />
         <span className="text-xl font-semibold">
