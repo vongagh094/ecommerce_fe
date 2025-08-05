@@ -1,5 +1,6 @@
+// File: index.ts
 export interface User {
-  id: string;
+  id: number;
   email: string;
   full_name: string;
   avatar?: string;
@@ -40,6 +41,17 @@ export interface Property {
   updatedAt: Date;
 }
 
+export interface WishlistProperty {
+  wishlist_id: number;
+  property_id: number;
+  added_at: string;
+  property: {
+    id: string;
+    title: string;
+    base_price: number;
+  };
+}
+
 export interface Wishlist {
   id: number;
   user_id: number;
@@ -47,54 +59,54 @@ export interface Wishlist {
   is_private: boolean;
   created_at: string;
   updated_at: string;
-  properties?: Array<{
-    wishlist_id: number;
-    property_id: number;
-    added_at: string;
-    title?: string;
-    base_price?: number;
-  }>;
-}
-export interface WishlistProperty {
-  wishlist_id: number;
-  property_id: number;
-  added_at: string;
-  property?: Property;
+  properties: WishlistProperty[];
+  total_properties?: number; // Optional, as it may not always be returned
 }
 
+export interface PropertyDisplay {
+  id: string;
+  title: string;
+  price: string;
+  rating: number;
+  nights: number;
+  image: string;
+  isFavorite: boolean;
+  isGuestFavorite: boolean;
+}
 
 export interface Booking {
-  id: string
-  propertyId: string
-  guestId: string
-  checkIn: Date
-  checkOut: Date
-  guests: number
-  totalPrice: number
-  status: "pending" | "confirmed" | "cancelled" | "completed"
-  createdAt: Date
-  updatedAt: Date
+  id: string;
+  propertyId: string;
+  guestId: string;
+  checkIn: Date;
+  checkOut: Date;
+  guests: number;
+  totalPrice: number;
+  status: "pending" | "confirmed" | "cancelled" | "completed";
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface Review {
-  id: string
-  propertyId: string
-  guestId: string
-  rating: number
-  comment: string
-  createdAt: Date
+  id: string;
+  propertyId: string;
+  guestId: string;
+  rating: number;
+  comment: string;
+  createdAt: Date;
 }
 
 export interface Conversation {
   id: number;
+  name: string;
   property_id: number | null;
   guest_id: number;
   host_id: number;
   last_message_at: string | null;
   is_archived: boolean;
-  property_title?: string;
-  other_user: User;
   has_unread: boolean;
+  property_title?: string;
+  other_user?: User;
 }
 
 export interface Message {
@@ -126,9 +138,3 @@ export interface Subscription {
   active: boolean;
   timestamp: string;
 }
- export interface LazyLoadProperty {
-  auction_id:string
-  user_id: string;
-  bid_amount: number;
-  bid_time:string;
- }
