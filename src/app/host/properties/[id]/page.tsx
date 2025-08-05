@@ -3,84 +3,129 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Star, MapPin, Wifi, Car, Utensils, Tv, Wind, Coffee, Clock } from "lucide-react"
+import { MapPin, Wifi, Car, Utensils, Tv, Wind, Coffee, Clock, ArrowLeft } from "lucide-react"
 import { PropertyEditModal } from "@/components/host/property-edit-modal"
 import type { HostProperty, PropertyEditSection } from "@/types/host"
+import React from "react"
+import { useRouter } from "next/navigation"
 
 interface PropertyDetailsPageProps {
-  params: {
-    id: string
-  }
+  params: Promise<{ id: string }>
 }
+
+const apiUrl = "http://127.0.0.1:8000"
 
 export default function PropertyDetailsPage({ params }: PropertyDetailsPageProps) {
   const [property, setProperty] = useState<HostProperty | null>(null)
   const [editingSection, setEditingSection] = useState<PropertyEditSection | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
+
+  // Unwrap params using React.use
+  const { id } = React.use(params)
 
   useEffect(() => {
-    // Mock data - replace with actual API call
-    const mockProperty: HostProperty = {
-      id: params.id,
-      title: "Ponta Delgada",
-      location: "Portugal",
-      description:
-        "Albatroz Club Ramalho is featured among the best hotels in Maldives and sits exclusively at the tip of the South Male atoll within the exotic collection of islands known as the Maldives. Its unique location offers access to pristine beaches, excellent scuba diving opportunities and a relaxed environment with easy access to the capital city of Male.",
-      details: "3 guests • 1 bedroom • 1 bed • 1 bathroom",
-      amenities: ["Wifi", "TV", "Air conditioning", "Pool", "Hair dryer", "Long-term stays allowed"],
-      rating: 5.0,
-      reviewCount: 7,
-      images: [
-        "/placeholder.svg?height=400&width=600",
-        "/placeholder.svg?height=200&width=300",
-        "/placeholder.svg?height=200&width=300",
-        "/placeholder.svg?height=200&width=300",
-        "/placeholder.svg?height=200&width=300",
-      ],
-      price: 250,
-      bedrooms: 1,
-      bathrooms: 1,
-      guests: 3,
-      hostId: "host1",
-      isAvailable: true,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+    const fetchProperty = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+        const response = await fetch(`${apiUrl}/properties/${id}`)
+        if (!response.ok) {
+          if (response.status === 404) {
+            throw new Error("Property not found")
+          }
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+        const data = await response.json()
+
+        // Map PropertyResponseDTO to HostProperty
+        const mappedProperty: HostProperty = {
+          id: data.id.toString(),
+          title: data.title,
+          location: `${data.city}${data.state ? `, ${data.state}` : ""}${data.country ? `, ${data.country}` : ""}`,
+          description: data.description,
+          details: `${data.max_guests} guests • ${data.bedrooms} bedrooms • ${data.bathrooms} bathrooms`,
+          amenities: data.amenities?.map((amenity: any) => amenity.name) || [],
+          rating: data.host?.host_rating_average || 0,
+          reviewCount: 0, // No review endpoint provided
+          images: data.images?.map((img: any) => img.image_url) || ["/placeholder.svg?height=300&width=400"],
+          price: data.base_price,
+          bedrooms: data.bedrooms || 0,
+          bathrooms: data.bathrooms || 0,
+          guests: data.max_guests || 1,
+          hostId: data.host_id?.toString() || "1", // TODO: Replace with actual host_id from auth context
+          isAvailable: data.status === "ACTIVE",
+          createdAt: new Date(data.created_at),
+          updatedAt: data.updated_at || new Date(data.updated_at),
+        }
+
+        setProperty(mappedProperty)
+      } catch (err: any) {
+        setError(err.message || "Failed to fetch property")
+      } finally {
+        setLoading(false)
+      }
     }
 
-    setTimeout(() => {
-      setProperty(mockProperty)
-      setLoading(false)
-    }, 1000)
-  }, [params.id])
+    fetchProperty()
+  }, [id])
 
   const handleEditSection = (section: PropertyEditSection) => {
     setEditingSection(section)
   }
 
-  const handleSaveSection = (sectionId: string, newContent: any) => {
+  const handleSaveSection = async (sectionId: string, newContent: any) => {
     if (!property) return
 
-    const updatedProperty = { ...property }
+    try {
+      const updatePayload: any = {}
+      if (sectionId === "title") updatePayload.title = newContent
+      if (sectionId === "description") updatePayload.description = newContent
+      if (sectionId === "bedrooms") {
+        updatePayload.bedrooms = parseInt(newContent.split(" ")[0]) || 1 // Extract number from "X double bed"
+      }
+      if (sectionId === "amenities") {
+        updatePayload.amenities = newContent.map((name: string) => ({
+          amenity_id: name, // Assume backend can handle name as ID or adjust based on API
+        }))
+      }
 
-    switch (sectionId) {
-      case "title":
-        updatedProperty.title = newContent
-        break
-      case "description":
-        updatedProperty.description = newContent
-        break
-      case "bedrooms":
-        updatedProperty.details = newContent
-        break
-      case "amenities":
-        updatedProperty.amenities = Array.isArray(newContent)
-          ? newContent
-          : newContent.split("\n").filter((item: string) => item.trim())
-        break
+      const response = await fetch(`${apiUrl}/properties/update/${property.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatePayload),
+      })
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`Failed to update property: ${errorText}`)
+      }
+
+      const updatedProperty = { ...property }
+      switch (sectionId) {
+        case "title":
+          updatedProperty.title = newContent
+          break
+        case "description":
+          updatedProperty.description = newContent
+          break
+        case "bedrooms":
+          updatedProperty.bedrooms = parseInt(newContent.split(" ")[0]) || 1
+          updatedProperty.details = `${property.guests} guests • ${updatedProperty.bedrooms} bedrooms • ${property.bathrooms} bathrooms`
+          break
+        case "amenities":
+          updatedProperty.amenities = Array.isArray(newContent)
+            ? newContent
+            : newContent.split("\n").filter((item: string) => item.trim())
+          break
+      }
+
+      setProperty(updatedProperty)
+      setEditingSection(null)
+    } catch (error: any) {
+      console.error("Error updating property:", error)
+      setError("Failed to save changes. Please try again.")
     }
-
-    setProperty(updatedProperty)
-    setEditingSection(null)
   }
 
   const getAmenityIcon = (amenity: string) => {
@@ -121,14 +166,30 @@ export default function PropertyDetailsPage({ params }: PropertyDetailsPageProps
     )
   }
 
-  if (!property) {
+  if (error || !property) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="text-center">
-          <p className="text-gray-600">Property not found</p>
+          <p className="text-gray-600">{error || "Property not found"}</p>
         </div>
       </div>
     )
+  }
+
+  function handleDeleteProperty(id: string): void {
+    fetch(`${apiUrl}/properties/delete/${id}`, {
+      method: "DELETE",
+      
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to delete property")
+        }
+      })
+      .catch((error) => {
+        console.error("Error deleting property:", error)
+        alert("Failed to delete property. Please try again.")
+      })
   }
 
   return (
@@ -151,6 +212,12 @@ export default function PropertyDetailsPage({ params }: PropertyDetailsPageProps
           className="bg-cyan-500 hover:bg-cyan-600 text-white"
         >
           Edit
+        </Button>
+      </div>
+      {/* Actions nằm ở bên phải */}
+      <div className="flex justify-end space-x-4 mb-8">
+        <Button variant="destructive" onClick={() => handleDeleteProperty(property.id)}>
+          Delete Property
         </Button>
       </div>
 
@@ -198,10 +265,6 @@ export default function PropertyDetailsPage({ params }: PropertyDetailsPageProps
                       <MapPin className="h-4 w-4 text-gray-400" />
                       <span className="text-sm text-gray-600">Dive right in</span>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <Star className="h-4 w-4 text-gray-400" />
-                      <span className="text-sm text-gray-600">Experienced host</span>
-                    </div>
                   </div>
                 </div>
                 <Button
@@ -232,7 +295,7 @@ export default function PropertyDetailsPage({ params }: PropertyDetailsPageProps
                     handleEditSection({
                       id: "bedrooms",
                       title: "Bedroom Configuration",
-                      content: "1 double bed",
+                      content: `${property.bedrooms} double bed`,
                       type: "bedrooms",
                     })
                   }
@@ -245,7 +308,7 @@ export default function PropertyDetailsPage({ params }: PropertyDetailsPageProps
                 <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">🛏️</div>
                 <div>
                   <p className="font-medium text-gray-900">Bedroom</p>
-                  <p className="text-sm text-gray-600">1 double bed</p>
+                  <p className="text-sm text-gray-600">{property.bedrooms} bedrooms</p>
                 </div>
               </div>
             </CardContent>
@@ -281,126 +344,6 @@ export default function PropertyDetailsPage({ params }: PropertyDetailsPageProps
             </CardContent>
           </Card>
 
-          {/* Reviews */}
-          <Card className="border border-gray-200 rounded-2xl">
-            <CardContent className="p-6">
-              <div className="flex items-center space-x-2 mb-6">
-                <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
-                <span className="text-xl font-semibold">{property.rating}</span>
-                <span className="text-xl font-semibold">•</span>
-                <span className="text-xl font-semibold">{property.reviewCount} reviews</span>
-              </div>
-
-              {/* Review Categories */}
-              <div className="grid grid-cols-2 gap-6 mb-8">
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Cleanliness</span>
-                    <span className="text-sm font-medium">5.0</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-1">
-                    <div className="bg-gray-900 h-1 rounded-full" style={{ width: "100%" }}></div>
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Accuracy</span>
-                    <span className="text-sm font-medium">5.0</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-1">
-                    <div className="bg-gray-900 h-1 rounded-full" style={{ width: "100%" }}></div>
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Communication</span>
-                    <span className="text-sm font-medium">5.0</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-1">
-                    <div className="bg-gray-900 h-1 rounded-full" style={{ width: "100%" }}></div>
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Location</span>
-                    <span className="text-sm font-medium">4.9</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-1">
-                    <div className="bg-gray-900 h-1 rounded-full" style={{ width: "98%" }}></div>
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Check-in</span>
-                    <span className="text-sm font-medium">5.0</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-1">
-                    <div className="bg-gray-900 h-1 rounded-full" style={{ width: "100%" }}></div>
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Value</span>
-                    <span className="text-sm font-medium">4.7</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-1">
-                    <div className="bg-gray-900 h-1 rounded-full" style={{ width: "94%" }}></div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Individual Reviews */}
-              <div className="space-y-6">
-                {[
-                  {
-                    name: "Jose",
-                    date: "December 2021",
-                    comment: "Host was very attentive.",
-                    avatar: "/placeholder.svg?height=40&width=40",
-                  },
-                  {
-                    name: "Luke",
-                    date: "December 2021",
-                    comment: "Nice place to stay!",
-                    avatar: "/placeholder.svg?height=40&width=40",
-                  },
-                  {
-                    name: "Shayna",
-                    date: "December 2021",
-                    comment:
-                      "Wonderful stay! The location is perfect to restaurants and bars. Really cozy studio apartment with a super comfortable bed. Great hosts, super helpful and responsive. Cool murphy bed!",
-                    avatar: "/placeholder.svg?height=40&width=40",
-                  },
-                  {
-                    name: "Josh",
-                    date: "November 2021",
-                    comment: "Well designed and fun space, neighborhood has lots of energy and amenities.",
-                    avatar: "/placeholder.svg?height=40&width=40",
-                  },
-                ].map((review, index) => (
-                  <div key={index} className="flex space-x-4">
-                    <img
-                      src={review.avatar || "/placeholder.svg"}
-                      alt={review.name}
-                      className="w-10 h-10 rounded-full"
-                    />
-                    <div>
-                      <div className="flex items-center space-x-2 mb-1">
-                        <span className="font-medium text-gray-900">{review.name}</span>
-                        <span className="text-sm text-gray-500">{review.date}</span>
-                      </div>
-                      <p className="text-gray-700 text-sm leading-relaxed">{review.comment}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <Button variant="outline" className="mt-6 bg-transparent">
-                Show all {property.reviewCount} reviews
-              </Button>
-            </CardContent>
-          </Card>
-
           {/* Where you'll be */}
           <Card className="border border-gray-200 rounded-2xl">
             <CardContent className="p-6">
@@ -420,8 +363,6 @@ export default function PropertyDetailsPage({ params }: PropertyDetailsPageProps
                   Edit
                 </Button>
               </div>
-
-              {/* Map placeholder */}
               <div className="w-full h-64 bg-gray-100 rounded-2xl flex items-center justify-center mb-4">
                 <div className="text-center">
                   <MapPin className="h-8 w-8 text-gray-400 mx-auto mb-2" />
@@ -429,7 +370,6 @@ export default function PropertyDetailsPage({ params }: PropertyDetailsPageProps
                   <p className="text-sm text-gray-400">Exact location provided after booking</p>
                 </div>
               </div>
-
               <p className="text-gray-700">{property.location}</p>
             </CardContent>
           </Card>
@@ -458,6 +398,7 @@ export default function PropertyDetailsPage({ params }: PropertyDetailsPageProps
         onClose={() => setEditingSection(null)}
         section={editingSection}
         onSave={handleSaveSection}
+        propertyId={id}
       />
     </div>
   )

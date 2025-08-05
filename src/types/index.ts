@@ -1,4 +1,3 @@
-// File: index.ts
 export interface User {
   id: number;
   email: string;
@@ -55,12 +54,14 @@ export interface WishlistProperty {
 export interface Wishlist {
   id: number;
   user_id: number;
-  name: string;
   is_private: boolean;
   created_at: string;
   updated_at: string;
   properties: WishlistProperty[];
-  total_properties?: number; // Optional, as it may not always be returned
+}
+
+export interface WishlistResponseDTO {
+  property_ids: number[];
 }
 
 export interface PropertyDisplay {
@@ -285,15 +286,6 @@ export interface Booking {
   status: "pending" | "confirmed" | "cancelled" | "completed";
   createdAt: Date;
   updatedAt: Date;
-}
-
-export interface Review {
-  id: string;
-  propertyId: string;
-  guestId: string;
-  rating: number;
-  comment: string;
-  createdAt: Date;
 }
 
 export interface Conversation {

@@ -88,5 +88,5 @@ export default function HomePage() {
       <Footer />
       <AiChatBubble />
     </main>
-  )
+  );
 }
