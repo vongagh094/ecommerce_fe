@@ -1,171 +1,138 @@
 "use client"
 
-import { Shield } from "lucide-react"
+import { Star, Shield, MessageCircle, Calendar } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { useRouter } from "next/navigation"
-import { useAuth } from "@/contexts/auth-context"
-import { useState, useCallback } from "react"
-import { LoginModal } from "@/components/auth/login-modal"
-import { SignupModal } from "@/components/auth/signup-modal"
+import { HostProfile as HostProfileType } from "@/types"
 
 interface HostProfileProps {
-  hostId: number
-  propertyId: number
+  host: HostProfileType
 }
 
-const apiUrl = "http://127.0.0.1:8000"
+export function HostProfile({ host }: HostProfileProps) {
+  const formatJoinDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long'
+    })
+  }
 
-export function HostProfile({ hostId = 3, propertyId = 1 }: HostProfileProps) {
-  const router = useRouter()
-  const { isLoggedIn, user, login } = useAuth()
-  const [showLoginModal, setShowLoginModal] = useState(false)
-  const [showSignupModal, setShowSignupModal] = useState(false)
-  const [pendingContact, setPendingContact] = useState(false)
+  const getInitials = (name: string) => {
+    return name.split(' ').map(n => n[0]).join('').toUpperCase()
+  }
 
-  const handleContactHost = useCallback(async () => {
-    if (!isLoggedIn) {
-      setPendingContact(true)
-      setShowLoginModal(true)
-      return
-    }
-
-    const guestId = user?.id ? parseInt(user.id) : null
-    if (!guestId) {
-      console.error("Không tìm thấy guestId từ user")
-      return
-    }
-
-    try {
-      const response = await fetch(`${apiUrl}/conversations/create`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ host_id: hostId, guest_id: guestId, property_id: propertyId }),
-      })
-
-      if (response.ok) {
-        const { id: conversationId } = await response.json()
-        console.log("Conversation created:", { conversationId })
-        router.push(`/dashboard/messages?conversationId=${conversationId}`)
-      } else {
-        const error = await response.json()
-        console.error("Lỗi khi tạo conversation:", error)
-      }
-    } catch (error) {
-      console.error("Lỗi khi tạo conversation:", error)
-    }
-  }, [isLoggedIn, user, hostId, propertyId, router])
-
-  const handleLogin = useCallback(() => {
-    const userData = {
-      id: "1",
-      name: "Moni Roy",
-      email: "jaskolski.brent@gmail.com",
-      avatar: "/placeholder.svg?height=40&width=40",
-    }
-    login(userData)
-    setShowLoginModal(false)
-    if (pendingContact) {
-      handleContactHost()
-      setPendingContact(false)
-    } else {
-      router.push("/dashboard/messages")
-    }
-  }, [login, pendingContact, handleContactHost, router])
-
-  const handleSignup = useCallback(() => {
-    const userData = {
-      id: "1",
-      name: "Moni Roy",
-      email: "jaskolski.brent@gmail.com",
-      avatar: "/placeholder.svg?height=40&width=40",
-    }
-    login(userData)
-    setShowSignupModal(false)
-    if (pendingContact) {
-      handleContactHost()
-      setPendingContact(false)
-    } else {
-      router.push("/dashboard/messages")
-    }
-  }, [login, pendingContact, handleContactHost, router])
+  const handleContactHost = () => {
+    // TODO: Implement contact host functionality
+    console.log('Contact host:', host.id)
+  }
 
   return (
-    <>
-      <div className="border-t pt-8">
+    <div className="border-t pt-8">
+      <h3 className="text-lg font-semibold text-gray-900 mb-6">Meet your host</h3>
+      
+      <div className="bg-gray-50 rounded-2xl p-6">
         <div className="flex items-start space-x-6">
-          <Avatar className="h-16 w-16">
-            <AvatarImage src="/placeholder.svg?height=64&width=64" alt="Ghazal" />
-            <AvatarFallback>G</AvatarFallback>
-          </Avatar>
-
-          <div className="flex-1">
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">Hosted by Ghazal</h2>
-            <p className="text-gray-600 text-sm mb-4">Joined in November 2021</p>
-
-            <div className="flex items-center space-x-4 mb-6">
-              <div className="flex items-center space-x-1">
-                <span className="text-sm font-medium">12 reviews</span>
-              </div>
-              <div className="flex items-center space-x-1">
-                <Shield className="h-4 w-4 text-gray-600" />
-                <span className="text-sm">Identity verified</span>
-              </div>
-              <div className="flex items-center space-x-1">
-                <span className="text-sm">Superhost</span>
-              </div>
-            </div>
-
-            <div className="space-y-3 mb-6">
-              <p className="text-sm text-gray-700">
-                <strong>Ghazal is a Superhost</strong>
-              </p>
-              <p className="text-sm text-gray-700">
-                Superhosts are experienced, highly rated hosts who are committed to providing great stays for guests.
-              </p>
-              <p className="text-sm text-gray-700">
-                <strong>Response rate: 100%</strong>
-              </p>
-              <p className="text-sm text-gray-700">
-                <strong>Response time: within an hour</strong>
-              </p>
-            </div>
-
-            <Button variant="outline" onClick={handleContactHost}>
-              Contact Host
-            </Button>
-
-            <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-              <div className="flex items-center space-x-2 text-sm text-gray-600">
+          {/* Host Avatar and Basic Info */}
+          <div className="text-center">
+            <Avatar className="h-20 w-20 mx-auto mb-3">
+              <AvatarImage 
+                src={host.profile_image_url} 
+                alt={host.full_name}
+              />
+              <AvatarFallback className="text-lg">
+                {getInitials(host.full_name)}
+              </AvatarFallback>
+            </Avatar>
+            <h4 className="font-semibold text-xl text-gray-900 mb-1">
+              {host.full_name}
+            </h4>
+            {host.is_super_host && (
+              <div className="flex items-center justify-center space-x-1 text-sm text-gray-600">
                 <Shield className="h-4 w-4" />
-                <span>
-                  To protect your payment, never transfer money or communicate outside of the Sky-high website or app.
-                </span>
+                <span>Superhost</span>
+              </div>
+            )}
+          </div>
+
+          {/* Host Stats */}
+          <div className="flex-1">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              {/* Reviews */}
+              <div>
+                <div className="flex items-center space-x-1 mb-1">
+                  <Star className="h-4 w-4 fill-current text-gray-900" />
+                  <span className="font-semibold text-gray-900">
+                    {host.host_rating_average?.toFixed(1) || 'New'}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-600">
+                  {host.host_review_count || 0} reviews
+                </p>
+              </div>
+
+              {/* Response Rate */}
+              <div>
+                <p className="font-semibold text-gray-900 mb-1">100%</p>
+                <p className="text-sm text-gray-600">Response rate</p>
+              </div>
+
+              {/* Response Time */}
+              <div>
+                <p className="font-semibold text-gray-900 mb-1">Within an hour</p>
+                <p className="text-sm text-gray-600">Response time</p>
+              </div>
+            </div>
+
+            {/* Join Date */}
+            <div className="flex items-center space-x-2 text-sm text-gray-600 mb-4">
+              <Calendar className="h-4 w-4" />
+              <span>Joined in {formatJoinDate(host.created_at)}</span>
+            </div>
+
+            {/* Contact Button */}
+            <Button
+              onClick={handleContactHost}
+              className="bg-gray-900 text-white hover:bg-gray-800"
+            >
+              <MessageCircle className="h-4 w-4 mr-2" />
+              Contact host
+            </Button>
+          </div>
+        </div>
+
+        {/* Host Description */}
+        {host.host_about && (
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <p className="text-gray-700 leading-relaxed">
+              {host.host_about}
+            </p>
+          </div>
+        )}
+
+        {/* Superhost Info */}
+        {host.is_super_host && (
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <div className="flex items-start space-x-3">
+              <Shield className="h-5 w-5 text-gray-600 mt-1" />
+              <div>
+                <h5 className="font-medium text-gray-900 mb-1">
+                  {host.full_name} is a Superhost
+                </h5>
+                <p className="text-sm text-gray-600">
+                  Superhosts are experienced, highly rated hosts who are committed to providing great stays for guests.
+                </p>
               </div>
             </div>
           </div>
+        )}
+
+        {/* Host Protection Info */}
+        <div className="mt-6 pt-6 border-t border-gray-200">
+          <p className="text-xs text-gray-500">
+            To protect your payment, never transfer money or communicate outside of the platform.
+          </p>
         </div>
       </div>
-
-      <LoginModal
-        isOpen={showLoginModal}
-        onClose={() => setShowLoginModal(false)}
-        onLogin={handleLogin}
-        onSwitchToSignup={() => {
-          setShowLoginModal(false)
-          setShowSignupModal(true)
-        }}
-      />
-
-      <SignupModal
-        isOpen={showSignupModal}
-        onClose={() => setShowSignupModal(false)}
-        onSignup={handleSignup}
-        onSwitchToLogin={() => {
-          setShowSignupModal(false)
-          setShowLoginModal(true)
-        }}
-      />
-    </>
+    </div>
   )
 }

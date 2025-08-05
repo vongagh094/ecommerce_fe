@@ -1,47 +1,155 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
-import { SearchResultsHeader } from "@/components/traveller/search/search-results-header"
-import { SearchFilters } from "@/components/traveller/search/search-filters"
-import { SearchResultsList } from "@/components/traveller/search/search-results-list"
-import { SearchResultsMap } from "@/components/traveller/search/search-results-map"
+import { SearchSection } from "@/components/traveller/search-section"
+import { CategoryFilters } from "@/components/traveller/category-filters"
+import { EnhancedPropertyGrid } from "@/components/traveller/enhanced-property-grid"
+import { usePropertySearch } from "@/hooks/use-property-search"
+import { SearchParams, FilterParams } from "@/types"
 
 export default function SearchPage() {
   const searchParams = useSearchParams()
-  const [showMap, setShowMap] = useState(false)
-  const [filters, setFilters] = useState({
-    priceRange: [0, 1000],
-    propertyType: "any",
-    amenities: [] as string[],
-  })
+  const { 
+    displayedProperties, 
+    loading, 
+    error, 
+    hasMore, 
+    canShowMore, 
+    total, 
+    search, 
+    filter, 
+    loadMore, 
+    showMore 
+  } = usePropertySearch()
+  const [isInitialized, setIsInitialized] = useState(false)
 
-  const searchData = {
-    location: searchParams.get("location") || "",
-    checkIn: searchParams.get("checkIn") ? new Date(searchParams.get("checkIn")!) : null,
-    checkOut: searchParams.get("checkOut") ? new Date(searchParams.get("checkOut")!) : null,
-    guests: Number.parseInt(searchParams.get("guests") || "1"),
+  // Initialize search from URL parameters
+  useEffect(() => {
+    if (!isInitialized) {
+      const params: SearchParams = {
+        location: searchParams.get('location') || undefined,
+        check_in: searchParams.get('check_in') || undefined,
+        check_out: searchParams.get('check_out') || undefined,
+        guests: searchParams.get('guests') ? parseInt(searchParams.get('guests')!) : undefined,
+      }
+
+      // Check if we have a category filter
+      const category = searchParams.get('category')
+      if (category) {
+        const filterParams: FilterParams = {
+          ...params,
+          categories: [category]
+        }
+        filter(filterParams)
+      } else {
+        // Remove undefined values
+        const cleanParams = Object.fromEntries(
+          Object.entries(params).filter(([_, value]) => value !== undefined)
+        )
+        
+        if (Object.keys(cleanParams).length > 0) {
+          search(cleanParams)
+        }
+      }
+      
+      setIsInitialized(true)
+    }
+  }, [searchParams, search, filter, isInitialized])
+
+  const handleCategoryChange = (category: string | null) => {
+    const baseParams: SearchParams = {
+      location: searchParams.get('location') || undefined,
+      check_in: searchParams.get('check_in') || undefined,
+      check_out: searchParams.get('check_out') || undefined,
+      guests: searchParams.get('guests') ? parseInt(searchParams.get('guests')!) : undefined,
+    }
+
+    if (category) {
+      const filterParams: FilterParams = {
+        ...baseParams,
+        categories: [category]
+      }
+      filter(filterParams)
+    } else {
+      // Remove undefined values
+      const cleanParams = Object.fromEntries(
+        Object.entries(baseParams).filter(([_, value]) => value !== undefined)
+      )
+      search(cleanParams)
+    }
+  }
+
+  const handleSearchResults = (searchData: any) => {
+    // This will be called when search is performed from the search section
+    // The search hook will automatically update the results
   }
 
   return (
     <div className="min-h-screen bg-white">
-      <SearchResultsHeader searchData={searchData} showMap={showMap} onToggleMap={() => setShowMap(!showMap)} />
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <SearchFilters filters={filters} onFiltersChange={setFilters} />
-
-        <div className="flex">
-          <div className={`${showMap ? "w-1/2" : "w-full"} transition-all duration-300`}>
-            <SearchResultsList filters={filters} />
+      <SearchSection onSearchResults={handleSearchResults} />
+      <CategoryFilters onCategoryChange={handleCategoryChange} />
+      
+      {/* Search Results Header */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold text-gray-900">
+              {total > 0 ? `${total} properties found` : 'Search results'}
+            </h1>
+            {searchParams.get('location') && (
+              <p className="text-gray-600 mt-1">
+                in {searchParams.get('location')}
+              </p>
+            )}
           </div>
-
-          {showMap && (
-            <div className="w-1/2 sticky top-0 h-screen">
-              <SearchResultsMap />
-            </div>
-          )}
+          
+          {/* Search filters summary */}
+          <div className="hidden md:flex items-center space-x-4 text-sm text-gray-600">
+            {searchParams.get('check_in') && searchParams.get('check_out') && (
+              <span>
+                {new Date(searchParams.get('check_in')!).toLocaleDateString()} - {' '}
+                {new Date(searchParams.get('check_out')!).toLocaleDateString()}
+              </span>
+            )}
+            {searchParams.get('guests') && (
+              <span>{searchParams.get('guests')} guests</span>
+            )}
+          </div>
         </div>
       </div>
+
+      {/* Error State */}
+      {error && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+            <h3 className="text-lg font-medium text-red-800 mb-2">
+              Search Error
+            </h3>
+            <p className="text-red-600 mb-4">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Property Grid */}
+      <EnhancedPropertyGrid
+        properties={displayedProperties}
+        loading={loading}
+        hasMore={hasMore}
+        canShowMore={canShowMore}
+        onLoadMore={loadMore}
+        onShowMore={showMore}
+        onToggleFavorite={(propertyId) => {
+          console.log('Toggle favorite for property:', propertyId)
+          // TODO: Implement favorite toggle API call
+        }}
+      />
     </div>
   )
 }

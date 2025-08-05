@@ -4,115 +4,245 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
-import  useWebsocket  from "@/hooks/use-Websocket"
-import History_render from "@/components/traveller/biddings_history/history_render"
-import { BookingPanelProps } from "@/types/bidding"
-import {useBidding} from "@/hooks/use-bidding";
-import {validationBidAmount} from "@/lib/utils";
+import { Calendar, Users } from "lucide-react"
+import { formatPrice, validationBidAmount } from "@/lib/utils"
+import { AvailabilityCalendar, AuctionInfo } from "@/types"
 
-// Function to render the booking panel
-export function BookingPanel({ currentBid, lowestOffer, timeLeft }: BookingPanelProps) {
+interface BookingPanelProps {
+  currentBid: number
+  lowestOffer: number
+  timeLeft: string
+  propertyId: string
+  basePrice: number
+  cleaningFee: number
+  serviceFee: number
+  availabilityCalendar: AvailabilityCalendar
+  activeAuctions: AuctionInfo[]
+}
 
+export function BookingPanel({ 
+  currentBid, 
+  lowestOffer, 
+  timeLeft, 
+  propertyId,
+  basePrice,
+  cleaningFee,
+  serviceFee,
+  availabilityCalendar,
+  activeAuctions 
+}: BookingPanelProps) {
   const [bidAmount, setBidAmount] = useState<string>("")
+  const [checkIn, setCheckIn] = useState<string>("")
+  const [checkOut, setCheckOut] = useState<string>("")
+  const [guests, setGuests] = useState<number>(1)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const bidData = {
-    user_id : '1', // thay ở đây bằng user_id của người dùng đăng nhập
-    auction_id: "22222222-2222-2222-2222-222222222222", // thay ở đây bằng auction_id của phiên đấu giá
-    bid_amount: bidAmount ,
-    bid_time: new Date().toISOString(),
-    created_at: new Date().toISOString(),
+  const activeAuction = activeAuctions?.[0]
+  const hasActiveAuction = activeAuction && activeAuction.status === 'ACTIVE'
+
+  const validationError = bidAmount ? validationBidAmount(bidAmount, currentBid) : null
+
+  const calculateNights = () => {
+    if (!checkIn || !checkOut) return 0
+    const start = new Date(checkIn)
+    const end = new Date(checkOut)
+    const diffTime = Math.abs(end.getTime() - start.getTime())
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24))
   }
 
-  const {isSubmitting,error,handleBid} = useBidding(bidData)
-  const highestBid = useWebsocket(bidData.auction_id)
-  const currentHighestBid = currentBid || highestBid || 0
-  const validationError = validationBidAmount(bidData.bid_amount.toString(), currentHighestBid);
-
-  const formatPrice = (price: number) => {
-    return `₫ ${price.toLocaleString()}`
+  const calculateTotal = () => {
+    const nights = calculateNights()
+    if (nights === 0) return 0
+    
+    const pricePerNight = bidAmount ? parseFloat(bidAmount) : basePrice
+    const subtotal = pricePerNight * nights
+    return subtotal + cleaningFee + serviceFee
   }
 
-  const onSubmit = () => {
-    if(validationError) {
-      return
+  const handleSubmit = async () => {
+    if (validationError || !checkIn || !checkOut) return
+    
+    setIsSubmitting(true)
+    try {
+      // TODO: Implement bid submission API call
+      console.log('Submitting bid:', {
+        propertyId,
+        bidAmount: parseFloat(bidAmount),
+        checkIn,
+        checkOut,
+        guests,
+        auctionId: activeAuction?.id
+      })
+      
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      // Reset form or show success message
+      setBidAmount("")
+    } catch (error) {
+      console.error('Bid submission failed:', error)
+    } finally {
+      setIsSubmitting(false)
     }
-    handleBid(bidData)
   }
+
   return (
     <Card className="sticky top-24">
       <CardContent className="p-6">
         <div className="space-y-6">
-          {/* Bidding Status */}
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">2 nights are on bidding</h3>
+          {/* Pricing Header */}
+          <div className="flex items-baseline space-x-2">
+            <span className="text-2xl font-semibold text-gray-900">
+              {formatPrice(basePrice)}
+            </span>
+            <span className="text-gray-600">per night</span>
+          </div>
 
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <div>
-                <label className="text-xs font-medium text-gray-500 uppercase">CHECK-IN</label>
-                <div className="text-sm text-gray-900">6/23/2023</div>
-              </div>
-              <div>
-                <label className="text-xs font-medium text-gray-500 uppercase">CHECKOUT</label>
-                <div className="text-sm text-gray-900">6/25/2023</div>
+          {/* Date Selection */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-medium text-gray-500 uppercase block mb-2">
+                CHECK-IN
+              </label>
+              <div className="relative">
+                <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  type="date"
+                  value={checkIn}
+                  onChange={(e) => setCheckIn(e.target.value)}
+                  className="pl-10"
+                />
               </div>
             </div>
-
-            <div className="mb-4">
-              <label className="text-xs font-medium text-gray-500 uppercase">GUESTS</label>
-              <div className="text-sm text-gray-900">1 guest</div>
+            <div>
+              <label className="text-xs font-medium text-gray-500 uppercase block mb-2">
+                CHECKOUT
+              </label>
+              <div className="relative">
+                <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  type="date"
+                  value={checkOut}
+                  onChange={(e) => setCheckOut(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
             </div>
           </div>
 
-          {/* Bidding Information */}
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Current highest bid</span>
-              <span className="font-semibold">{formatPrice(highestBid || currentBid)}</span>
-            </div>
-
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Lowest offer</span>
-              <span className="font-semibold">{formatPrice(lowestOffer)}</span>
-            </div>
-
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Time left</span>
-              <span className="text-sm font-medium text-rose-600">{timeLeft}</span>
-            </div>
-            <History_render/>
-          </div>
-
-          {/* Bid Input */}
+          {/* Guests Selection */}
           <div>
-            <label className="text-sm font-medium text-gray-700 mb-2 block">Your bid (per night)</label>
+            <label className="text-xs font-medium text-gray-500 uppercase block mb-2">
+              GUESTS
+            </label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₫</span>
+              <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
-                type="text"
-                value={bidAmount} // here need to update when web socket changes
-                onChange={(e) => setBidAmount(e.target.value)}
-                placeholder="Choose your bid here"
-                className="pl-8"
+                type="number"
+                value={guests}
+                onChange={(e) => setGuests(parseInt(e.target.value) || 1)}
+                min="1"
+                className="pl-10"
               />
             </div>
           </div>
 
-          {/* Total */}
-          <div className="border-t pt-4">
-            <div className="flex justify-between items-center mb-4">
-              <span className="font-medium">Must be at least</span>
-              <span className="font-semibold">{formatPrice(highestBid || currentBid)}</span>
+          {/* Auction Information */}
+          {hasActiveAuction && (
+            <div className="bg-rose-50 p-4 rounded-lg">
+              <h4 className="font-medium text-rose-900 mb-2">Active Auction</h4>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-rose-700">Current highest bid</span>
+                  <span className="font-semibold text-rose-900">
+                    {formatPrice(currentBid)}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-rose-700">Time left</span>
+                  <span className="font-medium text-rose-600">{timeLeft}</span>
+                </div>
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Place Bid Button */}
+          {/* Bid Input (only show if auction is active) */}
+          {hasActiveAuction && (
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-2 block">
+                Your bid (per night)
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                  ₫
+                </span>
+                <Input
+                  type="text"
+                  value={bidAmount}
+                  onChange={(e) => setBidAmount(e.target.value)}
+                  placeholder={`Minimum ${formatPrice(currentBid + 1)}`}
+                  className="pl-8"
+                />
+              </div>
+              {validationError && (
+                <p className="text-sm text-red-600 mt-1">{validationError}</p>
+              )}
+            </div>
+          )}
+
+          {/* Price Breakdown */}
+          {checkIn && checkOut && (
+            <div className="border-t pt-4 space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>
+                  {formatPrice(bidAmount ? parseFloat(bidAmount) : basePrice)} × {calculateNights()} nights
+                </span>
+                <span>
+                  {formatPrice((bidAmount ? parseFloat(bidAmount) : basePrice) * calculateNights())}
+                </span>
+              </div>
+              {cleaningFee > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span>Cleaning fee</span>
+                  <span>{formatPrice(cleaningFee)}</span>
+                </div>
+              )}
+              {serviceFee > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span>Service fee</span>
+                  <span>{formatPrice(serviceFee)}</span>
+                </div>
+              )}
+              <div className="border-t pt-2 flex justify-between font-semibold">
+                <span>Total</span>
+                <span>{formatPrice(calculateTotal())}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Action Button */}
           <Button
-              className="w-full bg-rose-500 hover:bg-rose-600 text-white"
-              onClick={onSubmit}
-              disabled={isSubmitting || !!validationError}
+            className="w-full bg-rose-500 hover:bg-rose-600 text-white"
+            onClick={handleSubmit}
+            disabled={
+              isSubmitting || 
+              !checkIn || 
+              !checkOut || 
+              (hasActiveAuction && (!bidAmount || !!validationError))
+            }
           >
-            {isSubmitting ? "Placing bid..." : "Place a bid"}
+            {isSubmitting 
+              ? "Processing..." 
+              : hasActiveAuction 
+                ? "Place a bid" 
+                : "Reserve"
+            }
           </Button>
+
+          {/* Additional Info */}
+          <p className="text-xs text-gray-500 text-center">
+            You won't be charged yet
+          </p>
         </div>
       </CardContent>
     </Card>

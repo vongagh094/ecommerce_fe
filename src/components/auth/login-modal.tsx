@@ -3,29 +3,43 @@
 import type React from "react"
 
 import { useState } from "react"
-import { ArrowLeft, Eye, EyeOff } from "lucide-react"
+import { ArrowLeft, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
+import { login, loginWithGoogle } from "@/lib/auth0"
 
 interface LoginModalProps {
   isOpen: boolean
   onClose: () => void
-  onLogin: () => void
+  onLogin?: () => void // optional callback for backward-compatibility
   onSwitchToSignup: () => void
 }
 
 export function LoginModal({ isOpen, onClose, onLogin, onSwitchToSignup }: LoginModalProps) {
-  const [email, setEmail] = useState("hello@simiakinbode.com")
-  const [password, setPassword] = useState("")
-  const [showPassword, setShowPassword] = useState(false)
+  // no local form state; using Auth0 Universal Login
+  const [loading, setLoading] = useState<"none" | "google" | "email">("none")
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    console.log("Login attempt:", { email, password })
-    onLogin()
-    onClose()
+  const handleEmailLogin = async () => {
+    try {
+      setLoading("email")
+      await login({ returnTo: window.location.pathname })
+      onLogin?.()
+    } finally {
+      setLoading("none")
+    }
   }
+
+  const handleGoogleLogin = async () => {
+    try {
+      setLoading("google")
+      await loginWithGoogle({ returnTo: window.location.pathname })
+      onLogin?.()
+    } finally {
+      setLoading("none")
+    }
+  }
+
+  // No traditional form submit; handled by buttons above
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -37,62 +51,36 @@ export function LoginModal({ isOpen, onClose, onLogin, onSwitchToSignup }: Login
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <h2 className="text-lg font-semibold">Log In</h2>
-            <div className="w-4" /> {/* Spacer for centering */}
+            <div className="w-4" />
           </div>
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Email Field */}
-            <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium text-gray-700">
-                Email
-              </label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="h-14 text-base border-gray-300 rounded-lg"
-                required
-              />
-              <p className="text-xs text-gray-500">We'll email you trip confirmation and receipts.</p>
-            </div>
+          {/* Social Login */}
+          <Button
+            onClick={handleGoogleLogin}
+            disabled={loading === "google"}
+            className="w-full h-14 bg-white border border-gray-300 hover:bg-gray-50 text-gray-800 font-semibold rounded-lg text-base flex items-center justify-center space-x-3"
+          >
+            {loading === "google" ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="h-4 w-4" />
+            )}
+            <span>Continue with Google</span>
+          </Button>
 
-            {/* Password Field */}
-            <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-medium text-gray-700">
-                Password
-              </label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="h-14 text-base border-gray-300 rounded-lg pr-16"
-                  required
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  <span className="ml-1 text-sm">Show</span>
-                </Button>
-              </div>
-            </div>
+          <div className="my-6 flex items-center justify-center">
+            <span className="text-xs text-gray-500 uppercase tracking-wider">or</span>
+          </div>
 
-            {/* Submit Button */}
-            <Button
-              type="submit"
-              className="w-full h-14 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg text-base"
-            >
-              Log in
-            </Button>
-          </form>
+          {/* Email login triggers Auth0 universal login */}
+          <Button
+            onClick={handleEmailLogin}
+            disabled={loading === "email"}
+            className="w-full h-14 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg text-base"
+          >
+            {loading === "email" && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+            Continue with Email
+          </Button>
 
           {/* Switch to Signup */}
           <div className="mt-6 text-center">

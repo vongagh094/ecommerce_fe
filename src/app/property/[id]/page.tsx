@@ -1,103 +1,117 @@
-import { PropertyHeader } from "@/components/traveller/property-header"
+"use client"
+
+import { useParams } from "next/navigation"
+import { usePropertyDetails } from "@/hooks/use-property-details"
 import { PropertyGallery } from "@/components/traveller/property-gallery"
-import { PropertyDetails } from "@/components/traveller/property-details"
-import { BookingPanel } from "@/components/traveller/booking-panel"
+import { PropertyHeader } from "@/components/traveller/property-header"
+import { PropertyDetails as PropertyDetailsComponent } from "@/components/traveller/property-details"
 import { PropertyAmenities } from "@/components/traveller/property-amenities"
-import { PropertyReviews } from "@/components/traveller/property-reviews"
 import { PropertyLocation } from "@/components/traveller/property-location"
+import { PropertyReviews } from "@/components/traveller/property-reviews"
 import { HostProfile } from "@/components/traveller/host-profile"
+import { BookingPanel } from "@/components/traveller/booking-panel"
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner"
 
-interface PropertyPageProps {
-  params: {
-    id: string
+export default function PropertyPage() {
+  const params = useParams()
+  const propertyId = params.id as string
+  const { property, loading, error, refetch } = usePropertyDetails(propertyId)
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner />
+      </div>
+    )
   }
-}
 
-export default function PropertyPage({ params }: PropertyPageProps) {
-  // In a real app, you'd fetch property data based on params.id
-  const property = {
-    id: params.id,
-    title: "Ponta Delgada",
-    location: "Portugal",
-    images: [
-      "/placeholder.svg?height=600&width=800",
-      "/placeholder.svg?height=300&width=400",
-      "/placeholder.svg?height=300&width=400",
-      "/placeholder.svg?height=300&width=400",
-      "/placeholder.svg?height=300&width=400",
-    ],
-    host: {
-      name: "Dorothy",
-      experience: "3 years hosting",
-      responseRate: "100%",
-      responseTime: "within an hour",
-    },
-    details: {
-      guests: 4,
-      bedrooms: 2,
-      beds: 1,
-      bathrooms: 1,
-    },
-    description:
-      "Adaaran Club Rannalhi is featured among the best Hotels in Maldives and sits exclusively at the tip of the South Male atoll within the exotic collection of islands known as the Maldives. Its unique location offers access to pristine beaches, excellent scuba diving opportunities and a relaxed environment with easy access to the capital city of Male.",
-    amenities: ["WiFi", "TV", "Hot dryer", "Long-term stays allowed", "Pool", "Air conditioning", "Breakfast"],
-    reviews: {
-      rating: 5.0,
-      count: 7,
-      breakdown: {
-        cleanliness: 5.0,
-        accuracy: 5.0,
-        location: 4.9,
-        checkin: 5.0,
-        communication: 5.0,
-        value: 4.9,
-      },
-    },
-    currentBid: 400000,
-    lowestOffer: 2500000,
-    timeLeft: "2 hours 30 mins 35 secs",
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Property Not Found</h1>
+          <p className="text-gray-600 mb-6">{error}</p>
+          <button
+            onClick={() => refetch()}
+            className="bg-rose-500 text-white px-6 py-2 rounded-lg hover:bg-rose-600 transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (!property) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Property Not Found</h1>
+          <p className="text-gray-600">The property you're looking for doesn't exist.</p>
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="min-h-screen bg-white">
-      <PropertyHeader />
+      {/* Property Header */}
+      <PropertyHeader
+        title={property.title}
+        rating={property.reviews.average_rating}
+        reviewCount={property.reviews.total_reviews}
+        location={`${property.location.city}, ${property.location.state}, ${property.location.country}`}
+        isSuperhost={property.host.is_super_host}
+      />
+
+      {/* Property Gallery */}
+      <PropertyGallery images={property.images} />
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold text-gray-900">{property.title}</h1>
-              <p className="text-gray-600">{property.location}</p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <button className="flex items-center space-x-2 text-gray-600 hover:text-gray-900">
-                <span className="text-sm font-medium">Report</span>
-              </button>
-              <button className="flex items-center space-x-2 text-gray-600 hover:text-gray-900">
-                <span className="text-sm font-medium">Share</span>
-              </button>
-              <button className="flex items-center space-x-2 text-gray-600 hover:text-gray-900">
-                <span className="text-sm font-medium">Save</span>
-              </button>
-            </div>
-          </div>
-        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* Property Details */}
+            <PropertyDetailsComponent
+              propertyType={property.property_type}
+              maxGuests={property.max_guests}
+              bedrooms={property.bedrooms}
+              bathrooms={property.bathrooms}
+              description={property.description}
+              highlights={property.highlights}
+            />
 
-        <PropertyGallery images={property.images} />
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 mt-12">
-          <div className="lg:col-span-2 space-y-12">
-            <PropertyDetails host={property.host} details={property.details} description={property.description} />
+            {/* Amenities */}
             <PropertyAmenities amenities={property.amenities} />
-            <PropertyReviews reviews={property.reviews} />
-            <PropertyLocation />
-            <HostProfile />
+
+            {/* Location */}
+            <PropertyLocation
+              location={property.location}
+              locationDescriptions={property.location_descriptions}
+            />
+
+            {/* Host Profile */}
+            <HostProfile host={property.host} />
+
+            {/* Reviews */}
+            <PropertyReviews
+              reviews={property.reviews}
+              propertyId={property.id}
+            />
           </div>
 
+          {/* Booking Panel */}
           <div className="lg:col-span-1">
             <BookingPanel
-              currentBid={property.currentBid}
-              lowestOffer={property.lowestOffer}
-              timeLeft={property.timeLeft}
+              currentBid={property.active_auctions[0]?.current_highest_bid || property.pricing.base_price}
+              lowestOffer={property.pricing.base_price}
+              timeLeft={property.active_auctions[0] ? "2h 30m" : "No active auction"}
+              propertyId={property.id}
+              basePrice={property.pricing.base_price}
+              cleaningFee={property.pricing.cleaning_fee}
+              serviceFee={property.pricing.service_fee}
+              availabilityCalendar={property.availability_calendar}
+              activeAuctions={property.active_auctions}
             />
           </div>
         </div>

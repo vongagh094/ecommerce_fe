@@ -15,9 +15,11 @@ import { useAuth } from "@/contexts/auth-context"
 interface SearchBarProps {
   variant?: "default" | "compact"
   className?: string
+  onSearchResults?: (results: any) => void
+  showBiddingMode?: boolean // For auction-specific searches
 }
 
-export function SearchBar({ variant = "default", className = "" }: SearchBarProps) {
+export function SearchBar({ variant = "default", className = "", onSearchResults, showBiddingMode = false }: SearchBarProps) {
   const [activeModal, setActiveModal] = useState<"location" | "dates" | "guests" | null>(null)
   const [searchData, setSearchData] = useState({
     location: "",
@@ -38,9 +40,10 @@ export function SearchBar({ variant = "default", className = "" }: SearchBarProp
   useEffect(() => {
     if (!isInitialized) {
       const location = searchParams.get("location")
-      const checkIn = searchParams.get("checkIn")
-      const checkOut = searchParams.get("checkOut")
+      const checkIn = searchParams.get("check_in")
+      const checkOut = searchParams.get("check_out")
       const guests = searchParams.get("guests")
+      const mode = searchParams.get("mode")
 
       if (location || checkIn || checkOut || guests) {
         setSearchData({
@@ -60,16 +63,52 @@ export function SearchBar({ variant = "default", className = "" }: SearchBarProp
   }, [searchParams, isInitialized])
 
   const handleSearch = useCallback(() => {
-    // Create search params
-    const params = new URLSearchParams()
-    if (searchData.location) params.set("location", searchData.location)
-    if (searchData.checkIn) params.set("checkIn", searchData.checkIn.toISOString())
-    if (searchData.checkOut) params.set("checkOut", searchData.checkOut.toISOString())
-    params.set("guests", (searchData.guests.adults + searchData.guests.children).toString())
+    // Validate search data against database constraints
+    const totalGuests = searchData.guests.adults + searchData.guests.children
 
+    // Validate guest count (must be > 0, matches properties.max_guests constraint)
+    if (totalGuests <= 0) {
+      console.warn('Guest count must be at least 1')
+      return
+    }
+
+    // Validate date range (check_out > check_in, matches bids table constraint)
+    if (searchData.checkIn && searchData.checkOut && searchData.checkOut <= searchData.checkIn) {
+      console.warn('Check-out date must be after check-in date')
+      return
+    }
+
+    // Create search params that match database schema
+    const params = new URLSearchParams()
+
+    // Location search - matches properties.city, properties.state, properties.country
+    if (searchData.location) params.set("location", searchData.location)
+
+    // Date range - matches bids.check_in, bids.check_out format (YYYY-MM-DD)
+    if (searchData.checkIn) params.set("check_in", searchData.checkIn.toISOString().split('T')[0])
+    if (searchData.checkOut) params.set("check_out", searchData.checkOut.toISOString().split('T')[0])
+
+    // Guest count - matches properties.max_guests
+    params.set("guests", totalGuests.toString())
+
+    // Add bidding mode if enabled (for auction searches)
+    if (showBiddingMode) params.set("mode", "bidding")
+
+    // Navigate to search results
     router.push(`/search?${params.toString()}`)
     setActiveModal(null)
-  }, [searchData, router])
+
+    // Notify parent component with search data
+    if (onSearchResults) {
+      onSearchResults({
+        location: searchData.location,
+        check_in: searchData.checkIn?.toISOString().split('T')[0],
+        check_out: searchData.checkOut?.toISOString().split('T')[0],
+        guests: totalGuests,
+        mode: showBiddingMode ? 'bidding' : 'standard'
+      })
+    }
+  }, [searchData, router, showBiddingMode, onSearchResults])
 
   const formatGuests = useCallback(() => {
     const total = searchData.guests.adults + searchData.guests.children
