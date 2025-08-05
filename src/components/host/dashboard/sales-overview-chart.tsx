@@ -1,3 +1,7 @@
+"use client"
+
+import { useEffect, useRef } from "react"
+import * as d3 from "d3"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ChevronDown } from "lucide-react"
@@ -8,7 +12,151 @@ interface SalesOverviewChartProps {
 }
 
 export function SalesOverviewChart({ data }: SalesOverviewChartProps) {
-  const maxValue = Math.max(...data.map((d) => d.value))
+  const svgRef = useRef<SVGSVGElement>(null)
+
+  useEffect(() => {
+    if (!data.length || !svgRef.current) return
+
+    const svg = d3.select(svgRef.current)
+    svg.selectAll("*").remove()
+
+    const margin = { top: 20, right: 30, bottom: 40, left: 50 }
+    const width = 600 - margin.left - margin.right
+    const height = 250 - margin.top - margin.bottom
+
+    const g = svg
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+      .attr("transform", `translate(${margin.left},${margin.top})`)
+
+    const parseMonth = d3.timeParse("%b")
+    const formatMonth = d3.timeFormat("%b")
+
+    const processedData = data.map((d) => ({
+      ...d,
+      date: parseMonth(d.month) || new Date(),
+    }))
+
+    const x = d3
+      .scaleTime()
+      .domain(d3.extent(processedData, (d) => d.date) as [Date, Date])
+      .range([0, width])
+
+    const y = d3
+      .scaleLinear()
+      .domain([0, d3.max(processedData, (d) => d.value) || 0])
+      .nice()
+      .range([height, 0])
+
+    const line = d3
+      .line<(typeof processedData)[0]>()
+      .x((d) => x(d.date))
+      .y((d) => y(d.value))
+      .curve(d3.curveMonotoneX)
+
+    const area = d3
+      .area<(typeof processedData)[0]>()
+      .x((d) => x(d.date))
+      .y0(height)
+      .y1((d) => y(d.value))
+      .curve(d3.curveMonotoneX)
+
+    const gradient = svg
+      .append("defs")
+      .append("linearGradient")
+      .attr("id", "area-gradient")
+      .attr("gradientUnits", "userSpaceOnUse")
+      .attr("x1", 0)
+      .attr("y1", height)
+      .attr("x2", 0)
+      .attr("y2", 0)
+
+    gradient.append("stop").attr("offset", "0%").attr("stop-color", "#22d3ee").attr("stop-opacity", 0.1)
+
+    gradient.append("stop").attr("offset", "100%").attr("stop-color", "#22d3ee").attr("stop-opacity", 0.8)
+
+    g.append("g")
+      .attr("transform", `translate(0,${height})`)
+      .call(
+        d3
+          .axisBottom(x)
+          .tickFormat((d) => formatMonth(d as Date))
+          .ticks(d3.timeMonth.every(1)),
+      )
+      .selectAll("text")
+      .style("font-size", "12px")
+      .style("fill", "#6b7280")
+
+    g.append("g")
+      .call(d3.axisLeft(y).tickFormat((d) => `${((d as number) / 1000000).toFixed(0)}M`))
+      .selectAll("text")
+      .style("font-size", "12px")
+      .style("fill", "#6b7280")
+
+    g.selectAll(".grid-line")
+      .data(y.ticks())
+      .enter()
+      .append("line")
+      .attr("class", "grid-line")
+      .attr("x1", 0)
+      .attr("x2", width)
+      .attr("y1", (d) => y(d))
+      .attr("y2", (d) => y(d))
+      .attr("stroke", "#e5e7eb")
+      .attr("stroke-width", 1)
+      .attr("opacity", 0.5)
+
+    g.append("path").datum(processedData).attr("fill", "url(#area-gradient)").attr("d", area)
+
+    g.append("path")
+      .datum(processedData)
+      .attr("fill", "none")
+      .attr("stroke", "#22d3ee")
+      .attr("stroke-width", 3)
+      .attr("d", line)
+
+    g.selectAll(".dot")
+      .data(processedData)
+      .enter()
+      .append("circle")
+      .attr("class", "dot")
+      .attr("cx", (d) => x(d.date))
+      .attr("cy", (d) => y(d.value))
+      .attr("r", 4)
+      .attr("fill", "#22d3ee")
+      .attr("stroke", "white")
+      .attr("stroke-width", 2)
+      .on("mouseover", function (event, d) {
+        d3.select(this).attr("r", 6)
+
+        const tooltip = d3
+          .select("body")
+          .append("div")
+          .attr("class", "tooltip")
+          .style("position", "absolute")
+          .style("background", "rgba(0, 0, 0, 0.8)")
+          .style("color", "white")
+          .style("padding", "8px 12px")
+          .style("border-radius", "6px")
+          .style("font-size", "12px")
+          .style("pointer-events", "none")
+          .style("opacity", 0)
+          .style("z-index", "1000")
+
+        tooltip.transition().duration(200).style("opacity", 1)
+
+        tooltip
+          .html(`<strong>${d.month}</strong><br/>Sales: ${(d.value / 1000000).toFixed(1)}M VND`)
+          .style("left", event.pageX + 10 + "px")
+          .style("top", event.pageY - 10 + "px")
+      })
+      .on("mouseout", function () {
+        d3.select(this).attr("r", 4)
+
+        d3.selectAll(".tooltip").remove()
+      })
+  }, [data])
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
@@ -31,46 +179,8 @@ export function SalesOverviewChart({ data }: SalesOverviewChartProps) {
             </div>
           </div>
 
-          <div className="h-64 relative">
-            <svg className="w-full h-full" viewBox="0 0 800 200">
-              <defs>
-                <linearGradient id="salesGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.8" />
-                  <stop offset="50%" stopColor="#67e8f9" stopOpacity="0.4" />
-                  <stop offset="100%" stopColor="#a7f3d0" stopOpacity="0.1" />
-                </linearGradient>
-              </defs>
-
-              <path
-                d={`M 0 ${200 - (data[0].value / maxValue) * 150} ${data
-                  .map(
-                    (point, index) => `L ${(index * 800) / (data.length - 1)} ${200 - (point.value / maxValue) * 150}`,
-                  )
-                  .join(" ")} L 800 200 L 0 200 Z`}
-                fill="url(#salesGradient)"
-                stroke="#22d3ee"
-                strokeWidth="2"
-              />
-
-              {data.map((point, index) => (
-                <g key={point.month}>
-                  <circle
-                    cx={(index * 800) / (data.length - 1)}
-                    cy={200 - (point.value / maxValue) * 150}
-                    r="4"
-                    fill="#22d3ee"
-                  />
-                  <text
-                    x={(index * 800) / (data.length - 1)}
-                    y="190"
-                    textAnchor="middle"
-                    className="text-xs fill-gray-500"
-                  >
-                    {point.month}
-                  </text>
-                </g>
-              ))}
-            </svg>
+          <div className="w-full overflow-x-auto">
+            <svg ref={svgRef} className="w-full h-auto"></svg>
           </div>
         </CardContent>
       </Card>
