@@ -5,47 +5,58 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
-import { useState } from "react"
+import { useState, useCallback } from "react"
 import { LoginModal } from "@/components/auth/login-modal"
 import { SignupModal } from "@/components/auth/signup-modal"
 
-export function HostProfile() {
+interface HostProfileProps {
+  hostId: number
+  propertyId: number
+}
+
+const apiUrl = "http://127.0.0.1:8000"
+
+export function HostProfile({ hostId = 3, propertyId = 1 }: HostProfileProps) {
   const router = useRouter()
-  const { isLoggedIn, login } = useAuth()
+  const { isLoggedIn, user, login } = useAuth()
   const [showLoginModal, setShowLoginModal] = useState(false)
   const [showSignupModal, setShowSignupModal] = useState(false)
+  const [pendingContact, setPendingContact] = useState(false)
 
-  const handleContactHost = async () => {
+  const handleContactHost = useCallback(async () => {
     if (!isLoggedIn) {
+      setPendingContact(true)
       setShowLoginModal(true)
       return
     }
 
-    const guestId = 1
-    const hostId = 3
-    const propertyId = 1
+    const guestId = user?.id ? parseInt(user.id) : null
+    if (!guestId) {
+      console.error("Không tìm thấy guestId từ user")
+      return
+    }
 
     try {
-      const response = await fetch("/api/chat/conversation", {
+      const response = await fetch(`${apiUrl}/conversations/create`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ host_id: hostId, guest_id: guestId, property_id: propertyId }),
       })
 
       if (response.ok) {
-        const { conversationId } = await response.json()
-        // Chuyển hướng đến trang tin nhắn với conversationId
+        const { id: conversationId } = await response.json()
+        console.log("Conversation created:", { conversationId })
         router.push(`/dashboard/messages?conversationId=${conversationId}`)
       } else {
-        console.error("Lỗi khi tạo conversation:", await response.json())
+        const error = await response.json()
+        console.error("Lỗi khi tạo conversation:", error)
       }
     } catch (error) {
       console.error("Lỗi khi tạo conversation:", error)
     }
-  }
+  }, [isLoggedIn, user, hostId, propertyId, router])
 
-  // Xử lý đăng nhập
-  const handleLogin = () => {
+  const handleLogin = useCallback(() => {
     const userData = {
       id: "1",
       name: "Moni Roy",
@@ -54,12 +65,15 @@ export function HostProfile() {
     }
     login(userData)
     setShowLoginModal(false)
-    // After login, redirect to messages
-    router.push("/dashboard/messages")
-  }
+    if (pendingContact) {
+      handleContactHost()
+      setPendingContact(false)
+    } else {
+      router.push("/dashboard/messages")
+    }
+  }, [login, pendingContact, handleContactHost, router])
 
-  const handleSignup = () => {
-    // Simulate user data - in real app this would come from the signup form
+  const handleSignup = useCallback(() => {
     const userData = {
       id: "1",
       name: "Moni Roy",
@@ -68,9 +82,13 @@ export function HostProfile() {
     }
     login(userData)
     setShowSignupModal(false)
-    // After signup, redirect to messages
-    router.push("/dashboard/messages")
-  }
+    if (pendingContact) {
+      handleContactHost()
+      setPendingContact(false)
+    } else {
+      router.push("/dashboard/messages")
+    }
+  }, [login, pendingContact, handleContactHost, router])
 
   return (
     <>
@@ -129,7 +147,6 @@ export function HostProfile() {
         </div>
       </div>
 
-      {/* Login Modal */}
       <LoginModal
         isOpen={showLoginModal}
         onClose={() => setShowLoginModal(false)}
@@ -140,7 +157,6 @@ export function HostProfile() {
         }}
       />
 
-      {/* Signup Modal */}
       <SignupModal
         isOpen={showSignupModal}
         onClose={() => setShowSignupModal(false)}
