@@ -28,30 +28,15 @@ export interface ChartData {
   occupancyChange: number
 }
 
-export interface PropertyEditSection {
-  id: string
-  title: string
-  type: "text" | "textarea" | "amenities" | "bedrooms"
-  content: any
+export interface Review {
+  id: string;
+  propertyId: string;
+  guestId: string;
+  rating: number;
+  comment: string;
+  createdAt: Date;
 }
 
-// Add to existing interfaces
-export interface HostProperty {
-  id: string
-  title: string
-  location: string
-  type: string
-  guests: number
-  bedrooms: number
-  bathrooms: number
-  amenities: string[]
-  images: string[]
-  rating: number
-  reviews: number
-  description: string
-  pricePerNight: number
-  isActive: boolean
-}
 
 export interface HostDashboardStats {
   totalListing: number
@@ -100,7 +85,7 @@ export interface PropertyEditSection {
   id: string
   title: string
   content: any
-  type: "text" | "textarea" | "amenities" | "images" | "bedrooms"
+  type: "text" | "textarea" | "amenities" | "bedrooms"
 }
 
 export interface Booking {
