@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import type { AdminStats, RevenueData, UserGrowthData } from "@/types/admin"
+import type { AdminStats, RevenueData, UserGrowthData, UserRoleData, PropertyPerformanceData } from "@/types/admin"
 
 export function useAdminData() {
   const [stats, setStats] = useState<AdminStats | null>(null)
@@ -10,149 +10,128 @@ export function useAdminData() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Simulate API call with mock data
-    const fetchAdminData = async () => {
-      try {
-        // Mock delay
-        await new Promise((resolve) => setTimeout(resolve, 1000))
+    // Simulate API call
+    const fetchData = async () => {
+      setLoading(true)
+      
+      // Simulate network delay
+      await new Promise(resolve => setTimeout(resolve, 1000))
 
-        // Mock admin stats
+      try {
+        // Mock user role distribution data
+        const userRoleDistribution: UserRoleData[] = [
+          { role: "Guests", count: 15420, percentage: 68.5 },
+          { role: "Hosts", count: 4830, percentage: 21.4 },
+          { role: "Both", count: 2280, percentage: 10.1 },
+        ]
+
+        // Mock top performing properties data
+        const topProperties: PropertyPerformanceData[] = [
+          { id: "prop_001", name: "Luxury Villa Da Nang", bookings: 156, earnings: 45000000, location: "Da Nang, Vietnam" },
+          { id: "prop_002", name: "Beachfront Resort Nha Trang", bookings: 142, earnings: 38500000, location: "Nha Trang, Vietnam" },
+          { id: "prop_003", name: "Mountain Lodge Sapa", bookings: 128, earnings: 32000000, location: "Sapa, Vietnam" },
+          { id: "prop_004", name: "City Center Apartment HCMC", bookings: 134, earnings: 41200000, location: "Ho Chi Minh City, Vietnam" },
+          { id: "prop_005", name: "Riverside Hotel Hoi An", bookings: 119, earnings: 28900000, location: "Hoi An, Vietnam" },
+          { id: "prop_006", name: "Penthouse Bangkok", bookings: 98, earnings: 52000000, location: "Bangkok, Thailand" },
+          { id: "prop_007", name: "Beach Villa Phuket", bookings: 87, earnings: 48500000, location: "Phuket, Thailand" },
+          { id: "prop_008", name: "Urban Loft Singapore", bookings: 76, earnings: 65000000, location: "Singapore" },
+          { id: "prop_009", name: "Garden House Hanoi", bookings: 92, earnings: 25800000, location: "Hanoi, Vietnam" },
+          { id: "prop_010", name: "Skyline Apartment KL", bookings: 68, earnings: 35600000, location: "Kuala Lumpur, Malaysia" },
+        ]
+
         const mockStats: AdminStats = {
           totalUsers: {
-            total: 15420,
-            guests: 12340,
-            hosts: 2580,
-            both: 500,
+            total: 22530,
+            guests: 15420,
+            hosts: 4830,
+            both: 2280,
           },
-          activeRooms: 3240,
+          activeRooms: 8945,
           bidding: {
-            daily: 45,
-            weekly: 312,
-            monthly: 1250,
+            daily: 234,
+            weekly: 1456,
+            monthly: 5890,
           },
           revenue: {
-            totalRevenue: 2500000000, // 2.5 billion VND
-            platformFees: 125000000, // 125 million VND
-            growth: 15.2,
+            totalRevenue: 125000000,
+            platformFees: 12500000,
+            growth: 15.8,
           },
-          activeBiddings: [
-            {
-              id: "1",
-              propertyTitle: "Luxury Villa in Da Nang",
-              currentBid: 15000000,
-              bidderCount: 8,
-              timeRemaining: "2h 15m",
-              status: "closing-soon",
-              endTime: new Date(Date.now() + 2 * 60 * 60 * 1000),
-            },
-            {
-              id: "2",
-              propertyTitle: "Beachfront Apartment in Nha Trang",
-              currentBid: 8500000,
-              bidderCount: 12,
-              timeRemaining: "1d 5h",
-              status: "active",
-              endTime: new Date(Date.now() + 29 * 60 * 60 * 1000),
-            },
-            {
-              id: "3",
-              propertyTitle: "Mountain Resort in Sapa",
-              currentBid: 22000000,
-              bidderCount: 6,
-              timeRemaining: "45m",
-              status: "closing-soon",
-              endTime: new Date(Date.now() + 45 * 60 * 1000),
-            },
-            {
-              id: "4",
-              propertyTitle: "City Center Penthouse in Ho Chi Minh",
-              currentBid: 35000000,
-              bidderCount: 15,
-              timeRemaining: "3d 12h",
-              status: "active",
-              endTime: new Date(Date.now() + 84 * 60 * 60 * 1000),
-            },
-          ],
           anomalyReports: [
             {
               id: "1",
               type: "reported-account",
-              severity: "high",
               status: "pending",
-              description: "User reported for fake property listings and fraudulent behavior",
-              userName: "suspicious_user_123",
-              userId: "user_123",
+              description: "Multiple fake reviews detected from this account",
+              userName: "john_doe_123",
+              userId: "user_001",
               createdAt: new Date("2024-01-15"),
               updatedAt: new Date("2024-01-15"),
             },
             {
               id: "2",
               type: "fraud-behavior",
-              severity: "medium",
-              status: "investigating",
-              description: "Multiple accounts detected from same IP address with coordinated bidding",
-              userName: "bidder_network_456",
-              userId: "user_456",
+              status: "resolved",
+              description: "Suspicious bidding patterns detected",
+              userName: "property_hunter",
+              userId: "user_002",
               createdAt: new Date("2024-01-14"),
               updatedAt: new Date("2024-01-16"),
             },
             {
               id: "3",
               type: "suspicious-activity",
-              severity: "low",
-              status: "resolved",
-              description: "Unusual bidding pattern detected - resolved as legitimate competitive bidding",
-              userName: "active_bidder_789",
-              userId: "user_789",
+              status: "pending",
+              description: "Unusual login patterns from different locations",
+              userName: "travel_lover",
+              userId: "user_003",
               createdAt: new Date("2024-01-13"),
+              updatedAt: new Date("2024-01-13"),
+            },
+            {
+              id: "4",
+              type: "reported-account",
+              status: "resolved",
+              description: "Account reported for harassment by multiple users",
+              userName: "bad_actor_99",
+              userId: "user_004",
+              createdAt: new Date("2024-01-12"),
               updatedAt: new Date("2024-01-17"),
             },
           ],
+          userRoleDistribution,
+          topProperties,
         }
 
-        // Mock revenue data for charts
         const mockRevenueData: RevenueData[] = [
-          { month: "Jan", revenue: 180000000, platformFees: 9000000 },
-          { month: "Feb", revenue: 220000000, platformFees: 11000000 },
-          { month: "Mar", revenue: 190000000, platformFees: 9500000 },
-          { month: "Apr", revenue: 280000000, platformFees: 14000000 },
-          { month: "May", revenue: 320000000, platformFees: 16000000 },
-          { month: "Jun", revenue: 350000000, platformFees: 17500000 },
-          { month: "Jul", revenue: 380000000, platformFees: 19000000 },
-          { month: "Aug", revenue: 420000000, platformFees: 21000000 },
-          { month: "Sep", revenue: 390000000, platformFees: 19500000 },
-          { month: "Oct", revenue: 450000000, platformFees: 22500000 },
-          { month: "Nov", revenue: 480000000, platformFees: 24000000 },
-          { month: "Dec", revenue: 520000000, platformFees: 26000000 },
+          { month: "Jan", revenue: 8500000, platformFees: 850000 },
+          { month: "Feb", revenue: 9200000, platformFees: 920000 },
+          { month: "Mar", revenue: 10100000, platformFees: 1010000 },
+          { month: "Apr", revenue: 11800000, platformFees: 1180000 },
+          { month: "May", revenue: 13200000, platformFees: 1320000 },
+          { month: "Jun", revenue: 12900000, platformFees: 1290000 },
         ]
 
-        // Mock user growth data
         const mockUserGrowthData: UserGrowthData[] = [
-          { month: "Jan", guests: 8500, hosts: 1200, total: 9700 },
-          { month: "Feb", guests: 9200, hosts: 1350, total: 10550 },
-          { month: "Mar", guests: 9800, hosts: 1480, total: 11280 },
-          { month: "Apr", guests: 10500, hosts: 1620, total: 12120 },
-          { month: "May", guests: 11200, hosts: 1780, total: 12980 },
-          { month: "Jun", guests: 11800, hosts: 1920, total: 13720 },
-          { month: "Jul", guests: 12100, hosts: 2050, total: 14150 },
-          { month: "Aug", guests: 12340, hosts: 2180, total: 14520 },
-          { month: "Sep", guests: 12280, hosts: 2280, total: 14560 },
-          { month: "Oct", guests: 12350, hosts: 2380, total: 14730 },
-          { month: "Nov", guests: 12340, hosts: 2480, total: 14820 },
-          { month: "Dec", guests: 12340, hosts: 2580, total: 14920 },
+          { month: "Jan", guests: 12500, hosts: 3200, total: 15700 },
+          { month: "Feb", guests: 13200, hosts: 3450, total: 16650 },
+          { month: "Mar", guests: 13800, hosts: 3680, total: 17480 },
+          { month: "Apr", guests: 14500, hosts: 4100, total: 18600 },
+          { month: "May", guests: 15100, hosts: 4520, total: 19620 },
+          { month: "Jun", guests: 15420, hosts: 4830, total: 20250 },
         ]
 
         setStats(mockStats)
         setRevenueData(mockRevenueData)
         setUserGrowthData(mockUserGrowthData)
       } catch (error) {
-        console.error("Error fetching admin data:", error)
+        console.error("Error loading admin data:", error)
       } finally {
         setLoading(false)
       }
     }
 
-    fetchAdminData()
+    fetchData()
   }, [])
 
   return {

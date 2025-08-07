@@ -1,147 +1,142 @@
-export interface DashboardStats {
-  totalListing: number
-  totalBidActive: number
-  totalBooking: number
-  sales: number
-}
-
-export interface SalesData {
-  month: string
-  amount: number
-}
-
-export interface MetricCard {
-  title: string
-  value: string | number
-  change?: string
-  changeType?: "positive" | "negative"
-  icon?: string
-}
-
-export interface ChartData {
-  salesOverview: SalesData[]
-  expectedSales: number
-  totalSales: number
-  salesIncrease: number
-  bidConversion: number
-  occupancyRatio: number
-  occupancyChange: number
-}
-
-export interface Review {
-  id: string;
-  propertyId: string;
-  guestId: string;
-  rating: number;
-  comment: string;
-  createdAt: Date;
-}
-
-
-export interface HostDashboardStats {
-  totalListing: number
-  totalBidActive: number
-  totalBooking: number
-  sales: number
-}
-
-export interface ChartDataPoint {
-  month: string
-  value: number
-}
-
-export interface HostDashboardData {
-  stats: HostDashboardStats
-  chartData: ChartDataPoint[]
-  expectedSales: number
-  totalSales: number
-  salesIncrease: number
-  bidConversion: number
-  occupancyRatio: number
-  occupancyChange: number
-}
+import { TypeIcon as type, type LucideIcon } from 'lucide-react'
 
 export interface HostProperty {
   id: string
-  title: string
+  name: string
   location: string
-  description: string
-  details: string
-  amenities: string[]
-  rating: number
-  reviewCount: number
-  images: string[]
-  price: number
-  bedrooms: number
-  bathrooms: number
-  guests: number
-  hostId: string
-  isAvailable: boolean
-  createdAt: Date
-  updatedAt: Date
+  expectedSales: number
+  totalSales: number
+  salesIncrease: number
+  chartData: { month: string; expected: number; actual: number }[]
+  guestRating: number // Keep for overall average if needed elsewhere, but chart will use distribution
+  ratingsDistribution: { stars: number; count: number }[] // New: for bar chart
+  occupancyData: OccupancyDataPoint[]
 }
 
-export interface PropertyEditSection {
+export interface OccupancyDataPoint {
+  date: string // YYYY-MM-DD
+  occupancyRate: number // 0-100
+  period: "daily" | "weekly" | "monthly"
+}
+
+export interface HostDashboardData {
+  properties: HostProperty[]
+}
+
+export interface PropertySummary {
   id: string
+  name: string
+  location: string
+}
+
+export interface StatCardProps {
   title: string
-  content: any
-  type: "text" | "textarea" | "amenities" | "bedrooms"
+  value: string
+  change?: string
+  icon: LucideIcon
+  color: string
 }
 
-export interface Booking {
+export interface SalesOverviewChartProps {
+  data: { month: string; expected: number; actual: number }[]
+}
+
+export interface MetricCardProps {
+  title: string
+  value: string
+  change: number
+  unit: string
+}
+
+export interface PropertyCreationStep {
   id: string
-  guest: {
+  name: string
+  component: React.ComponentType<any>
+  icon: LucideIcon
+}
+
+export interface PropertyDetails {
+  id: string
+  name: string
+  description: string
+  type: string
+  address: string
+  latitude: number
+  longitude: number
+  images: string[]
+  amenities: string[]
+  bedrooms: {
+    total: number
+    configurations: {
+      bedroomNumber: number
+      bedType: string
+      count: number
+    }[]
+  }
+  reviews: {
+    id: string
+    user: string
+    rating: number
+    comment: string
+    date: string
+  }[]
+  host: {
     id: string
     name: string
     avatar: string
+    joinedDate: string
+    propertiesCount: number
+    reviewsCount: number
   }
-  property: {
-    id: string
-    name: string
-    location: string
-  }
-  checkIn: string
-  checkOut: string
-  totalCharges: number
-  status: "confirmed" | "pending" | "cancelled"
-  createdAt: string
 }
 
-export interface ActiveAuction {
-  id: string
-  property: {
-    id: string
-    title: string
-    location: string
-    images: string[]
-  }
-  currentBid: number
-  remainingTime: {
-    days: number
-    hours: number
-    minutes: number
-  }
-  status: "active" | "ending_soon"
+export interface PropertyEditModalProps {
+  isOpen: boolean
+  onClose: () => void
+  property: PropertyDetails
+  onSave: (updatedProperty: PropertyDetails) => void
 }
 
-export interface PendingBid {
-  id: string
-  property: {
-    id: string
-    name: string
-    location: string
-  }
-  bidder: {
-    id: string
-    name: string
-    isAnonymous: boolean
-  }
-  bidAmount: number
-  bidDate: string
-  status: "pending" | "verified" | "rejected"
+export interface EditSectionProps {
+  title: string
+  onEdit: () => void
+  children: React.ReactNode
 }
 
-export interface BidAction {
-  bidId: string
-  action: "verify" | "reject" | "extend"
+export interface EditTextFieldModalProps {
+  isOpen: boolean
+  onClose: () => void
+  title: string
+  label: string
+  initialValue: string
+  onSave: (value: string) => void
+  isTextArea?: boolean
+}
+
+export interface EditAmenitiesModalProps {
+  isOpen: boolean
+  onClose: () => void
+  initialAmenities: string[]
+  onSave: (amenities: string[]) => void
+}
+
+export interface EditBedroomsModalProps {
+  isOpen: boolean
+  onClose: () => void
+  initialBedrooms: {
+    total: number
+    configurations: {
+      bedroomNumber: number
+      bedType: string
+      count: number
+    }[]
+  }
+  onSave: (bedrooms: {
+    total: number
+    configurations: {
+      bedroomNumber: number
+      bedType: string
+      count: number
+    }[]
+  }) => void
 }

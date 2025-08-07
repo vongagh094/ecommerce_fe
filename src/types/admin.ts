@@ -16,8 +16,23 @@ export interface AdminStats {
     platformFees: number
     growth: number
   }
-  activeBiddings: ActiveBidding[]
   anomalyReports: AnomalyReport[]
+  userRoleDistribution: UserRoleData[]
+  topProperties: PropertyPerformanceData[]
+}
+
+export interface UserRoleData {
+  role: string
+  count: number
+  percentage: number
+}
+
+export interface PropertyPerformanceData {
+  id: string
+  name: string
+  bookings: number
+  earnings: number
+  location: string
 }
 
 export interface ActiveBidding {
@@ -33,8 +48,7 @@ export interface ActiveBidding {
 export interface AnomalyReport {
   id: string
   type: "reported-account" | "fraud-behavior" | "suspicious-activity"
-  severity: "high" | "medium" | "low"
-  status: "pending" | "investigating" | "resolved"
+  status: "pending" | "resolved"
   description: string
   userName: string
   userId: string
