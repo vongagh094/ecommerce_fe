@@ -6,6 +6,7 @@ import { PropertyAmenities } from "@/components/traveller/property-amenities"
 import { PropertyReviews } from "@/components/traveller/property-reviews"
 import { PropertyLocation } from "@/components/traveller/property-location"
 import { HostProfile } from "@/components/traveller/host-profile"
+import {CalenderBidingFeature} from "@/components/traveller/calender-biding-feature";
 
 interface PropertyPageProps {
   params: {
@@ -27,6 +28,7 @@ export default function PropertyPage({ params }: PropertyPageProps) {
       "/placeholder.svg?height=300&width=400",
     ],
     host: {
+        id: 3631,
       name: "Dorothy",
       experience: "3 years hosting",
       responseRate: "100%",
@@ -57,7 +59,7 @@ export default function PropertyPage({ params }: PropertyPageProps) {
     lowestOffer: 2500000,
     timeLeft: "2 hours 30 mins 35 secs",
   }
-
+    const booking = "10000002-1000-1000-1000-100000000002"
   return (
     <div className="min-h-screen bg-white">
       <PropertyHeader />
@@ -86,19 +88,21 @@ export default function PropertyPage({ params }: PropertyPageProps) {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 mt-12">
           <div className="lg:col-span-2 space-y-12">
-            <PropertyDetails host={property.host} details={property.details} description={property.description} />
-            <PropertyAmenities amenities={property.amenities} />
-            <PropertyReviews reviews={property.reviews} />
-            <PropertyLocation />
-            <HostProfile />
+              <CalenderBidingFeature/>
+              <PropertyDetails host={property.host} details={property.details} description={property.description} />
+              <PropertyAmenities amenities={property.amenities} />
+              <PropertyReviews reviews = {property.reviews}
+                               propertyId={property.id}
+                               reviewerId={1}
+                               revieweeId={property.host.id}
+                               bookingId = {booking}
+              />
+              <PropertyLocation />
+            {/*<HostProfile />*/}
           </div>
 
           <div className="lg:col-span-1">
-            <BookingPanel
-              currentBid={property.currentBid}
-              lowestOffer={property.lowestOffer}
-              timeLeft={property.timeLeft}
-            />
+            <BookingPanel/>
           </div>
         </div>
       </div>
