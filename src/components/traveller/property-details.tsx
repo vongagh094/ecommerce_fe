@@ -1,5 +1,6 @@
-import { User, Award, MessageCircle, Home, Users, Bed, Bath } from "lucide-react"
+import { User, Award, MessageCircle, Home, Users, Bed, Bath, MapPin, Key, Mountain } from "lucide-react"
 import { PropertyHighlight } from "@/types"
+import { getPropertyHighlight, type PropertyHighlightMapping } from "../../../property-highlights-mapping"
 
 interface PropertyDetailsProps {
   propertyType: string
@@ -8,6 +9,25 @@ interface PropertyDetailsProps {
   bathrooms: number
   description: string
   highlights: PropertyHighlight[]
+}
+
+function getCategoryIcon(category: PropertyHighlightMapping['category']) {
+  switch (category) {
+    case 'amenity':
+      return Bath
+    case 'view':
+      return Mountain
+    case 'accommodation':
+      return Home
+    case 'location':
+      return MapPin
+    case 'host':
+      return User
+    case 'policy':
+      return Key
+    default:
+      return Award
+  }
 }
 
 export function PropertyDetails({
@@ -49,23 +69,26 @@ export function PropertyDetails({
       {/* Property Highlights */}
       {highlights && highlights.length > 0 && (
         <div className="space-y-6">
-          {highlights.map((highlight) => (
-            <div key={highlight.id} className="flex items-start space-x-4">
-              <div className="w-6 h-6 flex items-center justify-center">
-                {highlight.icon ? (
-                  <span className="text-lg">{highlight.icon}</span>
-                ) : (
-                  <Award className="h-5 w-5 text-gray-600" />
-                )}
+          {highlights.map((highlight) => {
+            const resolved = getPropertyHighlight(highlight.icon)
+            const displayTitle = resolved?.title ?? highlight.title
+            const displaySubtitle = resolved?.subtitle ?? highlight.subtitle
+            const IconComp = resolved ? getCategoryIcon(resolved.category) : Award
+
+            return (
+              <div key={highlight.id} className="flex items-start space-x-4">
+                <div className="w-6 h-6 flex items-center justify-center">
+                  <IconComp className="h-5 w-5 text-gray-600" />
+                </div>
+                <div>
+                  <h3 className="font-medium text-gray-900">{displayTitle}</h3>
+                  {displaySubtitle && (
+                    <p className="text-gray-600 text-sm">{displaySubtitle}</p>
+                  )}
+                </div>
               </div>
-              <div>
-                <h3 className="font-medium text-gray-900">{highlight.title}</h3>
-                {highlight.subtitle && (
-                  <p className="text-gray-600 text-sm">{highlight.subtitle}</p>
-                )}
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
 

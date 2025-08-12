@@ -5,7 +5,7 @@ import { usePropertyDetails } from "@/hooks/use-property-details"
 import { PropertyGallery } from "@/components/traveller/property-gallery"
 import { PropertyHeader } from "@/components/traveller/property-header"
 import { PropertyDetails as PropertyDetailsComponent } from "@/components/traveller/property-details"
-import { PropertyAmenities } from "@/components/traveller/property-amenities"
+import { EnhancedPropertyAmenities } from "@/components/traveller/enhanced-property-amenities"
 import { PropertyLocation } from "@/components/traveller/property-location"
 import { PropertyReviews } from "@/components/traveller/property-reviews"
 import { HostProfile } from "@/components/traveller/host-profile"
@@ -82,7 +82,7 @@ export default function PropertyPage() {
             />
 
             {/* Amenities */}
-            <PropertyAmenities amenities={property.amenities} />
+            <EnhancedPropertyAmenities amenities={property.amenities} />
 
             {/* Location */}
             <PropertyLocation
