@@ -1,225 +1,408 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { usePathname, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Star } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
+import { Star, Search, Plus, MapPin, Users, Bed, Bath, Eye, Gavel, Trash2 } from "lucide-react"
 import Link from "next/link"
 import { PropertyCreationModal } from "@/components/host/property-creation-modal"
-import type { HostProperty } from "@/types/host"
-import { AuctionSetupModal } from "@/components/host/auction-setup-modal"
+import { DeleteConfirmModal } from "@/components/host/delete-confirm-modal"
+import { AuctionCreationModal } from "@/components/host/auction-creation-modal"
+import { AuctionListModal } from "@/components/host/auction-list-modal"
+import type { PropertyAPI } from "@/types/api"
 
-interface PropertyResponseDTO {
-  id: number
-  host_id: string
+const apiUrl = "http://127.0.0.1:8000" // API URL
+
+interface HostProperty {
+  id: number // Changed to number
   title: string
+  location: string
   description: string
-  property_type: string
-  category: string
-  max_guests: number
+  amenities: string[]
+  rating: number
+  reviewCount: number
+  images: { image_url: string; is_primary: boolean }[]
+  price: number
   bedrooms: number
   bathrooms: number
-  city: string
-  state?: string
-  country?: string
-  base_price: number
-  status: string
-  created_at: string
-  updated_at: string
-  amenities: { id: string; name: string; category: string; created_at: string }[]
-  images: { id: string; image_url: string; display_order: number; is_primary: boolean; created_at: string }[]
-  host: { host_id: string; host_rating_average: number }
+  guests: number
+  hostId: number // Changed to number
+  isAvailable: boolean
+  status: "DRAFT" | "ACTIVE" | "INACTIVE"
+  createdAt: Date
+  updatedAt: Date
+  propertyType: string
+  category: string
 }
 
-const apiUrl = "http://127.0.0.1:8000"
-const propertiesPerPage = 12
-
-export default function HostProperties() {
+export default function HostPropertiesPage() {
   const [properties, setProperties] = useState<HostProperty[]>([])
-  const [page, setPage] = useState(1)
-  const [hasMore, setHasMore] = useState(true)
-  const [loading, setLoading] = useState(false)
+  const [filteredProperties, setFilteredProperties] = useState<HostProperty[]>([])
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showCreationModal, setShowCreationModal] = useState(false)
+  const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; property: HostProperty | null }>({
+    isOpen: false,
+    property: null,
+  })
+  const [showAuctionModal, setShowAuctionModal] = useState<{ isOpen: boolean; property: HostProperty | null }>({
+    isOpen: false,
+    property: null,
+  })
+  const [showAuctionListModal, setShowAuctionListModal] = useState<{ isOpen: boolean; property: HostProperty | null }>({
+    isOpen: false,
+    property: null,
+  })
+  const [searchTerm, setSearchTerm] = useState("")
+  const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "DRAFT" | "INACTIVE">("ALL")
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
 
-  const hostId = "1" // TODO: Replace with dynamic hostId from useAuth
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
-  const refreshKey = searchParams.get("refresh")
+  const hostId = 1 // Mock host ID, changed to number
+  const propertiesPerPage = 12
 
-  const fetchProperties = async (pageNum: number) => {
-    console.log(`Fetching properties for hostId=${hostId}, page=${pageNum}, offset=${(pageNum - 1) * propertiesPerPage}`)
+  const fetchProperties = async (page = 1) => {
     setLoading(true)
     setError(null)
     try {
+      const offset = (page - 1) * propertiesPerPage
       const response = await fetch(
-        `${apiUrl}/properties/host/${hostId}/properties?limit=${propertiesPerPage}&offset=${(pageNum - 1) * propertiesPerPage}`,
-        { cache: "no-store" }
+        `${apiUrl}/properties/host/${hostId}/properties?limit=${propertiesPerPage}&offset=${offset}`,
       )
-      console.log("API Response Status:", response.status)
       if (!response.ok) {
-        const errorData = await response.json()
-        console.log("API Error Data:", errorData)
-        const errorMessage = errorData.detail?.detail || errorData.detail || "Failed to fetch properties"
-        throw new Error(errorMessage.includes("validation errors") ? "Unable to load properties due to server data issues" : errorMessage)
+        throw new Error(`Failed to fetch properties: ${response.statusText}`)
       }
-      const data: PropertyResponseDTO[] = await response.json()
-      console.log("API Response Data:", data)
-      const newProperties: HostProperty[] = data.map((prop) => ({
-        id: prop.id.toString(),
+      const data: PropertyAPI[] = await response.json()
+
+      const mappedProperties: HostProperty[] = data.map((prop: PropertyAPI) => ({
+        id: prop.id,
         title: prop.title,
         location: `${prop.city}${prop.state ? `, ${prop.state}` : ""}${prop.country ? `, ${prop.country}` : ""}`,
-        description: prop.description || prop.category,
-        details: `${prop.max_guests} guests • ${prop.category} • ${prop.bedrooms || 0} bedrooms • ${prop.bathrooms || 0} bathrooms`,
-        amenities: prop.amenities?.map((a) => a.name) || [],
-        rating: prop.host?.host_rating_average || 5.0,
+        description: prop.description || "",
+        amenities: prop.amenities?.map((a: any) => a.name) || [],
+        rating: prop.host?.host_rating_average || 0,
         reviewCount: 0,
-        images: prop.images?.map((img) => img.image_url) || ["/placeholder.svg?height=300&width=400"],
+        images: prop.images?.map((img: any) => ({
+          image_url: img.image_url,
+          is_primary: img.is_primary,
+        })) || [{ image_url: "/placeholder.svg?height=300&width=400", is_primary: false }], // Updated mapping
         price: prop.base_price,
         bedrooms: prop.bedrooms || 0,
         bathrooms: prop.bathrooms || 0,
         guests: prop.max_guests || 1,
-        beds: prop.bedrooms || 0,
-        hostId: prop.host_id?.toString() || hostId,
+        hostId: prop.host_id || hostId,
         isAvailable: prop.status === "ACTIVE",
+        status: prop.status,
         createdAt: new Date(prop.created_at),
-        updatedAt: new Date(prop.updated_at),
-        type: prop.property_type,
-        pricePerNight: prop.base_price,
-        isActive: prop.status === "ACTIVE",
+        updatedAt: new Date(prop.updated_at || prop.created_at),
+        propertyType: prop.property_type,
+        category: prop.category,
       }))
 
-      setProperties((prev) => {
-        const existingIds = new Set(prev.map((p) => p.id))
-        const uniqueNewProperties = newProperties.filter((p: HostProperty) => !existingIds.has(p.id))
-        console.log("New Properties:", uniqueNewProperties)
-        return pageNum === 1 ? uniqueNewProperties : [...prev, ...uniqueNewProperties]
-      })
-      setHasMore(newProperties.length === propertiesPerPage)
-    } catch (error: any) {
-      console.error("Error fetching properties:", error)
-      setError(error.message || "Unable to load properties. Please try again.")
+      setProperties(mappedProperties)
+      setFilteredProperties(mappedProperties)
+      setTotalPages(Math.ceil(data.length / propertiesPerPage))
+    } catch (err: any) {
+      setError(err.message || "Failed to load properties")
     } finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
-    console.log(`useEffect triggered: pathname=${pathname}, refreshKey=${refreshKey}, properties.length=${properties.length}`)
-    if (pathname === "/host/properties" && !loading) {
-      setProperties([])
-      setPage(1)
-      fetchProperties(1)
-    }
-  }, [pathname, refreshKey])
+    fetchProperties(currentPage)
+  }, [currentPage])
 
   useEffect(() => {
-    if (page > 1 && !loading) {
-      fetchProperties(page)
-    }
-  }, [page])
+    let filtered = properties
 
-  const handleLoadMore = () => {
-    if (hasMore && !loading) {
-      setPage((prev) => prev + 1)
+    // Filter by search term
+    if (searchTerm) {
+      filtered = filtered.filter(
+        (property) =>
+          property.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          property.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          property.category.toLowerCase().includes(searchTerm.toLowerCase()),
+      )
+    }
+
+    // Filter by status
+    if (statusFilter !== "ALL") {
+      filtered = filtered.filter((property) => property.status === statusFilter)
+    }
+
+    setFilteredProperties(filtered)
+  }, [properties, searchTerm, statusFilter])
+
+  const handleDeleteProperty = async (propertyId: number) => {
+    // Changed propertyId to number
+    try {
+      const response = await fetch(`${apiUrl}/properties/delete/${propertyId}`, {
+        method: "DELETE",
+      })
+      if (!response.ok) {
+        throw new Error(`Failed to delete property: ${response.statusText}`)
+      }
+      setProperties((prev) => prev.filter((p) => p.id !== propertyId))
+      setDeleteModal({ isOpen: false, property: null })
+    } catch (err: any) {
+      setError(err.message || "Failed to delete property")
     }
   }
 
-  const handleModalClose = () => {
-    console.log("Modal closed, refreshing properties")
-    setShowCreationModal(false)
-    setProperties([])
-    setPage(1)
-    fetchProperties(1)
+  const getStatusBadge = (status: string) => {
+    const variants = {
+      ACTIVE: "bg-green-100 text-green-800",
+      DRAFT: "bg-gray-100 text-gray-800",
+      INACTIVE: "bg-red-100 text-red-800",
+    }
+    return variants[status as keyof typeof variants] || variants.DRAFT
+  }
+
+  if (loading && properties.length === 0) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="animate-pulse space-y-6">
+          <div className="h-8 bg-gray-200 rounded w-64"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="h-80 bg-gray-200 rounded-2xl"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-2xl font-semibold text-gray-900">Your properties</h1>
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+        <div>
+          <h1 className="text-3xl font-semibold text-gray-900">Your Properties</h1>
+          <p className="text-gray-600 mt-1">Manage your property listings and bookings</p>
+        </div>
         <Button onClick={() => setShowCreationModal(true)} className="bg-cyan-500 hover:bg-cyan-600 text-white">
-          + Add a new property
+          <Plus className="h-4 w-4 mr-2" />
+          Add New Property
         </Button>
       </div>
 
-      {loading && page === 1 ? (
-        <div className="animate-pulse">
-          <div className="space-y-6">
-            {[...Array(2)].map((_, i) => (
-              <div key={i} className="h-32 bg-gray-200 rounded-2xl"></div>
-            ))}
-          </div>
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-4 mb-8">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Input
+            placeholder="Search properties by title, location, or category..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
         </div>
-      ) : error ? (
-        <div className="text-center text-red-500">
-          {error}
+        <div className="flex gap-2">
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as any)}
+            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500"
+          >
+            <option value="ALL">All Status</option>
+            <option value="ACTIVE">Active</option>
+            <option value="DRAFT">Draft</option>
+            <option value="INACTIVE">Inactive</option>
+          </select>
+        </div>
+      </div>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <p className="text-red-800">{error}</p>
           <Button
-            onClick={() => {
-              setPage(1)
-              setProperties([])
-              fetchProperties(1)
-            }}
-            className="mt-4 bg-cyan-500 hover:bg-cyan-600 text-white"
+            onClick={() => fetchProperties(currentPage)}
+            className="mt-2 bg-red-600 hover:bg-red-700 text-white"
+            size="sm"
           >
             Retry
           </Button>
         </div>
-      ) : properties.length === 0 ? (
-        <div className="text-center text-gray-600">No properties found. Add a new property to get started!</div>
+      )}
+
+      {/* Properties Grid */}
+      {filteredProperties.length === 0 ? (
+        <div className="text-center py-12">
+          <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <MapPin className="h-12 w-12 text-gray-400" />
+          </div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No properties found</h3>
+          <p className="text-gray-600 mb-6">
+            {searchTerm || statusFilter !== "ALL"
+              ? "Try adjusting your search or filters"
+              : "Get started by adding your first property"}
+          </p>
+          {!searchTerm && statusFilter === "ALL" && (
+            <Button onClick={() => setShowCreationModal(true)} className="bg-cyan-500 hover:bg-cyan-600 text-white">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Your First Property
+            </Button>
+          )}
+        </div>
       ) : (
         <>
-          <div className="space-y-6">
-            {properties.map((property) => (
-              <Card key={property.id} className="border border-gray-200 rounded-2xl overflow-hidden">
-                <CardContent className="p-0">
-                  <div className="flex">
-                    <div className="w-80 h-48 flex-shrink-0">
-                      <img
-                        src={property.images[0] || "/placeholder.svg"}
-                        alt={property.title}
-                        className="w-full h-full object-cover"
-                      />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            {filteredProperties.map((property) => (
+              <Card key={property.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                <div className="relative">
+                  <img
+                    src={
+                      property.images.find((img) => img.is_primary)?.image_url ||
+                      property.images[0]?.image_url ||
+                      "/placeholder.svg?height=200&width=300"
+                    }
+                    alt={property.title}
+                    className="w-full h-48 object-cover"
+                  />
+                  <Badge className={`absolute top-3 right-3 ${getStatusBadge(property.status)}`}>
+                    {property.status}
+                  </Badge>
+                </div>
+                <CardContent className="p-4">
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="font-semibold text-gray-900 line-clamp-1">{property.title}</h3>
+                    <div className="flex items-center text-sm text-gray-600">
+                      <Star className="h-3 w-3 fill-yellow-400 text-yellow-400 mr-1" />
+                      {property.rating > 0 ? property.rating.toFixed(1) : "New"}
                     </div>
-                    <div className="flex-1 p-6">
-                      <div className="flex justify-between items-start mb-4">
-                        <div>
-                          <p className="text-sm text-gray-600 mb-1">{property.description}</p>
-                          <h3 className="text-xl font-semibold text-gray-900 mb-2">{property.title}</h3>
-                          <p className="text-gray-600 mb-4">{property.details}</p>
-                          <div className="flex items-center space-x-2">
-                            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                            <span className="font-medium">{property.rating}</span>
-                            <span className="text-gray-600">({property.reviewCount} reviews)</span>
-                          </div>
-                        </div>
-                        <Link href={`/host/properties/${property.id}`}>
-                          <Button variant="ghost" className="text-cyan-600 hover:text-cyan-700">
-                            View details
-                          </Button>
-                        </Link>
-                      </div>
+                  </div>
+
+                  <p className="text-sm text-gray-600 mb-2 line-clamp-1">{property.location}</p>
+                  <p className="text-sm text-gray-500 mb-3 line-clamp-2">{property.category}</p>
+
+                  <div className="flex items-center gap-4 text-xs text-gray-500 mb-4">
+                    <div className="flex items-center">
+                      <Users className="h-3 w-3 mr-1" />
+                      {property.guests}
+                    </div>
+                    <div className="flex items-center">
+                      <Bed className="h-3 w-3 mr-1" />
+                      {property.bedrooms}
+                    </div>
+                    <div className="flex items-center">
+                      <Bath className="h-3 w-3 mr-1" />
+                      {property.bathrooms}
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center mb-4">
+                    <div>
+                      <span className="text-lg font-semibold text-gray-900">${property.price}</span>
+                      <span className="text-sm text-gray-500"> / night</span>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons - Redesigned */}
+                  <div className="space-y-2">
+                    {/* Primary Actions Row */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <Link href={`/host/properties/${property.id}`} className="block">
+                        <Button variant="outline" size="sm" className="w-full bg-transparent">
+                          <Eye className="h-3 w-3 mr-2" />
+                          View
+                        </Button>
+                      </Link>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowAuctionModal({ isOpen: true, property })}
+                        className="w-full text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-200"
+                      >
+                        <Plus className="h-3 w-3 mr-2" />
+                        Create Auction
+                      </Button>
+                    </div>
+
+                    {/* Secondary Actions Row */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowAuctionListModal({ isOpen: true, property })}
+                        className="w-full text-purple-600 hover:text-purple-700 hover:bg-purple-50 border-purple-200"
+                      >
+                        <Gavel className="h-3 w-3 mr-2" />
+                        View Auctions
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setDeleteModal({ isOpen: true, property })}
+                        className="w-full text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                      >
+                        <Trash2 className="h-3 w-3 mr-2" />
+                        Delete
+                      </Button>
                     </div>
                   </div>
                 </CardContent>
               </Card>
             ))}
           </div>
-          {hasMore && (
-            <Button
-              onClick={handleLoadMore}
-              className="mt-6 w-full bg-cyan-500 hover:bg-cyan-600 text-white"
-              disabled={loading}
-            >
-              {loading ? "Loading..." : "Load More"}
-            </Button>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex justify-center gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+              >
+                Previous
+              </Button>
+              <span className="flex items-center px-4 py-2 text-sm text-gray-700">
+                Page {currentPage} of {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+              >
+                Next
+              </Button>
+            </div>
           )}
         </>
       )}
 
+      {/* Modals */}
       <PropertyCreationModal
         isOpen={showCreationModal}
-        onClose={handleModalClose}
+        onPropertyCreated={(newPropertyId: number) => {
+          setShowCreationModal(false)
+          fetchProperties(currentPage)
+        }}
+        onClose={() => {
+          setShowCreationModal(false)
+          fetchProperties(currentPage)
+        }}
+      />
+
+      <DeleteConfirmModal
+        isOpen={deleteModal.isOpen}
+        onClose={() => setDeleteModal({ isOpen: false, property: null })}
+        onConfirm={() => deleteModal.property && handleDeleteProperty(deleteModal.property.id)}
+        propertyTitle={deleteModal.property?.title || ""}
+      />
+
+      <AuctionCreationModal
+        isOpen={showAuctionModal.isOpen}
+        onClose={() => setShowAuctionModal({ isOpen: false, property: null })}
+        property={showAuctionModal.property}
+      />
+
+      <AuctionListModal
+        isOpen={showAuctionListModal.isOpen}
+        onClose={() => setShowAuctionListModal({ isOpen: false, property: null })}
+        propertyId={showAuctionListModal.property?.id ?? 0}
       />
     </div>
   )

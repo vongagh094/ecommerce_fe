@@ -30,6 +30,31 @@ export function PropertyGrid({
     async (property: PropertyDisplay, action: "add" | "remove") => {
       const propertyId = property.id;
       try {
+        console.log(`Checking wishlist for userId=${userId}`);
+        const checkResponse = await fetch(`${apiUrl}/wishlist/check?user_id=${userId}`, {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        });
+        if (!checkResponse.ok) {
+          const errorData = await checkResponse.json().catch(() => ({}));
+          console.error("Wishlist check error:", errorData);
+          throw new Error(errorData.detail?.detail || `Không thể kiểm tra wishlist: HTTP ${checkResponse.status}`);
+        }
+        const checkData = await checkResponse.json();
+        if (!checkData.exists && action === "add") {
+          console.log("Wishlist does not exist, creating one...");
+          const createResponse = await fetch(`${apiUrl}/wishlist/create?user_id=${userId}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+          });
+          if (!createResponse.ok) {
+            const errorData = await createResponse.json().catch(() => ({}));
+            console.error("Wishlist creation error:", errorData);
+            throw new Error(errorData.detail?.detail || `Không thể tạo wishlist: HTTP ${createResponse.status}`);
+          }
+          console.log("Wishlist created successfully");
+        }
+
         const endpoint =
           action === "add"
             ? `${apiUrl}/wishlist/${userId}/add-property?property_id=${propertyId}`
@@ -73,7 +98,7 @@ export function PropertyGrid({
         setIsMessageModalOpen?.(true);
       }
     },
-    [onFavoriteToggle, setMessageModalContent, setIsMessageModalOpen]
+    [onFavoriteToggle, setMessageModalContent, setIsMessageModalOpen, userId]
   );
 
   const loadMore = () => {
