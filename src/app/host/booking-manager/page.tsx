@@ -1,17 +1,41 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Search, Settings } from "lucide-react"
-import type { Booking } from "@/types/host"
+import { Search, Settings, MessageCircle } from "lucide-react"
+
+interface Guest {
+  id: string
+  name: string
+  avatar: string
+}
+
+interface Property {
+  id: string
+  name: string
+  location: string
+}
+
+interface Booking {
+  id: string
+  guest: Guest
+  property: Property
+  checkIn: string
+  checkOut: string
+  totalCharges: number
+  status: "confirmed" | "pending" | "cancelled"
+  createdAt: string
+}
 
 export default function BookingManager() {
   const [bookings, setBookings] = useState<Booking[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [loading, setLoading] = useState(true)
+  const router = useRouter()
 
   useEffect(() => {
     // Mock data - replace with actual API call
@@ -107,6 +131,12 @@ export default function BookingManager() {
       .replace("₫", "đ")
   }
 
+  const handleMessageClick = (guestId: string, guestName: string) => {
+    // Navigate to messages page with guest information
+    // You can pass guest info via URL params or state
+    router.push(`/host/messages?guestId=${guestId}&guestName=${encodeURIComponent(guestName)}`)
+  }
+
   const filteredBookings = bookings.filter(
     (booking) =>
       booking.guest.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -169,6 +199,7 @@ export default function BookingManager() {
                   <th className="text-left py-4 px-6 font-medium text-gray-900">Check in</th>
                   <th className="text-left py-4 px-6 font-medium text-gray-900">Check out</th>
                   <th className="text-left py-4 px-6 font-medium text-gray-900">Total charges</th>
+                  <th className="text-left py-4 px-6 font-medium text-gray-900">Message</th>
                 </tr>
               </thead>
               <tbody>
@@ -199,6 +230,17 @@ export default function BookingManager() {
                     </td>
                     <td className="py-4 px-6">
                       <span className="font-medium text-gray-900">{formatCurrency(booking.totalCharges)}</span>
+                    </td>
+                    <td className="py-4 px-6">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleMessageClick(booking.guest.id, booking.guest.name)}
+                        className="h-8 w-8 text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                        title={`Message ${booking.guest.name}`}
+                      >
+                        <MessageCircle className="h-4 w-4" />
+                      </Button>
                     </td>
                   </tr>
                 ))}

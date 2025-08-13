@@ -1,0 +1,64 @@
+global_notes:
+  - Các chart dùng data trong use-dashboard-data.ts trong hook
+  - Mỗi chart nhận 1 mảng tên "data". Mỗi phần tử phải đúng schema bên dưới.
+  - Tên field là bắt buộc và viết đúng y hệt (case-sensitive).
+  - Số tiền là số thuần (VND); frontend tự format (vi-VN, thêm 'đ' trong tooltip).
+  - Tháng dùng dạng viết tắt tiếng Anh 3 ký tự: Jan..Dec.
+  - Ngày (nếu có) dùng ISO 'YYYY-MM-DD'.
+  - Thứ tự mảng ảnh hưởng trục/đường; tuân thủ phần "ordering" của từng chart.
+
+charts:
+  - id: sales_overview
+    component: NewSalesOverviewChart
+    purpose: "Expected vs Actual theo tháng (area/line overlay)."
+    dataset: data
+    fields:
+      - name: month
+        type: string
+        required: true
+        constraints: { enum: [Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec] }
+      - name: expected
+        type: number
+        required: true
+        constraints: { min: 0 }
+        unit: VND
+      - name: actual
+        type: number
+        required: true
+        constraints: { min: 0 }
+        unit: VND
+
+  - id: occupancy_over_time
+    component: OccupancyChart
+    purpose: "Tỉ lệ lấp đầy theo thời gian với toggle daily/weekly/monthly."
+    dataset: data
+    fields:
+      - name: date
+        type: string
+        required: true
+        format: date
+        constraints: { pattern: '^\d{4}-\d{2}-\d{2}$' }
+      - name: occupancyRate
+        type: number
+        required: true
+        constraints: { min: 0, max: 100 }
+        unit: percent
+      - name: period
+        type: string
+        required: true
+        constraints: { enum: [daily, weekly, monthly] }
+
+  - id: rating_distribution
+    component: RatingBarChart
+    purpose: "Biểu đồ cột phân bổ review theo số sao."
+    dataset: data
+    fields:
+      - name: stars
+        type: integer
+        required: true
+        constraints: { min: 1, max: 5 }
+      - name: count
+        type: integer
+        required: true
+        constraints: { min: 0 }
+    ordering: "Không bắt buộc; FE tự sort theo stars giảm dần."

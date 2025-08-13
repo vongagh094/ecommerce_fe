@@ -23,9 +23,6 @@ export default function AdminLayout({
               <a href="/admin/properties" className="text-gray-600 hover:text-gray-900">
                 Properties
               </a>
-              <a href="/admin/bookings" className="text-gray-600 hover:text-gray-900">
-                Bookings
-              </a>
             </nav>
           </div>
         </div>
