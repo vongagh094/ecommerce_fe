@@ -178,11 +178,6 @@ export default function BookingManager() {
         <div className="flex items-center space-x-4">
           <span className="text-sm text-gray-600">1 - 10 of 52</span>
           <div className="flex items-center space-x-1">
-            {[...Array(6)].map((_, i) => (
-              <Button key={i} variant="ghost" size="icon" className="w-8 h-8">
-                <Settings className="h-4 w-4" />
-              </Button>
-            ))}
           </div>
         </div>
       </div>
