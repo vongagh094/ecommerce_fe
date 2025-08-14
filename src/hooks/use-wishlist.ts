@@ -17,6 +17,31 @@ export function useWishlist(userId: number, wishlistOnly: boolean = false) {
     setIsLoading(true);
     setError(null);
     try {
+      console.log("Checking wishlist existence...");
+      const checkResponse = await fetch(`${apiUrl}/wishlist/check?user_id=${userId}`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!checkResponse.ok) {
+        const errorData = await checkResponse.json().catch(() => ({}));
+        console.error("Wishlist check error:", errorData);
+        throw new Error(errorData.detail?.detail || `Không thể kiểm tra wishlist: HTTP ${checkResponse.status}`);
+      }
+      const checkData = await checkResponse.json();
+      if (!checkData.exists) {
+        console.log("Wishlist does not exist, creating one...");
+        const createResponse = await fetch(`${apiUrl}/wishlist/create?user_id=${userId}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        });
+        if (!createResponse.ok) {
+          const errorData = await createResponse.json().catch(() => ({}));
+          console.error("Wishlist creation error:", errorData);
+          throw new Error(errorData.detail?.detail || `Không thể tạo wishlist: HTTP ${createResponse.status}`);
+        }
+        console.log("Wishlist created successfully");
+      }
+
       console.log("Fetching wishlist property IDs...");
       const wishlistResponse = await fetch(`${apiUrl}/wishlist/${userId}/properties`, {
         method: "GET",

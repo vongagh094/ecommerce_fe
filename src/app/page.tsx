@@ -24,7 +24,7 @@ export default function HomePage() {
       <SearchSection />
       <CategoryFilters />
       <HeroSection />
-      {isLoading ? (
+      {/* {isLoading ? (
         <div className="text-center py-8">
           <svg
             className="animate-spin h-8 w-8 text-blue-600 mx-auto"
@@ -63,7 +63,7 @@ export default function HomePage() {
           onFavoriteToggle={handleFavoriteToggle}
           setIsMessageModalOpen={(open) => console.log("Message modal open:", open)}
         />
-      )}
+      )} */}
       <InspirationSection />
       <Footer />
       <AiChatBubble />

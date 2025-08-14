@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MapPin } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
+import { AddressData, AddressMapProps } from '@/types/address';
 
 // Cấu hình axios retry cho lỗi 429 và lỗi mạng
 axiosRetry(axios, {
@@ -57,7 +58,7 @@ const getMarkerIcon = async () => {
 const inferAddressFromQuery = (query: string): AddressData => {
   const parts = query.split(',').map((part) => part.trim()).filter((part) => part);
   let address = parts[0] || '';
-  let district = '';
+  let state = '';
   let city = '';
   let country = 'Vietnam';
   let postcode = '';
@@ -66,7 +67,7 @@ const inferAddressFromQuery = (query: string): AddressData => {
     for (let i = 1; i < parts.length; i++) {
       const part = parts[i].toLowerCase();
       if (part.includes('quận') || part.includes('huyện')) {
-        district = parts[i];
+        state = parts[i];
       } else if (part.includes('thành phố') || part.includes('tp') || part.includes('tỉnh')) {
         city = parts[i];
       } else if (part.includes('vietnam') || part.includes('vn')) {
@@ -76,13 +77,13 @@ const inferAddressFromQuery = (query: string): AddressData => {
         if (i > 1) country = parts[i - 1] || country;
       }
     }
-    if (!district && parts.length > 1) district = parts[1];
+    if (!state && parts.length > 1) state = parts[1];
     if (!city && parts.length > 2) city = parts[2];
   }
 
   return {
     address,
-    district,
+    state,
     city,
     country,
     postcode,
@@ -103,27 +104,27 @@ const getAddressComponents = (data: any): AddressData => {
   }
 
   const countryCodeUpper = data.address?.country_code?.toUpperCase() || '';
-  let district = '';
+  let state = '';
 
   if (countryCodeUpper === 'VN') {
     if (data.address?.county || data.address?.state_district) {
-      district = data.address.county || data.address.state_district;
-      if (data.address?.suburb && !data.address.suburb.includes('arrondissement') && data.address.suburb !== district) {
+      state = data.address.county || data.address.state_district;
+      if (data.address?.suburb && !data.address.suburb.includes('arrondissement') && data.address.suburb !== state) {
         addressParts.push(data.address.suburb);
       }
     } else if (data.address?.suburb && !data.address.suburb.includes('arrondissement')) {
-      district = data.address.suburb;
+      state = data.address.suburb;
     }
   } else {
-    district = data.address.county || data.address.state_district || data.address.suburb || '';
-    if (data.address?.suburb && data.address.suburb !== district) {
+    state = data.address.county || data.address.state_district || data.address.suburb || '';
+    if (data.address?.suburb && data.address.suburb !== state) {
       addressParts.push(data.address.suburb);
     }
   }
 
   return {
     address: addressParts.join(', ') || '',
-    district: district || '',
+    state: state || '',
     city: data.address?.city || data.address?.town || data.address?.village || '',
     country: data.address?.country || '',
     postcode: data.address?.postcode || '',
@@ -147,7 +148,7 @@ const AddressMap: React.FC<AddressMapProps> = ({
   );
   const [formData, setFormData] = useState<AddressData>({
     address: addressData.address || '',
-    district: addressData.district || '',
+    state: addressData.state || '',
     city: addressData.city || '',
     country: addressData.country || '',
     postcode: addressData.postcode || '',
@@ -182,20 +183,20 @@ const AddressMap: React.FC<AddressMapProps> = ({
         setPosition([addressData.latitude, addressData.longitude]);
         setFormData({
           address: addressData.address || '',
-          district: addressData.district || '',
+          state: addressData.state || '',
           city: addressData.city || '',
           country: addressData.country || '',
           postcode: addressData.postcode || '',
           latitude: addressData.latitude,
           longitude: addressData.longitude,
         });
-      } else if (addressData.address || addressData.district || addressData.city || addressData.country) {
+      } else if (addressData.address || addressData.state || addressData.city || addressData.country) {
         try {
           setError(null);
           setIsLoading(true);
           const queryParts = [
             addressData.address,
-            addressData.district,
+            addressData.state,
             addressData.city,
             addressData.country || 'Vietnam',
           ].filter(Boolean).join(', ');
@@ -215,7 +216,7 @@ const AddressMap: React.FC<AddressMapProps> = ({
             } else {
               setFormData({
                 address: addressData.address || '',
-                district: addressData.district || '',
+                state: addressData.state || '',
                 city: addressData.city || '',
                 country: addressData.country || '',
                 postcode: addressData.postcode || '',
@@ -233,7 +234,7 @@ const AddressMap: React.FC<AddressMapProps> = ({
         setPosition(defaultCenter);
         setFormData({
           address: addressData.address || '',
-          district: addressData.district || '',
+          state: addressData.state || '',
           city: addressData.city || '',
           country: addressData.country || '',
           postcode: addressData.postcode || '',
@@ -249,7 +250,7 @@ const AddressMap: React.FC<AddressMapProps> = ({
   const hasDataChanged = useMemo(() => {
     return (
       formData.address !== (addressData.address || '') ||
-      formData.district !== (addressData.district || '') ||
+      formData.state !== (addressData.state || '') ||
       formData.city !== (addressData.city || '') ||
       formData.country !== (addressData.country || '') ||
       formData.postcode !== (addressData.postcode || '') ||
@@ -373,7 +374,7 @@ const AddressMap: React.FC<AddressMapProps> = ({
           setFormData((prev) => ({
             ...prev,
             address: '',
-            district: '',
+            state: '',
             city: '',
             country: '',
             postcode: '',
@@ -385,7 +386,7 @@ const AddressMap: React.FC<AddressMapProps> = ({
         setFormData((prev) => ({
           ...prev,
           address: '',
-          district: '',
+          state: '',
           city: '',
           country: '',
           postcode: '',
@@ -422,7 +423,7 @@ const AddressMap: React.FC<AddressMapProps> = ({
           setFormData((prev) => ({
             ...prev,
             address: '',
-            district: '',
+            state: '',
             city: '',
             country: '',
             postcode: '',
@@ -434,7 +435,7 @@ const AddressMap: React.FC<AddressMapProps> = ({
         setFormData((prev) => ({
           ...prev,
           address: '',
-          district: '',
+          state: '',
           city: '',
           country: '',
           postcode: '',
@@ -489,7 +490,7 @@ const AddressMap: React.FC<AddressMapProps> = ({
   const addressSummary = useMemo(() => {
     const parts = [];
     if (formData.address) parts.push(formData.address);
-    if (formData.district) parts.push(formData.district);
+    if (formData.state) parts.push(formData.state);
     if (formData.city) parts.push(formData.city);
     if (formData.country) parts.push(formData.country);
     if (formData.postcode) parts.push(`(${formData.postcode})`);
@@ -572,11 +573,11 @@ const AddressMap: React.FC<AddressMapProps> = ({
                 />
               </div>
               <div>
-                <Label htmlFor="district">Quận/Huyện</Label>
+                <Label htmlFor="state">Tỉnh/Thành phố</Label>
                 <Input
-                  id="district"
-                  name="district"
-                  value={formData.district}
+                  id="state"
+                  name="state"
+                  value={formData.state || ''}
                   onChange={handleAddressChange}
                   disabled={editingMode === 'coords'}
                 />
@@ -606,7 +607,7 @@ const AddressMap: React.FC<AddressMapProps> = ({
                 <Input
                   id="postcode"
                   name="postcode"
-                  value={formData.postcode}
+                  value={formData.postcode ?? ''}
                   onChange={handleAddressChange}
                   disabled={editingMode === 'coords'}
                 />
