@@ -19,6 +19,7 @@ import { PropertyDetailsSection } from "@/components/host/property-details-secti
 import { PricingSection } from "@/components/host/pricing-section"
 import { AmenitiesSection } from "@/components/host/amenities-section"
 import { LocationSection } from "@/components/host/location-section"
+import { BookingSection } from "@/components/host/booking-section"
 
 const apiUrl = "http://127.0.0.1:8000"
 const AMENITIES_PER_PAGE = 50
@@ -876,11 +877,12 @@ export default function PropertyDetailsPage() {
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview">Tổng quan</TabsTrigger>
           <TabsTrigger value="pricing">Giá cả</TabsTrigger>
           <TabsTrigger value="amenities">Tiện nghi</TabsTrigger>
           <TabsTrigger value="location">Vị trí</TabsTrigger>
+          <TabsTrigger value="bookings">Đặt phòng</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
@@ -938,6 +940,11 @@ export default function PropertyDetailsPage() {
             onLocationSave={handleLocationSave}
             getCurrentValue={getCurrentValue}
           />
+        </TabsContent>
+
+        
+        <TabsContent value="bookings" className="space-y-6">
+          <BookingSection propertyId={propertyId} apiUrl={apiUrl} />
         </TabsContent>
       </Tabs>
 

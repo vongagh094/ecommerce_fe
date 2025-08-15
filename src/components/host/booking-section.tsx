@@ -5,46 +5,30 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Calendar, Users, DollarSign, Clock, Search, RefreshCw, MessageCircle, Trash2, Loader2 } from "lucide-react"
+import { Calendar, Users, DollarSign, Clock, Trash2, MessageCircle, Search, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import type { BookingResponse } from "@/types/booking"
 
-export default function BookingManager() {
+interface BookingSectionProps {
+  propertyId: number
+  apiUrl: string
+}
+
+export function BookingSection({ propertyId, apiUrl }: BookingSectionProps) {
   const router = useRouter()
   const [bookings, setBookings] = useState<BookingResponse[]>([])
   const [filteredBookings, setFilteredBookings] = useState<BookingResponse[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [deletingBookings, setDeletingBookings] = useState<Set<string>>(new Set())
-
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [paymentFilter, setPaymentFilter] = useState("all")
   const [dateFilter, setDateFilter] = useState("all")
 
-  const fetchBookings = async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const apiUrl = "http://127.0.0.1:8000"
-      const hostId = 1 // Using integer instead of UUID
-      const response = await fetch(`${apiUrl}/bookings/host/${hostId}`)
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.detail || `Failed to fetch bookings: ${response.statusText}`)
-      }
-      const data: BookingResponse[] = await response.json()
-      setBookings(data)
-    } catch (err: any) {
-      setError(err.message || "Failed to load bookings")
-    } finally {
-      setLoading(false)
-    }
-  }
-
   useEffect(() => {
     fetchBookings()
-  }, [])
+  }, [propertyId])
 
   useEffect(() => {
     let filtered = bookings
@@ -91,9 +75,26 @@ export default function BookingManager() {
     setFilteredBookings(filtered)
   }, [bookings, searchTerm, statusFilter, paymentFilter, dateFilter])
 
+  const fetchBookings = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const response = await fetch(`${apiUrl}/bookings/property/${propertyId}`)
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.detail || `Failed to fetch bookings: ${response.statusText}`)
+      }
+      const data: BookingResponse[] = await response.json()
+      setBookings(data)
+    } catch (err: any) {
+      setError(err.message || "Failed to load bookings")
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const handleContactGuest = async (booking: BookingResponse) => {
     try {
-      const apiUrl = "http://127.0.0.1:8000"
       const response = await fetch(`${apiUrl}/conversations/create`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -155,7 +156,6 @@ export default function BookingManager() {
     setDeletingBookings((prev) => new Set(prev).add(bookingId))
 
     try {
-      const apiUrl = "http://127.0.0.1:8000"
       const response = await fetch(`${apiUrl}/bookings/delete/${bookingId}`, {
         method: "DELETE",
       })
@@ -176,22 +176,18 @@ export default function BookingManager() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <div className="space-y-6">
       <div className="bg-gray-50 rounded-lg p-6 border">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-gray-600 rounded-lg">
-              <Calendar className="h-6 w-6 text-white" />
-            </div>
             <div>
-              <h1 className="text-xl font-semibold text-gray-900">Quản lý tất cả booking</h1>
+              <h2 className="text-xl font-semibold text-gray-900">Quản lý đặt phòng</h2>
               <p className="text-sm text-gray-600">
                 {filteredBookings.length > 0 ? `${filteredBookings.length} booking` : "Chưa có booking nào"}
               </p>
             </div>
           </div>
           <Button onClick={fetchBookings} variant="outline" size="sm">
-            <RefreshCw className="h-4 w-4 mr-2" />
             Làm mới
           </Button>
         </div>
@@ -306,19 +302,34 @@ export default function BookingManager() {
           <div className="mx-auto w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-6">
             <Calendar className="h-10 w-10 text-gray-500" />
           </div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-3">
-            {searchTerm ? "Không tìm thấy booking nào" : "Chưa có booking nào"}
-          </h3>
+          <h3 className="text-xl font-semibold text-gray-900 mb-3">Chưa có booking nào</h3>
           <p className="text-gray-600 mb-8 max-w-md mx-auto">
-            {searchTerm
-              ? "Thử thay đổi từ khóa tìm kiếm hoặc xóa bộ lọc để xem tất cả booking."
-              : "Host này chưa có booking nào. Khi có khách đặt phòng, thông tin sẽ hiển thị tại đây."}
+            Bất động sản này chưa có booking nào. Khi có khách đặt phòng, thông tin sẽ hiển thị tại đây với đầy đủ chi
+            tiết.
           </p>
-          {searchTerm && (
-            <Button onClick={() => setSearchTerm("")} variant="outline">
-              Xóa bộ lọc
-            </Button>
-          )}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-2xl mx-auto">
+            <div className="flex flex-col items-center p-4 bg-gray-50 rounded-lg">
+              <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center mb-3">
+                <Users className="h-6 w-6 text-gray-600" />
+              </div>
+              <h4 className="font-medium text-gray-900 mb-1">Thông tin khách</h4>
+              <p className="text-sm text-gray-600 text-center">Theo dõi chi tiết khách hàng</p>
+            </div>
+            <div className="flex flex-col items-center p-4 bg-gray-50 rounded-lg">
+              <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center mb-3">
+                <DollarSign className="h-6 w-6 text-gray-600" />
+              </div>
+              <h4 className="font-medium text-gray-900 mb-1">Doanh thu</h4>
+              <p className="text-sm text-gray-600 text-center">Quản lý thanh toán</p>
+            </div>
+            <div className="flex flex-col items-center p-4 bg-gray-50 rounded-lg">
+              <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center mb-3">
+                <Clock className="h-6 w-6 text-gray-600" />
+              </div>
+              <h4 className="font-medium text-gray-900 mb-1">Lịch sử</h4>
+              <p className="text-sm text-gray-600 text-center">Theo dõi đặt phòng</p>
+            </div>
+          </div>
         </div>
       )}
 
@@ -423,14 +434,6 @@ export default function BookingManager() {
                           <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">{booking.auction_id}</span>
                         </div>
                       )}
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Property ID:</span>
-                        <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">{booking.property_id}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Bất động sản:</span>
-                        <span className="font-medium text-blue-600">Property #{booking.property_id}</span>
-                      </div>
                     </div>
                   </div>
 

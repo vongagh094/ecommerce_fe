@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Star, Search, Plus, MapPin, Users, Bed, Bath, Eye, Gavel, Trash2 } from "lucide-react"
+import { Star, Search, Plus, MapPin, Users, Bed, Bath, Eye, Gavel, Trash2, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { PropertyCreationModal } from "@/components/host/property-creation-modal"
 import { DeleteConfirmModal } from "@/components/host/delete-confirm-modal"
@@ -16,7 +16,7 @@ import type { PropertyAPI } from "@/types/api"
 const apiUrl = "http://127.0.0.1:8000" // API URL
 
 interface HostProperty {
-  id: number // Changed to number
+  id: number
   title: string
   location: string
   description: string
@@ -28,7 +28,7 @@ interface HostProperty {
   bedrooms: number
   bathrooms: number
   guests: number
-  hostId: number // Changed to number
+  hostId: number
   isAvailable: boolean
   status: "DRAFT" | "ACTIVE" | "INACTIVE"
   createdAt: Date
@@ -41,6 +41,7 @@ export default function HostPropertiesPage() {
   const [properties, setProperties] = useState<HostProperty[]>([])
   const [filteredProperties, setFilteredProperties] = useState<HostProperty[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showCreationModal, setShowCreationModal] = useState(false)
   const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; property: HostProperty | null }>({
@@ -58,14 +59,20 @@ export default function HostPropertiesPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "DRAFT" | "INACTIVE">("ALL")
   const [currentPage, setCurrentPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
+  const [hasMore, setHasMore] = useState(true)
+  const [totalCount, setTotalCount] = useState(0)
 
-  const hostId = 1 // Mock host ID, changed to number
+  const hostId = 1 // Mock host ID
   const propertiesPerPage = 12
 
-  const fetchProperties = async (page = 1) => {
-    setLoading(true)
+  const fetchProperties = async (page = 1, append = false) => {
+    if (append) {
+      setLoadingMore(true)
+    } else {
+      setLoading(true)
+    }
     setError(null)
+
     try {
       const offset = (page - 1) * propertiesPerPage
       const response = await fetch(
@@ -87,7 +94,7 @@ export default function HostPropertiesPage() {
         images: prop.images?.map((img: any) => ({
           image_url: img.image_url,
           is_primary: img.is_primary,
-        })) || [{ image_url: "/placeholder.svg?height=300&width=400", is_primary: false }], // Updated mapping
+        })) || [{ image_url: "/placeholder.svg?height=300&width=400", is_primary: false }],
         price: prop.base_price,
         bedrooms: prop.bedrooms || 0,
         bathrooms: prop.bathrooms || 0,
@@ -101,19 +108,34 @@ export default function HostPropertiesPage() {
         category: prop.category,
       }))
 
-      setProperties(mappedProperties)
-      setFilteredProperties(mappedProperties)
-      setTotalPages(Math.ceil(data.length / propertiesPerPage))
+      if (append) {
+        setProperties((prev) => [...prev, ...mappedProperties])
+      } else {
+        setProperties(mappedProperties)
+      }
+
+      setHasMore(data.length === propertiesPerPage)
+
+      if (!append) {
+        setTotalCount(mappedProperties.length + (data.length === propertiesPerPage ? propertiesPerPage : 0))
+      }
     } catch (err: any) {
       setError(err.message || "Failed to load properties")
     } finally {
       setLoading(false)
+      setLoadingMore(false)
     }
   }
 
+  const loadMore = () => {
+    const nextPage = currentPage + 1
+    setCurrentPage(nextPage)
+    fetchProperties(nextPage, true)
+  }
+
   useEffect(() => {
-    fetchProperties(currentPage)
-  }, [currentPage])
+    fetchProperties(1, false)
+  }, [])
 
   useEffect(() => {
     let filtered = properties
@@ -137,7 +159,6 @@ export default function HostPropertiesPage() {
   }, [properties, searchTerm, statusFilter])
 
   const handleDeleteProperty = async (propertyId: number) => {
-    // Changed propertyId to number
     try {
       const response = await fetch(`${apiUrl}/properties/delete/${propertyId}`, {
         method: "DELETE",
@@ -182,7 +203,10 @@ export default function HostPropertiesPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-semibold text-gray-900">Your Properties</h1>
-          <p className="text-gray-600 mt-1">Manage your property listings and bookings</p>
+          <p className="text-gray-600 mt-1">
+            Manage your property listings and bookings
+            {properties.length > 0 && <span className="ml-2 text-sm">({properties.length} properties loaded)</span>}
+          </p>
         </div>
         <Button onClick={() => setShowCreationModal(true)} className="bg-cyan-500 hover:bg-cyan-600 text-white">
           <Plus className="h-4 w-4 mr-2" />
@@ -219,7 +243,7 @@ export default function HostPropertiesPage() {
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
           <p className="text-red-800">{error}</p>
           <Button
-            onClick={() => fetchProperties(currentPage)}
+            onClick={() => fetchProperties(1, false)}
             className="mt-2 bg-red-600 hover:bg-red-700 text-white"
             size="sm"
           >
@@ -257,7 +281,8 @@ export default function HostPropertiesPage() {
                     src={
                       property.images.find((img) => img.is_primary)?.image_url ||
                       property.images[0]?.image_url ||
-                      "/placeholder.svg?height=200&width=300"
+                      "/placeholder.svg?height=200&width=300" ||
+                      "/placeholder.svg"
                     }
                     alt={property.title}
                     className="w-full h-48 object-cover"
@@ -300,7 +325,7 @@ export default function HostPropertiesPage() {
                     </div>
                   </div>
 
-                  {/* Action Buttons - Redesigned */}
+                  {/* Action Buttons */}
                   <div className="space-y-2">
                     {/* Primary Actions Row */}
                     <div className="grid grid-cols-2 gap-2">
@@ -348,26 +373,31 @@ export default function HostPropertiesPage() {
             ))}
           </div>
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex justify-center gap-2">
+          {hasMore && !searchTerm && statusFilter === "ALL" && (
+            <div className="flex justify-center">
               <Button
-                variant="outline"
-                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
+                onClick={loadMore}
+                disabled={loadingMore}
+                className="bg-cyan-500 hover:bg-cyan-600 text-white px-8 py-2"
               >
-                Previous
+                {loadingMore ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Loading more properties...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Load More Properties
+                  </>
+                )}
               </Button>
-              <span className="flex items-center px-4 py-2 text-sm text-gray-700">
-                Page {currentPage} of {totalPages}
-              </span>
-              <Button
-                variant="outline"
-                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                disabled={currentPage === totalPages}
-              >
-                Next
-              </Button>
+            </div>
+          )}
+
+          {!hasMore && properties.length > propertiesPerPage && !searchTerm && statusFilter === "ALL" && (
+            <div className="text-center py-4">
+              <p className="text-gray-500 text-sm">You've reached the end of your properties list</p>
             </div>
           )}
         </>
@@ -378,11 +408,11 @@ export default function HostPropertiesPage() {
         isOpen={showCreationModal}
         onPropertyCreated={(newPropertyId: number) => {
           setShowCreationModal(false)
-          fetchProperties(currentPage)
+          fetchProperties(1, false)
         }}
         onClose={() => {
           setShowCreationModal(false)
-          fetchProperties(currentPage)
+          fetchProperties(1, false)
         }}
       />
 

@@ -14,9 +14,9 @@ import { X, Plus, Minus, Upload, MapPin, DollarSign, Home, ImageIcon } from "luc
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden"
 import type { PropertyCreationModalProps } from "@/types/modal"
 import type { Amenity, PropertyType, PropertyCategory } from "@/types/property"
-import type { AddressData } from "@/types/address"
 import type { AmenityAPI, PropertyTypeAPI, PropertyCategoryAPI, PropertyAPI } from "@/types/api"
 import AddressMap from "@/components/shared/map"
+import type { AddressData } from "@/types/address" // Declare AddressData type
 
 const apiUrl = "http://127.0.0.1:8000"
 const HOST_ID = 1
@@ -301,23 +301,7 @@ export function PropertyCreationModal({ isOpen, onClose, onPropertyCreated }: Pr
     }
   }
 
-  const handleNext = () => {
-    if (validateStep(currentStep) && currentStep < steps.length) {
-      setCurrentStep((prev) => prev + 1)
-      setError(null)
-    } else if (!validateStep(currentStep)) {
-      setError("Please fill in all required fields for this step.")
-    }
-  }
-
-  const handleBack = () => {
-    if (currentStep > 1) {
-      setCurrentStep((prev) => prev - 1)
-      setError(null)
-    }
-  }
-
-  const handleSubmit = async (publish: boolean = true) => {
+  const handleSubmit = async (publish = true) => {
     setLoading(true)
     setError(null)
     try {
@@ -704,17 +688,13 @@ export function PropertyCreationModal({ isOpen, onClose, onPropertyCreated }: Pr
                   { field: "bedrooms", label: "Bedrooms", icon: "🛏️" },
                   { field: "bathrooms", label: "Bathrooms", icon: "🚿" },
                 ].map(({ field, label, icon }, index) => (
-                  <div
-                    key={field}
-                    className="flex items-center justify-between p-4 border border-gray-200 rounded-lg"
-                  >
+                  <div key={field} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
                     <div className="flex items-center">
                       <span className="text-2xl mr-3">{icon}</span>
                       <span className="font-medium">{label}</span>
                     </div>
                     <div className="flex items-center space-x-4">
                       <Button
-                        key={`${field}-decrement-${index}`}
                         type="button"
                         onClick={() => handleCountChange(field as "maxGuests" | "bedrooms" | "bathrooms", false)}
                         className="w-16 h-16 rounded-full border-2 border-gray-300 bg-white hover:bg-cyan-200 hover:border-cyan-700 text-gray-800 hover:text-cyan-800 font-bold shadow-sm flex items-center justify-center transition-all"
@@ -730,7 +710,6 @@ export function PropertyCreationModal({ isOpen, onClose, onPropertyCreated }: Pr
                         {formData[field as keyof typeof formData] as number}
                       </span>
                       <Button
-                        key={`${field}-increment-${index}`}
                         type="button"
                         onClick={() => handleCountChange(field as "maxGuests" | "bedrooms" | "bathrooms", true)}
                         className="w-16 h-16 rounded-full border-2 border-gray-300 bg-white hover:bg-cyan-200 hover:border-cyan-700 text-gray-800 hover:text-cyan-800 font-bold shadow-sm flex items-center justify-center transition-all"
@@ -760,9 +739,7 @@ export function PropertyCreationModal({ isOpen, onClose, onPropertyCreated }: Pr
                 <p className="text-gray-600 mb-2">Click to upload images</p>
                 <p className="text-sm text-gray-500">Upload multiple images (JPG, PNG, GIF)</p>
                 {formData.images.length > 0 && (
-                  <Badge className="mt-2 bg-green-100 text-green-800">
-                    ✓ {formData.images.length} images uploaded
-                  </Badge>
+                  <Badge className="mt-2 bg-green-100 text-green-800">✓ {formData.images.length} images uploaded</Badge>
                 )}
               </div>
 
@@ -798,9 +775,7 @@ export function PropertyCreationModal({ isOpen, onClose, onPropertyCreated }: Pr
                       <button
                         type="button"
                         onClick={() => handleSetPrimary(index)}
-                        className={`absolute bottom-2 right-2 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity ${
-                          primaryImageIndex === index ? "bg-gray-500 cursor-not-allowed" : "bg-blue-500 hover:bg-blue-600"
-                        }`}
+                        className={`absolute bottom-2 right-2 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity ${primaryImageIndex === index ? "bg-gray-500 cursor-not-allowed" : "bg-blue-500 hover:bg-blue-600"}`}
                         disabled={primaryImageIndex === index}
                       >
                         {primaryImageIndex === index ? "Primary" : "Set as Primary"}
@@ -865,11 +840,7 @@ export function PropertyCreationModal({ isOpen, onClose, onPropertyCreated }: Pr
                     <button
                       key={amenity.id}
                       onClick={() => toggleAmenity(amenity.id)}
-                      className={`p-3 rounded-lg border-2 transition-all text-left ${
-                        formData.selectedAmenities.includes(amenity.id)
-                          ? "border-blue-600 bg-blue-100"
-                          : "border-gray-200 hover:border-gray-300"
-                      }`}
+                      className={`p-3 rounded-lg border-2 transition-all text-left ${formData.selectedAmenities.includes(amenity.id) ? "border-blue-600 bg-blue-100" : "border-gray-200 hover:border-gray-300"}`}
                     >
                       <div className="text-sm font-medium">{amenity.name}</div>
                       <div className="text-xs text-gray-500">{amenity.category}</div>
@@ -1012,14 +983,17 @@ export function PropertyCreationModal({ isOpen, onClose, onPropertyCreated }: Pr
             </div>
           </div>
 
-          <div className="min-h-[400px]">
-            {loading && currentStep === 1 ? (
-              <div className="flex items-center justify-center h-64">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-500"></div>
+          <div className="min-h-[400px] relative">
+            {loading ? (
+              <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-50 rounded-lg">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-4 border-cyan-500 border-t-transparent mx-auto mb-4"></div>
+                  <p className="text-lg font-medium text-gray-900 mb-2">Đang tạo bất động sản...</p>
+                  <p className="text-sm text-gray-600">Vui lòng đợi, quá trình này có thể mất vài phút</p>
+                </div>
               </div>
-            ) : (
-              renderStepContent()
-            )}
+            ) : null}
+            <div className={loading ? "opacity-50 pointer-events-none" : ""}>{renderStepContent()}</div>
           </div>
 
           <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
@@ -1041,9 +1015,14 @@ export function PropertyCreationModal({ isOpen, onClose, onPropertyCreated }: Pr
             </div>
           )}
 
-          <div className="flex justify-between items-center pt-6 mt-6 border-t">
-            <Button type="button" variant="outline" onClick={handleBack} disabled={currentStep === 1}>
-              Back
+          <div className={`flex justify-between pt-6 border-t ${loading ? "opacity-50" : ""}`}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setCurrentStep(Math.max(1, currentStep - 1))}
+              disabled={currentStep === 1 || loading}
+            >
+              Previous
             </Button>
 
             <div className="flex gap-2">
@@ -1054,23 +1033,38 @@ export function PropertyCreationModal({ isOpen, onClose, onPropertyCreated }: Pr
                     variant="outline"
                     onClick={() => handleSubmit(false)}
                     disabled={loading || !validateStep(currentStep)}
+                    className="relative"
                   >
-                    {loading ? "Saving as Draft..." : "Save as Draft"}
+                    {loading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-400 border-t-transparent mr-2"></div>
+                        Đang lưu nháp...
+                      </>
+                    ) : (
+                      "Save as Draft"
+                    )}
                   </Button>
                   <Button
                     type="button"
                     onClick={() => handleSubmit(true)}
                     disabled={loading || !validateStep(currentStep)}
-                    className="bg-cyan-500 hover:bg-cyan-600"
+                    className="bg-cyan-500 hover:bg-cyan-600 relative"
                   >
-                    {loading ? "Publishing..." : "Publish Property"}
+                    {loading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                        Đang xuất bản...
+                      </>
+                    ) : (
+                      "Publish Property"
+                    )}
                   </Button>
                 </>
               ) : (
                 <Button
                   type="button"
-                  onClick={handleNext}
-                  disabled={!validateStep(currentStep)}
+                  onClick={() => setCurrentStep(Math.min(steps.length, currentStep + 1))}
+                  disabled={!validateStep(currentStep) || loading}
                   className="bg-cyan-500 hover:bg-cyan-600"
                 >
                   Next
