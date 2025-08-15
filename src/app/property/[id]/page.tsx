@@ -7,6 +7,7 @@ import { PropertyReviews } from "@/components/traveller/property-reviews"
 import { PropertyLocation } from "@/components/traveller/property-location"
 import { HostProfile } from "@/components/traveller/host-profile"
 import {CalenderBidingFeature} from "@/components/traveller/calender-biding-feature";
+import {CalendarProvider} from "@/contexts/calender-context";
 
 interface PropertyPageProps {
   params: {
@@ -55,57 +56,71 @@ export default function PropertyPage({ params }: PropertyPageProps) {
         value: 4.9,
       },
     },
-    currentBid: 400000,
-    lowestOffer: 2500000,
-    timeLeft: "2 hours 30 mins 35 secs",
+      auction:{
+        id: "22222222-2222-2222-2222-222222222222",
+          auction_start_time: "2025-01-01T00:00:00Z",
+          auction_end_time: "2025-08-23T00:00:00Z",
+          current_highest_bid: 1000000, 
+      }
   }
     const booking = "10000002-1000-1000-1000-100000000002"
-  return (
-    <div className="min-h-screen bg-white">
-      <PropertyHeader />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold text-gray-900">{property.title}</h1>
-              <p className="text-gray-600">{property.location}</p>
+    const users = 1
+  // @ts-ignore
+    // @ts-ignore
+
+    return (
+        <CalendarProvider>
+            <div className="min-h-screen bg-white">
+              <PropertyHeader />
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <div className="mb-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h1 className="text-2xl font-semibold text-gray-900">{property.title}</h1>
+                      <p className="text-gray-600">{property.location}</p>
+                    </div>
+                    <div className="flex items-center space-x-4">
+                      <button className="flex items-center space-x-2 text-gray-600 hover:text-gray-900">
+                        <span className="text-sm font-medium">Report</span>
+                      </button>
+                      <button className="flex items-center space-x-2 text-gray-600 hover:text-gray-900">
+                        <span className="text-sm font-medium">Share</span>
+                      </button>
+                      <button className="flex items-center space-x-2 text-gray-600 hover:text-gray-900">
+                        <span className="text-sm font-medium">Save</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <PropertyGallery images={property.images} />
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 mt-12">
+                  <div className="lg:col-span-2 space-y-12">
+                      <CalenderBidingFeature property_id={Number(property.id)}/>
+                      <PropertyDetails host={property.host} details={property.details} description={property.description} />
+                      <PropertyAmenities amenities={property.amenities} />
+                      <PropertyReviews reviews = {property.reviews}
+                                       propertyId={property.id}
+                                       reviewerId={1}
+                                       revieweeId={property.host.id}
+                                       bookingId = {booking}
+                      />
+                      <PropertyLocation />
+                    {/*<HostProfile />*/}
+                  </div>
+
+                  <div className="lg:col-span-1">
+                    <BookingPanel user_id={users}
+                                  property_id={Number(property.id)}
+                                  auction_id={property.auction.id}
+
+
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="flex items-center space-x-4">
-              <button className="flex items-center space-x-2 text-gray-600 hover:text-gray-900">
-                <span className="text-sm font-medium">Report</span>
-              </button>
-              <button className="flex items-center space-x-2 text-gray-600 hover:text-gray-900">
-                <span className="text-sm font-medium">Share</span>
-              </button>
-              <button className="flex items-center space-x-2 text-gray-600 hover:text-gray-900">
-                <span className="text-sm font-medium">Save</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <PropertyGallery images={property.images} />
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 mt-12">
-          <div className="lg:col-span-2 space-y-12">
-              <CalenderBidingFeature/>
-              <PropertyDetails host={property.host} details={property.details} description={property.description} />
-              <PropertyAmenities amenities={property.amenities} />
-              <PropertyReviews reviews = {property.reviews}
-                               propertyId={property.id}
-                               reviewerId={1}
-                               revieweeId={property.host.id}
-                               bookingId = {booking}
-              />
-              <PropertyLocation />
-            {/*<HostProfile />*/}
-          </div>
-
-          <div className="lg:col-span-1">
-            <BookingPanel/>
-          </div>
-        </div>
-      </div>
-    </div>
+        </CalendarProvider>
   )
 }
