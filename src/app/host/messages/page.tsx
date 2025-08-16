@@ -69,40 +69,58 @@ export default function HostMessagesPage() {
           cluster = process.env.NEXT_PUBLIC_PUSHER_CLUSTER
           console.log("Using Pusher environment variables:", { appKey, cluster })
         } else {
-          const response = await fetch(`${apiUrl}/pusher/get`)
-          if (!response.ok) {
-            const errorText = await response.text()
-            console.error("Pusher config fetch error:", errorText)
-            throw new Error(`Failed to fetch Pusher config: ${response.status}`)
+          console.warn("Pusher environment variables not found, attempting to fetch from API...")
+          try {
+            const response = await fetch(`${apiUrl}/pusher/get`)
+            if (!response.ok) {
+              console.warn("Pusher config API not available, disabling real-time features")
+              return
+            }
+            const config = await response.json()
+            if (!config || !config.app_key || !config.cluster) {
+              console.warn("Invalid Pusher configuration received, disabling real-time features")
+              return
+            }
+            appKey = config.app_key
+            cluster = config.cluster
+          } catch (fetchError) {
+            console.warn("Failed to fetch Pusher config, disabling real-time features:", fetchError)
+            return
           }
-          const config = await response.json()
-          console.log("Pusher config response:", config)
-          if (!config || !config.app_key || !config.cluster) {
-            throw new Error("Invalid Pusher configuration: Missing app_key or cluster")
-          }
-          appKey = config.app_key
-          cluster = config.cluster
         }
 
-        // Enable Pusher logging for debugging
-        Pusher.logToConsole = true
-        pusherRef.current = new Pusher(appKey, {
-          cluster,
-          forceTLS: true,
-          enabledTransports: ["ws", "wss"],
-        })
-        console.log("Pusher initialized for user:", temporaryUserId)
+        try {
+          pusherRef.current = new Pusher(appKey, {
+            cluster,
+            forceTLS: true,
+            enabledTransports: ["ws", "wss"],
+          })
+          console.log("Pusher initialized for user:", temporaryUserId)
 
-        pusherRef.current.connection.bind("connected", () => {
-          console.log("Pusher connected successfully for user:", temporaryUserId)
-        })
-        pusherRef.current.connection.bind("error", (err: any) => {
-          console.error("Pusher connection error:", JSON.stringify(err, null, 2))
-          setError("Failed to connect to real-time messaging service. Please try again later.")
-        })
+          pusherRef.current.connection.bind("connected", () => {
+            console.log("Pusher connected successfully for user:", temporaryUserId)
+            setError(null) // Clear any previous connection errors
+          })
+
+          pusherRef.current.connection.bind("error", (err: any) => {
+            console.warn("Pusher connection error (non-critical):", JSON.stringify(err, null, 2))
+            // Don't set error state for connection issues, just log them
+          })
+
+          pusherRef.current.connection.bind("disconnected", () => {
+            console.log("Pusher disconnected")
+          })
+
+          pusherRef.current.connection.bind("unavailable", () => {
+            console.warn("Pusher connection unavailable, real-time features disabled")
+          })
+        } catch (pusherError) {
+          console.warn("Failed to initialize Pusher client:", pusherError)
+          pusherRef.current = null
+        }
       } catch (error: any) {
-        console.error("Error initializing Pusher:", error.message)
-        setError("Failed to initialize real-time messaging. Real-time updates may not work.")
+        console.warn("Pusher initialization failed, continuing without real-time features:", error.message)
+        pusherRef.current = null
       }
     }
 
@@ -113,12 +131,16 @@ export default function HostMessagesPage() {
     return () => {
       console.log("Disconnecting Pusher for user:", temporaryUserId)
       if (pusherRef.current) {
-        pusherRef.current.allChannels().forEach((channel) => {
-          console.log("Unsubscribing from channel:", channel.name)
-          channel.unbind_all()
-          channel.unsubscribe()
-        })
-        pusherRef.current.disconnect()
+        try {
+          pusherRef.current.allChannels().forEach((channel) => {
+            console.log("Unsubscribing from channel:", channel.name)
+            channel.unbind_all()
+            channel.unsubscribe()
+          })
+          pusherRef.current.disconnect()
+        } catch (cleanupError) {
+          console.warn("Error during Pusher cleanup:", cleanupError)
+        }
         pusherRef.current = null
       }
     }
@@ -126,8 +148,8 @@ export default function HostMessagesPage() {
 
   // Handle conversation channel subscription
   useEffect(() => {
-    if (!selectedConversation || !pusherRef.current) {
-      console.log("No selected conversation or Pusher not initialized, skipping subscription")
+    if (!selectedConversation) {
+      console.log("No selected conversation, skipping subscription")
       setMessages([])
       setVisibleMessages([])
       setMessagePage(1)
@@ -137,10 +159,29 @@ export default function HostMessagesPage() {
       return
     }
 
+    if (!pusherRef.current) {
+      console.log("Pusher not available, skipping real-time subscription for conversation:", selectedConversation.id)
+      fetchMessages(selectedConversation.id, 1).then((data) => {
+        if (data.length > 0) {
+          const sortedMessages = sortMessages(data)
+          setMessages(sortedMessages)
+          setVisibleMessages(sortedMessages.slice(-messagesPerRender))
+          setMessagePage(2)
+          setVisibleMessageCount(messagesPerRender)
+          setHasMoreMessages(data.length === messagesPerPage)
+          setTimeout(() => {
+            messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+          }, 100)
+        } else {
+          setHasMoreMessages(false)
+        }
+      })
+      return
+    }
+
     const subscribeToChannel = async (conversationId: number) => {
       console.log("Subscribing to conversation:", conversationId, "user:", temporaryUserId)
 
-      // Disconnect and reconnect Pusher to reset state
       if (pusherRef.current) {
         pusherRef.current.allChannels().forEach((channel) => {
           console.log("Unsubscribing from channel:", channel.name)
@@ -156,7 +197,6 @@ export default function HostMessagesPage() {
       }
 
       const channelName = `conversation-${conversationId}`
-      // Check channel state before subscribing
       const existingChannel = pusherRef.current!.channel(channelName)
       if (existingChannel && existingChannel.subscribed) {
         console.log("Channel already subscribed:", channelName)
@@ -231,7 +271,6 @@ export default function HostMessagesPage() {
       })
     }
 
-    // Check Pusher connection state before subscribing
     if (pusherRef.current.connection.state !== "connected") {
       console.log("Pusher not connected, delaying subscription for conversation:", selectedConversation.id)
       let retryCount = 0
@@ -281,7 +320,6 @@ export default function HostMessagesPage() {
           console.log("Unsubscribing from channel during cleanup:", channel.name)
           channel.unbind_all()
           channel.unsubscribe()
-          // Wait to ensure cleanup completes
           setTimeout(() => {}, 500)
         }
       }
@@ -409,7 +447,6 @@ export default function HostMessagesPage() {
       const updatedMessage = await response.json()
       console.log("Mark message as read response:", updatedMessage)
 
-      // Update state immediately to reflect is_read change
       setMessages((prev) => {
         const updated = prev.map((msg) => (msg.id === messageId ? { ...msg, is_read: true } : msg))
         console.log("Updated messages with is_read locally:", updated)
@@ -421,7 +458,6 @@ export default function HostMessagesPage() {
         return sortMessages(updatedVisible)
       })
 
-      // Trigger messages-read event to notify other clients
       await fetch(`${apiUrl}/messages/notify-read`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
