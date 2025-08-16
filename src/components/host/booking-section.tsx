@@ -107,7 +107,7 @@ export function BookingSection({ propertyId, apiUrl }: BookingSectionProps) {
 
       if (response.ok) {
         const { id: conversationId } = await response.json()
-        router.push(`/dashboard/messages?conversationId=${conversationId}`)
+        router.push(`/host/messages?conversationId=${conversationId}&hostId=${booking.host_id}`)
       } else {
         const error = await response.json()
         console.error("Lỗi khi tạo conversation:", error)

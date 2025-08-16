@@ -106,7 +106,7 @@ export default function BookingManager() {
 
       if (response.ok) {
         const { id: conversationId } = await response.json()
-        router.push(`/dashboard/messages?conversationId=${conversationId}`)
+        router.push(`/host/messages?conversationId=${conversationId}&hostId=${booking.host_id}`)
       } else {
         const error = await response.json()
         console.error("Lỗi khi tạo conversation:", error)
@@ -180,9 +180,6 @@ export default function BookingManager() {
       <div className="bg-gray-50 rounded-lg p-6 border">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-gray-600 rounded-lg">
-              <Calendar className="h-6 w-6 text-white" />
-            </div>
             <div>
               <h1 className="text-xl font-semibold text-gray-900">Quản lý tất cả booking</h1>
               <p className="text-sm text-gray-600">
