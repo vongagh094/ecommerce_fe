@@ -6,207 +6,134 @@ import {
   Category, 
   Amenity 
 } from "@/types"
-import { getAccessToken } from './auth0'
-import Cookies from 'js-cookie'
+import { apiClient, buildQueryString, ApiError } from './api/base'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
+// Re-export for backward compatibility
+export { ApiError }
 
-class ApiError extends Error {
-  constructor(public status: number, message: string, public code?: string) {
-    super(message)
-    this.name = 'ApiError'
+
+
+// Backend response types (matching actual API)
+interface BackendSearchResponse {
+  properties: PropertyDetails[]
+  pagination: {
+    page: number
+    limit: number
+    total: number
+    has_more: boolean
   }
+  status_code: number
 }
 
-interface ApiRequestOptions extends RequestInit {
-  requireAuth?: boolean
-  skipAuthRefresh?: boolean
+interface LocationSuggestion {
+  display_name: string
+  city: string
+  state: string
+  country: string
+  property_count: number
 }
 
-// Enhanced API wrapper with authentication
-async function fetchApi<T>(endpoint: string, options: ApiRequestOptions = {}): Promise<T> {
-  const { requireAuth = false, skipAuthRefresh = false, ...fetchOptions } = options
-  const url = `${API_BASE_URL}${endpoint}`
-  
-  // Prepare headers
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...(fetchOptions.headers as Record<string, string>),
-    Authorization: '',
+// Transform backend response to frontend format
+function transformBackendResponse(backendResponse: BackendSearchResponse): SearchResponse {
+  return {
+    properties: backendResponse.properties,
+    pagination: {
+      page: backendResponse.pagination.page,
+      limit: backendResponse.pagination.limit,
+      total: backendResponse.pagination.total,
+      total_pages: Math.ceil(backendResponse.pagination.total / backendResponse.pagination.limit),
+      has_next: backendResponse.pagination.has_more,
+      has_prev: backendResponse.pagination.page > 1
+    },
+    filters: {
+      available_categories: [],
+      price_range: { min: 0, max: 1000 },
+      available_amenities: [],
+      location_suggestions: []
+    },
+    search_metadata: {
+      query_time_ms: 0,
+      total_found: backendResponse.pagination.total
+    },
+    // Backward compatibility
+    total: backendResponse.pagination.total,
+    page: backendResponse.pagination.page,
+    limit: backendResponse.pagination.limit,
+    has_more: backendResponse.pagination.has_more
   }
-
-  // Add authentication token if required or available
-  if (requireAuth || (!skipAuthRefresh && typeof window !== 'undefined')) {
-    try {
-      const token = await getAccessToken()
-      if (token) {
-        headers.Authorization = `Bearer ${token}`
-      } else if (requireAuth) {
-        throw new ApiError(401, 'Authentication required', 'AUTH_REQUIRED')
-      }
-    } catch (error) {
-      if (requireAuth) {
-        throw new ApiError(401, 'Failed to get authentication token', 'AUTH_TOKEN_ERROR')
-      }
-    }
-  }
-
-  try {
-    const response = await fetch(url, {
-      ...fetchOptions,
-      headers,
-    })
-
-    // Handle authentication errors
-    if (response.status === 401) {
-      if (!skipAuthRefresh && typeof window !== 'undefined') {
-        // Try to refresh token once
-        try {
-          const { refreshToken } = await import('./auth0')
-          const newToken = await refreshToken()
-          if (newToken) {
-            // Retry request with new token
-            headers.Authorization = `Bearer ${newToken}`
-            const retryResponse = await fetch(url, {
-              ...fetchOptions,
-              headers,
-            })
-            
-            if (retryResponse.ok) {
-              return await retryResponse.json()
-            }
-          }
-        } catch (refreshError) {
-          console.error('Token refresh failed:', refreshError)
-        }
-      }
-      
-      throw new ApiError(401, 'Authentication failed', 'AUTH_FAILED')
-    }
-
-    if (!response.ok) {
-      let errorMessage = `HTTP error! status: ${response.status}`
-      let errorCode = `HTTP_${response.status}`
-      
-      try {
-        const errorData = await response.json()
-        errorMessage = errorData.message || errorData.error || errorMessage
-        errorCode = errorData.code || errorCode
-      } catch {
-        // If response is not JSON, use default message
-      }
-      
-      throw new ApiError(response.status, errorMessage, errorCode)
-    }
-
-    return await response.json()
-  } catch (error) {
-    if (error instanceof ApiError) {
-      throw error
-    }
-    throw new ApiError(500, 'Network error occurred', 'NETWORK_ERROR')
-  }
-}
-
-// Convenience methods for different HTTP methods
-const apiWrapper = {
-  get: <T>(endpoint: string, options?: ApiRequestOptions) => 
-    fetchApi<T>(endpoint, { ...options, method: 'GET' }),
-    
-  post: <T>(endpoint: string, data?: any, options?: ApiRequestOptions) => 
-    fetchApi<T>(endpoint, { 
-      ...options, 
-      method: 'POST', 
-      body: data ? JSON.stringify(data) : undefined 
-    }),
-    
-  put: <T>(endpoint: string, data?: any, options?: ApiRequestOptions) => 
-    fetchApi<T>(endpoint, { 
-      ...options, 
-      method: 'PUT', 
-      body: data ? JSON.stringify(data) : undefined 
-    }),
-    
-  patch: <T>(endpoint: string, data?: any, options?: ApiRequestOptions) => 
-    fetchApi<T>(endpoint, { 
-      ...options, 
-      method: 'PATCH', 
-      body: data ? JSON.stringify(data) : undefined 
-    }),
-    
-  delete: <T>(endpoint: string, options?: ApiRequestOptions) => 
-    fetchApi<T>(endpoint, { ...options, method: 'DELETE' }),
 }
 
 export const propertyApi = {
   // Search properties (public - no auth required)
+  // GET /api/v1/properties/search
   search: async (params: SearchParams): Promise<SearchResponse> => {
-    const searchParams = new URLSearchParams()
-    
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        searchParams.append(key, value.toString())
-      }
-    })
-
-    return apiWrapper.get<SearchResponse>(`/properties/search?${searchParams}`)
+    const queryString = buildQueryString(params)
+    const response = await apiClient.get<BackendSearchResponse>(`/properties/search?${queryString}`)
+    return transformBackendResponse(response)
   },
 
   // Filter properties with advanced criteria (public - no auth required)
+  // GET /api/v1/properties/filter
   filter: async (params: FilterParams): Promise<SearchResponse> => {
-    const searchParams = new URLSearchParams()
-    
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        if (Array.isArray(value)) {
-          value.forEach(item => searchParams.append(key, item.toString()))
-        } else {
-          searchParams.append(key, value.toString())
-        }
-      }
-    })
-
-    return apiWrapper.get<SearchResponse>(`/properties/filter?${searchParams}`)
+    const queryString = buildQueryString(params)
+    const response = await apiClient.get<BackendSearchResponse>(`/properties/filter?${queryString}`)
+    return transformBackendResponse(response)
   },
 
   // Browse properties by category (public - no auth required)
+  // GET /api/v1/properties/categories/{category_name}
   browseByCategory: async (categoryName: string, params?: Partial<SearchParams>): Promise<SearchResponse> => {
-    const searchParams = new URLSearchParams()
-    
-    if (params) {
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          searchParams.append(key, value.toString())
-        }
-      })
-    }
-
-    const query = searchParams.toString() ? `?${searchParams}` : ''
-    return apiWrapper.get<SearchResponse>(`/properties/categories/${categoryName}${query}`)
+    const queryString = params ? buildQueryString(params) : ''
+    const query = queryString ? `?${queryString}` : ''
+    const response = await apiClient.get<BackendSearchResponse>(`/properties/categories/${categoryName}${query}`)
+    return transformBackendResponse(response)
   },
 
   // Get property details (public - no auth required)
+  // GET /api/v1/properties/{property_id}
   getDetails: async (propertyId: string): Promise<PropertyDetails> => {
-    return apiWrapper.get<PropertyDetails>(`/properties/${propertyId}`)
+    return await apiClient.get<PropertyDetails>(`/properties/${propertyId}`)
   },
 
   // Get categories list (public - no auth required)
+  // GET /api/v1/properties/categories
   getCategories: async (): Promise<Category[]> => {
-    const response = await apiWrapper.get<{ categories: Category[] }>('/properties/categories')
+    const response = await apiClient.get<{ categories: Category[] }>('/properties/categories')
     return response.categories
   },
 
   // Get amenities list (public - no auth required)
+  // GET /api/v1/properties/amenities
   getAmenities: async (): Promise<Amenity[]> => {
-    const response = await apiWrapper.get<{ amenities: Amenity[] }>('/amenities')
+    const response = await apiClient.get<{ amenities: Amenity[] }>('/properties/amenities')
     return response.amenities
   },
 
   // Get location suggestions (public - no auth required)
+  // GET /api/v1/properties/locations/suggestions
   getLocationSuggestions: async (query: string, limit = 10) => {
-    const searchParams = new URLSearchParams({ query, limit: limit.toString() })
-    const response = await apiWrapper.get<{ suggestions: any[] }>(`/locations/suggestions?${searchParams}`)
-    return response.suggestions
+    const queryString = buildQueryString({ query, limit })
+    return await apiClient.get<{ suggestions: LocationSuggestion[] }>(`/properties/locations/suggestions?${queryString}`)
+  },
+
+  // Health check (public - no auth required)
+  // GET /api/v1/health
+  healthCheck: async () => {
+    return await apiClient.get<{ status: string; version: string }>('/health')
+  }
+}
+
+
+// Host-specific APIs (public - no auth required for profile viewing)
+export const hostApi = {
+  // Get host profile (public)
+  getProfile: async (hostId: string) => {
+    return apiClient.get(`/hosts/${hostId}/profile`)
+  },
+
+  // Get host statistics (public)
+  getStatistics: async (hostId: string) => {
+    return apiClient.get(`/hosts/${hostId}/statistics`)
   }
 }
 
@@ -214,96 +141,103 @@ export const propertyApi = {
 export const authApi = {
   // User profile
   getProfile: async () => {
-    return apiWrapper.get('/user/profile', { requireAuth: true })
+    return apiClient.get('/user/profile', { requireAuth: true })
   },
 
   updateProfile: async (data: any) => {
-    return apiWrapper.put('/user/profile', data, { requireAuth: true })
+    return apiClient.put('/user/profile', data, { requireAuth: true })
   },
 
   // Bookings
   createBooking: async (bookingData: any) => {
-    return apiWrapper.post('/bookings', bookingData, { requireAuth: true })
+    return apiClient.post('/bookings', bookingData, { requireAuth: true })
   },
 
   getUserBookings: async () => {
-    return apiWrapper.get('/user/bookings', { requireAuth: true })
+    return apiClient.get('/user/bookings', { requireAuth: true })
   },
 
   cancelBooking: async (bookingId: string) => {
-    return apiWrapper.delete(`/bookings/${bookingId}`, { requireAuth: true })
+    return apiClient.delete(`/bookings/${bookingId}`, { requireAuth: true })
   },
 
   // Bidding
   placeBid: async (bidData: any) => {
-    return apiWrapper.post('/bids', bidData, { requireAuth: true })
+    return apiClient.post('/bids', bidData, { requireAuth: true })
   },
 
   getUserBids: async () => {
-    return apiWrapper.get('/user/bids', { requireAuth: true })
+    return apiClient.get('/user/bids', { requireAuth: true })
   },
 
   withdrawBid: async (bidId: string) => {
-    return apiWrapper.delete(`/bids/${bidId}`, { requireAuth: true })
+    return apiClient.delete(`/bids/${bidId}`, { requireAuth: true })
   },
 
-  // Wishlist
+  // Wishlist/Favorites
   getUserWishlists: async () => {
-    return apiWrapper.get('/user/wishlists', { requireAuth: true })
+    return apiClient.get('/user/wishlists', { requireAuth: true })
   },
 
   createWishlist: async (wishlistData: any) => {
-    return apiWrapper.post('/user/wishlists', wishlistData, { requireAuth: true })
+    return apiClient.post('/user/wishlists', wishlistData, { requireAuth: true })
   },
 
   addToWishlist: async (wishlistId: string, propertyId: string) => {
-    return apiWrapper.post(`/user/wishlists/${wishlistId}/properties`, 
+    return apiClient.post(`/user/wishlists/${wishlistId}/properties`, 
       { propertyId }, { requireAuth: true })
   },
 
   removeFromWishlist: async (wishlistId: string, propertyId: string) => {
-    return apiWrapper.delete(`/user/wishlists/${wishlistId}/properties/${propertyId}`, 
+    return apiClient.delete(`/user/wishlists/${wishlistId}/properties/${propertyId}`, 
       { requireAuth: true })
   },
 
-  // Host APIs
+  // Host APIs (authenticated)
   becomeHost: async (hostData: any) => {
-    return apiWrapper.post('/host/register', hostData, { requireAuth: true })
+    return apiClient.post('/host/register', hostData, { requireAuth: true })
   },
 
   createProperty: async (propertyData: any) => {
-    return apiWrapper.post('/host/properties', propertyData, { requireAuth: true })
+    return apiClient.post('/host/properties', propertyData, { requireAuth: true })
   },
 
-  getHostProperties: async () => {
-    return apiWrapper.get('/host/properties', { requireAuth: true })
+  getHostProperties: async (params?: { page?: number; limit?: number }) => {
+    const queryString = params ? buildQueryString(params) : ''
+    const query = queryString ? `?${queryString}` : ''
+    return apiClient.get(`/host/properties${query}`, { requireAuth: true })
   },
 
   updateProperty: async (propertyId: string, propertyData: any) => {
-    return apiWrapper.put(`/host/properties/${propertyId}`, propertyData, { requireAuth: true })
+    return apiClient.put(`/host/properties/${propertyId}`, propertyData, { requireAuth: true })
   },
 
   createAuction: async (auctionData: any) => {
-    return apiWrapper.post('/host/auctions', auctionData, { requireAuth: true })
+    return apiClient.post('/host/auctions', auctionData, { requireAuth: true })
   },
 
   getHostAuctions: async () => {
-    return apiWrapper.get('/host/auctions', { requireAuth: true })
+    return apiClient.get('/host/auctions', { requireAuth: true })
   },
 
   // Messages
-  getConversations: async () => {
-    return apiWrapper.get('/user/conversations', { requireAuth: true })
+  getConversations: async (params?: { page?: number; limit?: number }) => {
+    const queryString = params ? buildQueryString(params) : ''
+    const query = queryString ? `?${queryString}` : ''
+    return apiClient.get(`/user/conversations${query}`, { requireAuth: true })
   },
 
-  getMessages: async (conversationId: string) => {
-    return apiWrapper.get(`/conversations/${conversationId}/messages`, { requireAuth: true })
+  getMessages: async (conversationId: string, params?: { page?: number; limit?: number }) => {
+    const queryString = params ? buildQueryString(params) : ''
+    const query = queryString ? `?${queryString}` : ''
+    return apiClient.get(`/conversations/${conversationId}/messages${query}`, { requireAuth: true })
   },
 
   sendMessage: async (conversationId: string, message: string) => {
-    return apiWrapper.post(`/conversations/${conversationId}/messages`, 
+    return apiClient.post(`/conversations/${conversationId}/messages`, 
       { message }, { requireAuth: true })
   }
 }
 
-export { ApiError, apiWrapper }
+// Re-export for backward compatibility
+export { apiClient as apiWrapper }

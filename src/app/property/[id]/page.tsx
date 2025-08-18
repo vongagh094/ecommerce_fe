@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useCallback } from "react"
 import { useParams } from "next/navigation"
 import { usePropertyDetails } from "@/hooks/use-property-details"
 import { PropertyGallery } from "@/components/traveller/property-gallery"
@@ -16,6 +17,13 @@ export default function PropertyPage() {
   const params = useParams()
   const propertyId = params.id as string
   const { property, loading, error, refetch } = usePropertyDetails(propertyId)
+  const [isFavorite, setIsFavorite] = useState(false)
+
+  const handleFavoriteToggle = useCallback(() => {
+    setIsFavorite(prev => !prev)
+    // Here you would call your API to update the favorite status
+    console.log(`Property ${propertyId} favorite status toggled to: ${!isFavorite}`)
+  }, [propertyId, isFavorite])
 
   if (loading) {
     return (
@@ -65,7 +73,13 @@ export default function PropertyPage() {
       />
 
       {/* Property Gallery */}
-      <PropertyGallery images={property.images} />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+        <PropertyGallery 
+          images={property.images} 
+          onFavoriteToggle={handleFavoriteToggle}
+          isFavorite={isFavorite}
+        />
+      </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

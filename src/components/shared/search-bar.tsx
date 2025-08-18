@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react"
 import { Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { LocationSearchModal } from "@/components/traveller/search/location-search-modal"
+import { EnhancedLocationSearchModal } from "@/components/traveller/search/enhanced-location-search-modal"
 import { DatePickerModal } from "@/components/traveller/search/date-picker-modal"
 import { GuestSelectorModal, type GuestCounts } from "@/components/traveller/search/guest-selector-modal"
 import { useRouter, useSearchParams } from "next/navigation"
@@ -200,7 +200,7 @@ export function SearchBar({ variant = "default", className = "", onSearchResults
         </div>
 
         {/* Modals for compact version */}
-        <LocationSearchModal
+        <EnhancedLocationSearchModal
           isOpen={activeModal === "location"}
           onClose={() => setActiveModal(null)}
           onSelect={(location) => {
@@ -244,7 +244,7 @@ export function SearchBar({ variant = "default", className = "", onSearchResults
             <div className="text-xs font-semibold text-gray-800">Where</div>
             <div className="text-sm text-gray-600 w-32 truncate">{searchData.location || "Search destinations"}</div>
           </button>
-          <LocationSearchModal
+          <EnhancedLocationSearchModal
             isOpen={activeModal === "location"}
             onClose={() => setActiveModal(null)}
             onSelect={handleLocationSelect}

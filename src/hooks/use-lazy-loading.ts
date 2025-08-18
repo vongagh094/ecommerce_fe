@@ -10,6 +10,8 @@ interface UseLazyLoadingProps<T> {
   }>
   initialLimit?: number
   displayLimit?: number
+  maxCachedItems?: number // Maximum items to keep in memory
+  enableVirtualization?: boolean
 }
 
 interface UseLazyLoadingResult<T> {
@@ -23,12 +25,20 @@ interface UseLazyLoadingResult<T> {
   canShowMore: boolean
   reset: () => void
   total: number
+  currentPage: number
+  memoryUsage: {
+    cachedItems: number
+    maxCached: number
+    memoryPressure: 'low' | 'medium' | 'high'
+  }
 }
 
 export function useLazyLoading<T>({
   fetchFunction,
   initialLimit = 40,
-  displayLimit = 20
+  displayLimit = 20,
+  maxCachedItems = 1000,
+  enableVirtualization = true
 }: UseLazyLoadingProps<T>): UseLazyLoadingResult<T> {
   const [items, setItems] = useState<T[]>([])
   const [displayedItems, setDisplayedItems] = useState<T[]>([])
@@ -40,10 +50,43 @@ export function useLazyLoading<T>({
   const [displayCount, setDisplayCount] = useState(displayLimit)
   
   const isInitialLoad = useRef(true)
+  const abortControllerRef = useRef<AbortController | null>(null)
+  const memoryCleanupTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Load more items from API
+  // Memory management functions
+  const getMemoryPressure = useCallback((itemCount: number): 'low' | 'medium' | 'high' => {
+    const ratio = itemCount / maxCachedItems
+    if (ratio < 0.5) return 'low'
+    if (ratio < 0.8) return 'medium'
+    return 'high'
+  }, [maxCachedItems])
+
+  const cleanupOldItems = useCallback(() => {
+    setItems(prev => {
+      if (prev.length <= maxCachedItems) return prev
+      
+      // Keep the most recent items and some from the beginning for smooth scrolling
+      const keepFromEnd = Math.floor(maxCachedItems * 0.7)
+      const keepFromStart = Math.floor(maxCachedItems * 0.3)
+      
+      const recentItems = prev.slice(-keepFromEnd)
+      const initialItems = prev.slice(0, keepFromStart)
+      
+      return [...initialItems, ...recentItems]
+    })
+  }, [maxCachedItems])
+
+  // Enhanced load more with memory management and abort control
   const loadMore = useCallback(async () => {
     if (loading || !hasMore) return
+
+    // Cancel any pending request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+
+    const abortController = new AbortController()
+    abortControllerRef.current = abortController
 
     setLoading(true)
     setError(null)
@@ -51,7 +94,23 @@ export function useLazyLoading<T>({
     try {
       const result = await fetchFunction(currentPage, initialLimit)
       
-      setItems(prev => [...prev, ...result.items])
+      // Check if request was aborted
+      if (abortController.signal.aborted) return
+
+      setItems(prev => {
+        const newItems = [...prev, ...result.items]
+        
+        // Trigger memory cleanup if needed
+        if (newItems.length > maxCachedItems) {
+          if (memoryCleanupTimeoutRef.current) {
+            clearTimeout(memoryCleanupTimeoutRef.current)
+          }
+          memoryCleanupTimeoutRef.current = setTimeout(cleanupOldItems, 1000)
+        }
+        
+        return newItems
+      })
+      
       setTotal(result.total)
       setHasMore(result.hasMore)
       setCurrentPage(prev => prev + 1)
@@ -62,11 +121,16 @@ export function useLazyLoading<T>({
         isInitialLoad.current = false
       }
     } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        return // Request was cancelled, don't set error
+      }
       setError(err instanceof Error ? err.message : 'Failed to load items')
     } finally {
-      setLoading(false)
+      if (!abortController.signal.aborted) {
+        setLoading(false)
+      }
     }
-  }, [fetchFunction, currentPage, initialLimit, displayLimit, loading, hasMore])
+  }, [fetchFunction, currentPage, initialLimit, displayLimit, loading, hasMore, maxCachedItems, cleanupOldItems])
 
   // Show more items from already loaded items
   const showMore = useCallback(() => {
@@ -90,8 +154,18 @@ export function useLazyLoading<T>({
     }
   }, [items, displayCount])
 
-  // Reset all state
+  // Enhanced reset with cleanup
   const reset = useCallback(() => {
+    // Cancel any pending requests
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+    
+    // Clear cleanup timeouts
+    if (memoryCleanupTimeoutRef.current) {
+      clearTimeout(memoryCleanupTimeoutRef.current)
+    }
+
     setItems([])
     setDisplayedItems([])
     setLoading(false)
@@ -103,12 +177,55 @@ export function useLazyLoading<T>({
     isInitialLoad.current = true
   }, [displayLimit])
 
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+      if (memoryCleanupTimeoutRef.current) {
+        clearTimeout(memoryCleanupTimeoutRef.current)
+      }
+    }
+  }, [])
+
   // Initial load
   useEffect(() => {
     if (isInitialLoad.current) {
-      loadMore()
+      console.log('useLazyLoading: Triggering initial load')
+      // Call loadMore directly to avoid dependency issues
+      const initialLoad = async () => {
+        if (loading || !hasMore) return
+
+        setLoading(true)
+        setError(null)
+
+        try {
+          const result = await fetchFunction(1, initialLimit)
+          
+          setItems(result.items)
+          setDisplayedItems(result.items.slice(0, displayLimit))
+          setTotal(result.total)
+          setHasMore(result.hasMore)
+          setCurrentPage(2) // Next page will be 2
+          isInitialLoad.current = false
+        } catch (err) {
+          setError(err instanceof Error ? err.message : 'Failed to load items')
+        } finally {
+          setLoading(false)
+        }
+      }
+
+      initialLoad()
     }
-  }, []) // Only run once on mount
+  }, [fetchFunction, initialLimit, displayLimit]) // Only include stable dependencies
+
+  // Memory usage statistics
+  const memoryUsage = {
+    cachedItems: items.length,
+    maxCached: maxCachedItems,
+    memoryPressure: getMemoryPressure(items.length)
+  }
 
   return {
     items,
@@ -120,6 +237,8 @@ export function useLazyLoading<T>({
     showMore,
     canShowMore,
     reset,
-    total
+    total,
+    currentPage,
+    memoryUsage
   }
 }

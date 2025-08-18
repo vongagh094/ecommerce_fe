@@ -4,31 +4,36 @@ import { useEffect, useState } from "react"
 import { SearchSection } from "@/components/traveller/search-section"
 import { CategoryFilters } from "@/components/traveller/category-filters"
 import { HeroSection } from "@/components/traveller/hero-section"
-import { EnhancedPropertyGrid } from "@/components/traveller/enhanced-property-grid"
+import { PaginatedPropertyGrid } from "@/components/traveller/paginated-property-grid"
 import { InspirationSection } from "@/components/traveller/inspiration-section"
 import { Footer } from "@/components/shared/footer"
 import { AiChatBubble } from "@/components/shared/ai-chat-bubble"
-import { usePropertySearch } from "@/hooks/use-property-search"
+import { usePagination } from "@/hooks/use-pagination"
 import { useRouter } from "next/navigation"
 
 export default function HomePage() {
   const { 
-    displayedProperties, 
+    properties, 
     loading, 
-    hasMore, 
-    canShowMore, 
-    search, 
-    loadMore, 
-    showMore 
-  } = usePropertySearch()
+    error,
+    currentPage,
+    totalPages,
+    total,
+    hasNext,
+    hasPrev,
+    search,
+    goToPage,
+    nextPage,
+    prevPage
+  } = usePagination()
   const [isInitialized, setIsInitialized] = useState(false)
   const router = useRouter()
 
   // Load initial properties on page load
   useEffect(() => {
     if (!isInitialized) {
-      // Load some featured properties for the homepage
-      search({ limit: 20 })
+      console.log('Loading initial properties...')
+      search({}) // Load all properties (no filters)
       setIsInitialized(true)
     }
   }, [search, isInitialized])
@@ -36,9 +41,9 @@ export default function HomePage() {
   const handleSearchResults = (searchData: any) => {
     // Redirect to search page with parameters
     const params = new URLSearchParams()
-    Object.entries(searchData).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        params.append(key, value.toString())
+    Object.entries(searchData || {}).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        params.append(key, String(value))
       }
     })
     router.push(`/search?${params.toString()}`)
@@ -71,22 +76,39 @@ export default function HomePage() {
         </div>
       </div>
 
-      <EnhancedPropertyGrid
-        properties={displayedProperties}
+      <PaginatedPropertyGrid
+        properties={properties}
         loading={loading}
-        hasMore={hasMore}
-        canShowMore={canShowMore}
-        onLoadMore={loadMore}
-        onShowMore={showMore}
+        error={error}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        total={total}
+        hasNext={hasNext}
+        hasPrev={hasPrev}
+        onPageChange={goToPage}
+        onNext={nextPage}
+        onPrev={prevPage}
         onToggleFavorite={(propertyId) => {
           console.log('Toggle favorite for property:', propertyId)
           // TODO: Implement favorite toggle API call
         }}
       />
 
+      {/* Debug info - remove in production */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="fixed bottom-4 right-4 bg-black text-white p-4 rounded text-xs max-w-xs">
+          <div>Properties: {properties.length}</div>
+          <div>Page: {currentPage}/{totalPages}</div>
+          <div>Total: {total}</div>
+          <div>Loading: {loading ? 'true' : 'false'}</div>
+          <div>Has Next: {hasNext ? 'true' : 'false'}</div>
+          <div>Has Prev: {hasPrev ? 'true' : 'false'}</div>
+        </div>
+      )}
+
       <InspirationSection />
       <Footer />
       <AiChatBubble />
     </main>
-  );
+  )
 }

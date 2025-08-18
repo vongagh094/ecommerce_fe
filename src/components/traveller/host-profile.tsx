@@ -29,14 +29,14 @@ export function HostProfile({ host }: HostProfileProps) {
   return (
     <div className="border-t pt-8">
       <h3 className="text-lg font-semibold text-gray-900 mb-6">Meet your host</h3>
-      
+
       <div className="bg-gray-50 rounded-2xl p-6">
         <div className="flex items-start space-x-6">
           {/* Host Avatar and Basic Info */}
           <div className="text-center">
             <Avatar className="h-20 w-20 mx-auto mb-3">
-              <AvatarImage 
-                src={host.profile_image_url} 
+              <AvatarImage
+                src={host.profile_image_url}
                 alt={host.full_name}
               />
               <AvatarFallback className="text-lg">
