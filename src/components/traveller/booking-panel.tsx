@@ -67,7 +67,7 @@ export function BookingPanel({
     }
      console.log(selectedAuction?.id)
     // using hook biding
-    const { isSubmitting, error, handleBid } = useBidding(bidData)
+    const {isSuccess, isSubmitting, error, handleBid } = useBidding(bidData)
 
 
 
@@ -97,7 +97,7 @@ export function BookingPanel({
                     description: "Please wait while your bid is being processed",
                 })
             }
-            if (!error) {
+            if (isSuccess) {
                 toast({
                     title: "Bid Submitted Successfully! 🎉",
                     description: `Your bid of $${totalBid} for ${selectedNights} nights has been submitted`,

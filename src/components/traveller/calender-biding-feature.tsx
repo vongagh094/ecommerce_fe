@@ -1,5 +1,5 @@
 "use client"
-import { useState, useEffect } from "react"
+import {useState, useEffect, useMemo, useCallback} from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/biding/card"
 import { Button } from "@/components/ui/biding/button"
 import { Badge } from "@/components/ui/badge"
@@ -7,6 +7,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/biding/dialog"
 import { useToast } from "@/hooks/use-toast"
 import { useAuctionCalendarContext } from "@/contexts/auction-calendar-context";
+import SimpleCountdownTimer from "@/components/traveller/PollingCountDown"
 import {
     ChevronLeft,
     ChevronRight,
@@ -82,8 +83,9 @@ export function CalenderBidingFeature({ property_id }: CalendarBidingProps) {
     const [loading, setLoading] = useState(false)
     const [calendarData, setCalendarData] = useState<DayData[]>([])
     const [tripSuggestions, setTripSuggestions] = useState<TripSuggestion[]>([])
+    const [refreshCount, setRefreshCount] = useState(0)
+    const [lastRefresh, setLastRefresh] = useState<Date | null>(null)
 
-    // ==================== FIXED NIGHTS CALCULATION ====================
 
     // Helper function to calculate nights properly
     const calculateNights = (dates: Date[]): number => {
@@ -110,12 +112,23 @@ export function CalenderBidingFeature({ property_id }: CalendarBidingProps) {
     // ==================== REST OF THE COMPONENT ====================
 
     // Fetch calendar data from API
-    const fetchCalendarData = async (month: number, year: number) => {
+    const fetchCalendarData = useCallback(async (month: number, year: number, source = 'unknown') => {
         if (!selectedAuction) {
+            console.log('⚠️ No selectedAuction, clearing calendar data');
             setCalendarData([]);
             return;
         }
+
+        console.log('🔄 Fetching calendar data...', {
+            month,
+            year,
+            source,
+            auctionId: selectedAuction.id,
+            timestamp: new Date().toLocaleTimeString()
+        });
+
         setLoading(true)
+
         try {
             const response = await fetch(
                 `http://localhost:8000/calendar/properties/${property_id}/calendar?auction_id=${selectedAuction.id}&month=${month}&year=${year}`,
@@ -138,15 +151,30 @@ export function CalenderBidingFeature({ property_id }: CalendarBidingProps) {
                 date: new Date(day.date)
             }))
 
+            console.log('✅ Calendar data received:', {
+                count: calendarDataWithDates.length,
+                source,
+                firstDay: calendarDataWithDates[0]?.date.toDateString(),
+                lastDay: calendarDataWithDates[calendarDataWithDates.length - 1]?.date.toDateString(),
+                sampleData: calendarDataWithDates.slice(0, 2)
+            });
+
+            // 🎯 UPDATE STATE - This should trigger calendarGrid recalculation
             setCalendarData(calendarDataWithDates)
 
-            // Fetch trip suggestions nếu API có
+            // Track refresh
+            if (source === 'timer') {
+                setRefreshCount(prev => prev + 1);
+                setLastRefresh(new Date());
+            }
+
+            // Fetch trip suggestions
             if (responseData.trip_suggestions) {
                 setTripSuggestions(responseData.trip_suggestions)
             }
 
         } catch (error) {
-            console.error('Error fetching calendar data:', error)
+            console.error('❌ Error fetching calendar data:', error)
             toast({
                 title: "Error",
                 description: "Failed to load calendar data",
@@ -155,7 +183,7 @@ export function CalenderBidingFeature({ property_id }: CalendarBidingProps) {
         } finally {
             setLoading(false)
         }
-    }
+    }, [selectedAuction, property_id, toast])
 
     // Generate calendar grid với bidding window logic
     const generateCalendarGrid = () => {
@@ -231,7 +259,86 @@ export function CalenderBidingFeature({ property_id }: CalendarBidingProps) {
 
         return calendarGrid
     }
+    const calendarGrid = useMemo(() => {
+        console.log('🔄 Regenerating calendar grid...', {
+            calendarDataLength: calendarData.length,
+            currentMonth: format(currentMonth, "MMM yyyy"),
+            timestamp: new Date().toLocaleTimeString()
+        });
 
+        const year = currentMonth.getFullYear()
+        const month = currentMonth.getMonth()
+
+        const firstDayOfMonth = new Date(year, month, 1)
+        const lastDayOfMonth = new Date(year, month + 1, 0)
+        const startingDayOfWeek = firstDayOfMonth.getDay()
+        const daysInMonth = lastDayOfMonth.getDate()
+
+        const grid = []
+
+        // Empty cells for days before first day of month
+        for (let i = 0; i < startingDayOfWeek; i++) {
+            grid.push(null)
+        }
+
+        // Add all days in month
+        for (let day = 1; day <= daysInMonth; day++) {
+            const date = new Date(year, month, day)
+            const isInWindow = isDateInBiddingWindow(date)
+
+            // 🎯 KEY: Find data from updated calendarData
+            const dayData = calendarData.find(d => isSameDay(d.date, date))
+
+            if (dayData) {
+                // Have data from API - apply bidding window logic
+                grid.push({
+                    ...dayData,
+                    isInBiddingWindow: isInWindow,
+                    is_available: isInWindow && !dayData.is_booked,
+                    disabled: !isInWindow || dayData.is_booked
+                })
+            } else {
+                // No data from API - create default data
+                if (isInWindow && selectedAuction) {
+                    grid.push({
+                        date: date,
+                        highest_bid: selectedAuction.starting_price || 0,
+                        active_bids: 0,
+                        minimum_to_win: selectedAuction.minimum_bid || 0,
+                        base_price: selectedAuction.starting_price || 0,
+                        demand_level: "low" as const,
+                        success_rate: 0.7,
+                        is_available: true,
+                        is_booked: false,
+                        isInBiddingWindow: true,
+                        disabled: false
+                    })
+                } else {
+                    grid.push({
+                        date: date,
+                        highest_bid: 0,
+                        active_bids: 0,
+                        minimum_to_win: 0,
+                        base_price: 0,
+                        demand_level: "low" as const,
+                        success_rate: 0,
+                        is_available: false,
+                        is_booked: false,
+                        isInBiddingWindow: false,
+                        disabled: true
+                    })
+                }
+            }
+        }
+
+        console.log('✅ Calendar grid generated:', {
+            totalCells: grid.length,
+            validDays: grid.filter(d => d !== null).length,
+            availableDays: grid.filter(d => d && d.is_available).length
+        });
+
+        return grid
+    }, [calendarData, currentMonth, selectedAuction, isDateInBiddingWindow])
     // Load calendar data when the month or selectedAuction changes
     useEffect(() => {
         const month = currentMonth.getMonth() + 1
@@ -376,6 +483,13 @@ export function CalenderBidingFeature({ property_id }: CalendarBidingProps) {
         }
     }
 
+    const handleTimerRefresh = useCallback(() => {
+        console.log('⏰ Timer triggered refresh');
+        const month = currentMonth.getMonth() + 1;
+        const year = currentMonth.getFullYear();
+        fetchCalendarData(month, year, 'timer');
+    }, [currentMonth, fetchCalendarData]);
+
     const selectSuggestion = (suggestion: TripSuggestion) => {
         // IMPORTANT: Fix trip suggestion logic too
         const range = eachDayOfInterval({ start: suggestion.startDate, end: suggestion.endDate })
@@ -513,9 +627,29 @@ export function CalenderBidingFeature({ property_id }: CalendarBidingProps) {
                                 <CardTitle className="flex items-center">
                                     <CalendarIcon className="h-5 w-5 mr-2" />
                                     Bidding Calendar
+                                    {/* 🎯 Add refresh indicator */}
+                                    {refreshCount > 0 && (
+                                        <Badge variant="outline" className="ml-2 text-green-600 border-green-200">
+                                            🔄 {refreshCount} updates
+                                        </Badge>
+                                    )}
                                 </CardTitle>
-                                <CardDescription>Click dates to select your stay period (each date = 1 night)</CardDescription>
+
+                                {/* 🎯 Enhanced timer display */}
+                                <div className="flex items-center space-x-4 mt-2">
+                                    <SimpleCountdownTimer
+                                        interval={10000}
+                                        onTick={handleTimerRefresh}  // 🎯 Use proper callback
+                                        enabled={!loading}           // 🎯 Disable when loading
+                                    />
+                                    {lastRefresh && (
+                                        <div className="text-xs text-gray-500">
+                                            Last refresh: {lastRefresh.toLocaleTimeString()}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
+
                             <Button
                                 variant="outline"
                                 onClick={() => setShowBiddingCalendar(!showBiddingCalendar)}
@@ -530,6 +664,7 @@ export function CalenderBidingFeature({ property_id }: CalendarBidingProps) {
                                     {showBiddingCalendar ? "Hide" : "Show"} Calendar
                                 </span>
                             </Button>
+
                         </div>
                     </CardHeader>
                     {showBiddingCalendar && (

@@ -12,7 +12,6 @@ interface SimpleCountdownProps {
     onRefetch?: () => void; // Optional refetch callback
 }
 
-
 export const SimpleCountdown: React.FC<SimpleCountdownProps> = ({
                                                                     auction_id,
                                                                     auctionStartTime,
@@ -27,7 +26,8 @@ export const SimpleCountdown: React.FC<SimpleCountdownProps> = ({
     );
     // Ref để track xem đã update status chưa
     const hasUpdatedStatus = useRef(false);
-    const previousIsEnded = useRef(false);
+    const previousIsEnded = useRef(false);// Thêm vào đầu componen
+
 
     // Format time với leading zero
     const formatTime = (value: number): string => {
