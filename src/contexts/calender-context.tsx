@@ -1,6 +1,6 @@
 "use client"
 import {createContext, useContext} from "react";
-import {useBidingState} from "@/hooks/use-bidding";
+import {useBidingState} from "@/hooks/use-calendar";
 interface DayData {
     date: Date
     highest_bid: number

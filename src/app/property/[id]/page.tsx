@@ -6,9 +6,10 @@ import { PropertyAmenities } from "@/components/traveller/property-amenities"
 import { PropertyReviews } from "@/components/traveller/property-reviews"
 import { PropertyLocation } from "@/components/traveller/property-location"
 import { HostProfile } from "@/components/traveller/host-profile"
-import {CalenderBidingFeature} from "@/components/traveller/calender-biding-feature";
-import {CalendarProvider} from "@/contexts/calender-context";
-
+import {CalenderBidingFeature} from "@/components/traveller/calender-biding-feature"
+import {CalendarProvider} from "@/contexts/calender-context"
+import SimpleAuctionSelector from "@/components/traveller/auction-infor-biding"
+import {AuctionProvider} from "@/contexts/auction-calendar-context"
 interface PropertyPageProps {
   params: {
     id: string
@@ -56,12 +57,6 @@ export default function PropertyPage({ params }: PropertyPageProps) {
         value: 4.9,
       },
     },
-      auction:{
-        id: "22222222-2222-2222-2222-222222222222",
-          auction_start_time: "2025-01-01T00:00:00Z",
-          auction_end_time: "2025-08-23T00:00:00Z",
-          current_highest_bid: 1000000, 
-      }
   }
     const booking = "10000002-1000-1000-1000-100000000002"
     const users = 1
@@ -69,7 +64,6 @@ export default function PropertyPage({ params }: PropertyPageProps) {
     // @ts-ignore
 
     return (
-        <CalendarProvider>
             <div className="min-h-screen bg-white">
               <PropertyHeader />
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -96,31 +90,33 @@ export default function PropertyPage({ params }: PropertyPageProps) {
                 <PropertyGallery images={property.images} />
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 mt-12">
-                  <div className="lg:col-span-2 space-y-12">
-                      <CalenderBidingFeature property_id={Number(property.id)}/>
-                      <PropertyDetails host={property.host} details={property.details} description={property.description} />
-                      <PropertyAmenities amenities={property.amenities} />
-                      <PropertyReviews reviews = {property.reviews}
-                                       propertyId={property.id}
-                                       reviewerId={1}
-                                       revieweeId={property.host.id}
-                                       bookingId = {booking}
-                      />
-                      <PropertyLocation />
-                    {/*<HostProfile />*/}
-                  </div>
+                    <AuctionProvider>
+                        <CalendarProvider>
+                          <div className="lg:col-span-2 space-y-12">
+                              <CalenderBidingFeature property_id={Number(property.id)}/>
+                              <PropertyDetails host={property.host} details={property.details} description={property.description} />
+                              <PropertyAmenities amenities={property.amenities} />
+                              <PropertyReviews reviews = {property.reviews}
+                                               propertyId={property.id}
+                                               reviewerId={1}
+                                               revieweeId={property.host.id}
+                                               bookingId = {booking}
+                              />
+                              <PropertyLocation />
 
-                  <div className="lg:col-span-1">
-                    <BookingPanel user_id={users}
-                                  property_id={Number(property.id)}
-                                  auction_id={property.auction.id}
+                            {/*<HostProfile />*/}
+                          </div>
 
-
-                    />
-                  </div>
+                          <div className="lg:col-span-1">
+                                <SimpleAuctionSelector propertyId={Number(property.id)}/>
+                                <BookingPanel user_id={users}
+                                          property_id={Number(property.id)}
+                                />
+                          </div>
+                        </CalendarProvider>
+                    </AuctionProvider>
                 </div>
               </div>
             </div>
-        </CalendarProvider>
   )
 }

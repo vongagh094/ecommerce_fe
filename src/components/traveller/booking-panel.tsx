@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast"
 import { useCalendarContext } from "@/contexts/calender-context"
 import {BidData} from "@/types/bidding";
 import { useBidding } from "@/hooks/use-bidding";
+import { useAuctionCalendarContext } from "@/contexts/auction-calendar-context";
 import {
     CalendarDays,
     DollarSign,
@@ -30,14 +31,14 @@ import {boolean} from "zod";
 interface BidingProps{
     user_id: number,
     property_id: number,
-    auction_id: string,
 }
 export function BookingPanel({
                                  user_id,
-                                 property_id,
-                                 auction_id}: BidingProps) {
+                                 property_id}: BidingProps) {
     const { toast } = useToast()
 
+
+    const {selectedAuction} = useAuctionCalendarContext()
     // Use shared booking state
     const {
         selectedDates,
@@ -50,11 +51,12 @@ export function BookingPanel({
         bidPerNight
     } = useCalendarContext()
 
+
     // @ts-ignore
     const bidData : BidData = {
         user_id: user_id,
         property_id: property_id,
-        auction_id: auction_id,
+        auction_id: selectedAuction?.id || "00000000-0000-0000-0000-000000000000",
         bid_amount: totalBid,
         bid_time: new Date().toISOString(),
         check_in: selectedDates.length > 0 ? format(selectedDates[0], "yyyy-MM-dd") : "",
@@ -63,10 +65,11 @@ export function BookingPanel({
         partial_awarded:!allowPartial, // set to false if allow_partial is false
         created_at: new Date().toISOString()
     }
-
+     console.log(selectedAuction?.id)
     // using hook biding
-
     const { isSubmitting, error, handleBid } = useBidding(bidData)
+
+
 
     const handleSubmitBid = async () => {
         if (!selectedDates.length || !totalBid) {
@@ -88,7 +91,12 @@ export function BookingPanel({
 
         try {
             await handleBid(bidData)
-
+            if (isSubmitting) {
+                toast({
+                    title: "Submitting Bid...",
+                    description: "Please wait while your bid is being processed",
+                })
+            }
             if (!error) {
                 toast({
                     title: "Bid Submitted Successfully! 🎉",
