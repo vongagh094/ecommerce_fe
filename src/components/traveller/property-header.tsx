@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 
 interface PropertyHeaderProps {
   title: string
-  rating: number
+  rating: string
   reviewCount: number
   location: string
   isSuperhost?: boolean

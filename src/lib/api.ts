@@ -3,7 +3,6 @@ import {
   FilterParams, 
   SearchResponse, 
   PropertyDetails, 
-  Category, 
   Amenity 
 } from "@/types"
 import { apiClient, buildQueryString, ApiError } from './api/base'
@@ -97,8 +96,8 @@ export const propertyApi = {
 
   // Get categories list (public - no auth required)
   // GET /api/v1/properties/categories
-  getCategories: async (): Promise<Category[]> => {
-    const response = await apiClient.get<{ categories: Category[] }>('/properties/categories')
+  getCategories: async (): Promise<string[]> => {
+    const response = await apiClient.get<{ categories: string[] }>('/properties/categories')
     return response.categories
   },
 

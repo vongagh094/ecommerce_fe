@@ -11,7 +11,7 @@ import { paymentApi } from "@/lib/api/payment"
 import { PaymentSession, PaymentStatus } from "@/types/payment"
 import { paymentWebSocketHandler } from "@/lib/websocket"
 import type { PaymentNotificationMessage } from "@/types/auction-winners"
-import { useAuth0 } from "@/contexts/auth0-context"
+import { useAuth0 } from "@auth0/auth0-react"
 
 export default function ZaloPayProcessingPage({ params }: { params: { sessionId: string } }) {
   const router = useRouter()

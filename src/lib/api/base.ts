@@ -2,8 +2,6 @@
  * Base API client with authentication and error handling
  */
 
-import { getAccessToken } from '../auth0'
-
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
 
 export class ApiError extends Error {
@@ -21,13 +19,14 @@ export class ApiError extends Error {
 interface ApiRequestOptions extends RequestInit {
   requireAuth?: boolean
   skipAuthRefresh?: boolean
+  getAccessTokenSilently?: (() => Promise<string>) | null
 }
 
 /**
  * Enhanced API wrapper with authentication and error handling
  */
 async function fetchApi<T>(endpoint: string, options: ApiRequestOptions = {}): Promise<T> {
-  const { requireAuth = false, skipAuthRefresh = false, ...fetchOptions } = options
+  const { requireAuth = false, skipAuthRefresh = false, getAccessTokenSilently = null, ...fetchOptions } = options
   const url = `${API_BASE_URL}${endpoint}`
   
   // Prepare headers
@@ -36,10 +35,12 @@ async function fetchApi<T>(endpoint: string, options: ApiRequestOptions = {}): P
     ...(fetchOptions.headers as Record<string, string>),
   }
 
-  // Add authentication token if required or available
-  if (requireAuth || (!skipAuthRefresh && typeof window !== 'undefined')) {
+  // Add authentication token if required or available (client-side only)
+  const tokenGetter = getAccessTokenSilently || (typeof window !== 'undefined' ? (window as any).__getAccessTokenSilently : null)
+  if ((requireAuth || !skipAuthRefresh) && typeof window !== 'undefined' && tokenGetter) {
     try {
-      const token = await getAccessToken()
+      const token = await tokenGetter()
+      console.log('token', token)
       if (token) {
         headers.Authorization = `Bearer ${token}`
       } else if (requireAuth) {
@@ -60,28 +61,6 @@ async function fetchApi<T>(endpoint: string, options: ApiRequestOptions = {}): P
 
     // Handle authentication errors
     if (response.status === 401) {
-      if (!skipAuthRefresh && typeof window !== 'undefined') {
-        // Try to refresh token once
-        try {
-          const { refreshToken } = await import('../auth0')
-          const newToken = await refreshToken()
-          if (newToken) {
-            // Retry request with new token
-            headers.Authorization = `Bearer ${newToken}`
-            const retryResponse = await fetch(url, {
-              ...fetchOptions,
-              headers,
-            })
-            
-            if (retryResponse.ok) {
-              return await retryResponse.json()
-            }
-          }
-        } catch (refreshError) {
-          console.error('Token refresh failed:', refreshError)
-        }
-      }
-      
       throw new ApiError(401, 'Authentication failed', 'AUTH_FAILED')
     }
 

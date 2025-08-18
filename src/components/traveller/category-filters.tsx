@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useRouter, usePathname, useSearchParams } from "next/navigation"
 import { propertyApi } from "@/lib/api"
 import { Category } from "@/types"
+import { getCategoryIconByCode, getCategoryLabelByCode } from "./category-icons"
 
 interface CategoryFiltersProps {
   onCategoryChange: (category: string | null) => void
@@ -11,7 +12,7 @@ interface CategoryFiltersProps {
 }
 
 export function CategoryFilters({ onCategoryChange, selectedCategory: propSelectedCategory }: CategoryFiltersProps) {
-  const [categories, setCategories] = useState<Category[]>([])
+  const [categories, setCategories] = useState<string []>([])
   const [loading, setLoading] = useState(true)
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const router = useRouter()
@@ -81,44 +82,51 @@ export function CategoryFilters({ onCategoryChange, selectedCategory: propSelect
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 border-b border-gray-200">
       <div className="flex space-x-8 overflow-x-auto pb-4">
-        {categories.map((category) => (
-          <button
-            key={category.name}
-            onClick={() => handleCategoryClick(category.name)}
-            className={`flex flex-col items-center space-y-2 min-w-[80px] group ${
-              selectedCategory === category.name
-                ? "opacity-100"
-                : "opacity-70 hover:opacity-100"
-            }`}
-          >
-            <div
-              className={`w-16 h-16 rounded-full flex items-center justify-center bg-gray-100 group-hover:bg-gray-200 transition-colors ${
-                selectedCategory === category.name
-                  ? "border-2 border-black"
-                  : "border border-gray-200"
+        {categories.map((category) => {
+          const IconComp = getCategoryIconByCode(category)
+          const displayName = getCategoryLabelByCode(category)
+
+          return (
+            <button
+              key={category}
+              onClick={() => handleCategoryClick(category)}
+              className={`flex flex-col items-center space-y-2 min-w-[80px] group ${
+                selectedCategory === category
+                  ? "opacity-100"
+                  : "opacity-70 hover:opacity-100"
               }`}
             >
-              <span className="text-2xl">
-                {getCategoryEmoji(category.name)}
+              <div
+                className={`w-16 h-16 rounded-full flex items-center justify-center bg-gray-100 group-hover:bg-gray-200 transition-colors ${
+                  selectedCategory === category
+                    ? "border-2 border-black"
+                    : "border border-gray-200"
+                }`}
+              >
+                {IconComp ? (
+                  <IconComp className="h-6 w-6 text-gray-700" />
+                ) : (
+                  <span className="text-2xl">{getCategoryEmoji(category)}</span>
+                )}
+              </div>
+              <span
+                className={`text-sm ${
+                  selectedCategory === category
+                    ? "font-medium"
+                    : "text-gray-600"
+                }`}
+              >
+                {displayName}
               </span>
-            </div>
-            <span
-              className={`text-sm ${
-                selectedCategory === category.name
-                  ? "font-medium"
-                  : "text-gray-600"
-              }`}
-            >
-              {category.display_name}
-            </span>
-          </button>
-        ))}
+            </button>
+          )
+        })}
       </div>
     </div>
   )
 }
 
-// Helper function to get emoji for category
+// Helper function to get emoji for category (fallback)
 function getCategoryEmoji(categoryName: string): string {
   const emojiMap: Record<string, string> = {
     beach: "🏖️",

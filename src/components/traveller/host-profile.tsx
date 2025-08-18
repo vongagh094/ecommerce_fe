@@ -62,7 +62,7 @@ export function HostProfile({ host }: HostProfileProps) {
                 <div className="flex items-center space-x-1 mb-1">
                   <Star className="h-4 w-4 fill-current text-gray-900" />
                   <span className="font-semibold text-gray-900">
-                    {host.host_rating_average?.toFixed(1) || 'New'}
+                    {host.host_rating_average || 'New'}
                   </span>
                 </div>
                 <p className="text-sm text-gray-600">

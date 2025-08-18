@@ -83,13 +83,15 @@ export interface PropertyCard {
   title: string;
   images: PropertyImage[];
   base_price: number;
+  cleaning_fee: number;
+  service_fee: number;
   location: {
     city: string;
     state: string;
     country: string;
   };
   rating: {
-    average: number;
+    average: string;
     count: number;
   };
   property_type: string;
@@ -233,6 +235,10 @@ export interface PropertyDetails {
   max_guests: number;
   bedrooms: number;
   bathrooms: number;
+  rating: {
+    average: string;
+    count: number;
+  };
   location: {
     address_line1: string;
     city: string;
@@ -242,11 +248,9 @@ export interface PropertyDetails {
     latitude: number;
     longitude: number;
   };
-  pricing: {
-    base_price: number;
-    cleaning_fee: number;
-    service_fee: number;
-  };
+  base_price: number;
+  cleaning_fee: number;
+  service_fee: number;
   policies: {
     cancellation_policy: string;
     instant_book: boolean;

@@ -117,9 +117,9 @@ export function PaginatedPropertyGrid({
                             </div>
                             <div className="flex items-center space-x-1">
                                 <Star className="h-4 w-4 fill-current text-gray-900" />
-                                {typeof property.rating?.average === 'number' ? (
+                                {typeof property.rating?.average === 'string' ? (
                                     <span className="text-sm text-gray-900">
-                                        {property.rating.average.toFixed(1)}
+                                        {property.rating.average.substring(0, 4)}
                                     </span>
                                 ) : (
                                     <span className="text-sm text-gray-500">N/A</span>

@@ -2,16 +2,15 @@
 
 import { useState, useEffect } from 'react'
 import { propertyApi } from '@/lib/api'
-import { Category } from '@/types'
 
 interface UseCategoriesResult {
-  categories: Category[]
+  categories: string[]
   loading: boolean
   error: string | null
 }
 
 export function useCategories(): UseCategoriesResult {
-  const [categories, setCategories] = useState<Category[]>([])
+  const [categories, setCategories] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 

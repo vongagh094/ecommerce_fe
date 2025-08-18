@@ -33,7 +33,32 @@ export function PropertyLocation({ location, locationDescriptions }: PropertyLoc
       window.open(`https://www.google.com/maps/dir/?api=1&destination=${query}`, '_blank')
     }
   }
+  
+  const constructLocationString = () => {
+    let locationString = []
+    if (location.city) {
+      locationString.push(location.city)
+    }
+    if (location.state) {
+      locationString.push(location.state)
+    }
+    if (location.country) {
+      locationString.push(location.country)
+    }
+    return locationString.join(', ')
+  }
 
+  const constructAddressString = () => {
+    let addressString = []
+    if (location.address_line1) {
+      addressString.push(location.address_line1)
+    }
+    if (location.postal_code) {
+      addressString.push(location.postal_code)
+    }
+    return addressString.join(', ')
+  }
+    
   return (
     <div className="border-t pt-8">
       <h3 className="text-lg font-semibold text-gray-900 mb-6">Where you'll be</h3>
@@ -44,11 +69,10 @@ export function PropertyLocation({ location, locationDescriptions }: PropertyLoc
           <MapPin className="h-5 w-5 text-gray-600 mt-1" />
           <div>
             <p className="text-gray-900 font-medium">
-              {location.city}, {location.state}, {location.country}
+              {constructLocationString()}
             </p>
             <p className="text-gray-600 text-sm mt-1">
-              {location.address_line1}
-              {location.postal_code && `, ${location.postal_code}`}
+              {constructAddressString()}
             </p>
           </div>
         </div>

@@ -66,8 +66,8 @@ export default function PropertyPage() {
       {/* Property Header */}
       <PropertyHeader
         title={property.title}
-        rating={property.reviews.average_rating}
-        reviewCount={property.reviews.total_reviews}
+        rating={property.rating.average}
+        reviewCount={property.rating.count}
         location={`${property.location.city}, ${property.location.state}, ${property.location.country}`}
         isSuperhost={property.host.is_super_host}
       />
@@ -93,6 +93,7 @@ export default function PropertyPage() {
               bathrooms={property.bathrooms}
               description={property.description}
               highlights={property.highlights}
+
             />
 
             {/* Amenities */}
@@ -117,13 +118,13 @@ export default function PropertyPage() {
           {/* Booking Panel */}
           <div className="lg:col-span-1">
             <BookingPanel
-              currentBid={property.active_auctions[0]?.current_highest_bid || property.pricing.base_price}
-              lowestOffer={property.pricing.base_price}
+              currentBid={property.active_auctions[0]?.current_highest_bid || property.base_price}
+              lowestOffer={property.base_price}
               timeLeft={property.active_auctions[0] ? "2h 30m" : "No active auction"}
               propertyId={property.id}
-              basePrice={property.pricing.base_price}
-              cleaningFee={property.pricing.cleaning_fee}
-              serviceFee={property.pricing.service_fee}
+              basePrice={property.base_price}
+              cleaningFee={property.cleaning_fee}
+              serviceFee={property.service_fee}
               availabilityCalendar={property.availability_calendar}
               activeAuctions={property.active_auctions}
             />

@@ -23,19 +23,22 @@ interface UsePaginationResult {
 
 // Helper function to transform PropertyDetails to PropertyCard
 const transformToPropertyCard = (property: PropertyDetails): PropertyCard => {
+  console.log("property", property)
   return {
     id: property.id,
     title: property.title,
     images: property.images || [],
-    base_price: property.pricing?.base_price || 0,
+    base_price: property.base_price || 0,
+    cleaning_fee: property.cleaning_fee || 0,
+    service_fee: property.service_fee || 0,
     location: {
       city: property.location?.city || '',
       state: property.location?.state || '',
       country: property.location?.country || ''
     },
     rating: {
-      average: property.reviews?.average_rating || 0,
-      count: property.reviews?.total_reviews || 0
+      average: property.rating?.average || '0',
+      count: property.rating?.count || 0
     },
     property_type: property.property_type || '',
     max_guests: property.max_guests || 0,
