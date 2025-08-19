@@ -20,11 +20,20 @@ export function SignupModal({ isOpen, onClose, onSignup, onSwitchToLogin }: Sign
 	const [loading, setLoading] = useState(false)
 	const { loginWithRedirect } = useAuth0()
 
+	const currentReturnTo = typeof window !== 'undefined' ? `${window.location.pathname}${window.location.search}${window.location.hash}` : '/'
+
+	const saveReturnUrl = () => {
+		if (typeof window !== 'undefined') {
+			localStorage.setItem('auth_return_url', currentReturnTo)
+		}
+	}
+
 	const handleSignup = async () => {
 		try {
 			setLoading(true)
+			saveReturnUrl()
 			await loginWithRedirect({
-				appState: { returnTo: "/" },
+				appState: { returnTo: currentReturnTo },
 				authorizationParams: { screen_hint: "signup" as any },
 			})
 			onSignup?.()

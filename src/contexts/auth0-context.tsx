@@ -1,8 +1,9 @@
 'use client'
 import { Auth0Provider as Auth0SPAProvider, useAuth0 as useAuth0React } from '@auth0/auth0-react'
-import { ReactNode, useMemo, useEffect, useRef } from 'react'
+import { ReactNode, useMemo, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { userApi } from '@/lib/api/user'
+import { useAuth } from './auth-context'
 
 interface Auth0ProviderProps {
   children: ReactNode
@@ -22,29 +23,51 @@ function Auth0TokenBridge() {
 }
 
 function Auth0SyncUser() {
-  const { isAuthenticated, user } = useAuth0React()
+  const { isAuthenticated, user, getAccessTokenSilently } = useAuth0React()
+  const { login } = useAuth()
   const syncedRef = useRef(false)
+  const [isSyncing, setIsSyncing] = useState(false)
 
   useEffect(() => {
     const doSync = async () => {
-      if (!isAuthenticated || !user || syncedRef.current) return
+      if (!isAuthenticated || !user || syncedRef.current || isSyncing) return
+      
       try {
+        setIsSyncing(true)
         const auth0UserId = (user as any).sub as string
         const email = (user as any).email as string
         const emailVerified = Boolean((user as any).email_verified)
         const name = (user as any).name as string | undefined
         const picture = (user as any).picture as string | undefined
-        if (auth0UserId && email) {
-          await userApi.syncAuth0User({ auth0UserId, email, emailVerified, name, picture })
+        
+        const accessToken = await getAccessTokenSilently()
+
+        let appUser = null as null | { id: string, name?: string | null, picture?: string | null }
+        try {
+          // Best effort backend sync
+          appUser = await userApi.syncAuth0User({ auth0UserId, email, emailVerified, name, picture })
+        } catch (err) {
+          console.warn('User sync failed (non-fatal):', err)
         }
-      } catch (err) {
-        console.warn('User sync failed (non-fatal):', err)
-      } finally {
+
+        // Always set our app session so cookies/UI state are present
+        await login({
+          id: appUser?.id || auth0UserId,
+          name: (appUser?.name || name || email.split('@')[0]) as string,
+          email,
+          avatar: (appUser?.picture || picture) as string | undefined,
+        }, accessToken)
+
         syncedRef.current = true
+      } catch (err) {
+        console.warn('Auth0 bridge failed:', err)
+      } finally {
+        setIsSyncing(false)
       }
     }
+    
     doSync()
-  }, [isAuthenticated, user])
+  }, [isAuthenticated, user, getAccessTokenSilently, login, isSyncing])
 
   return null
 }
@@ -61,6 +84,15 @@ export function Auth0Provider({ children }: Auth0ProviderProps) {
     return `${window.location.origin}/callback`
   }, [])
 
+  const handleRedirectCallback = (appState: any) => {
+    const savedReturnUrl = typeof window !== 'undefined' ? localStorage.getItem('auth_return_url') : null
+    const redirectTo = savedReturnUrl || (appState?.returnTo || '/')
+    if (savedReturnUrl && typeof window !== 'undefined') {
+      localStorage.removeItem('auth_return_url')
+    }
+    router.replace(redirectTo)
+  }
+
   return (
     <Auth0SPAProvider
       domain={domain}
@@ -68,13 +100,11 @@ export function Auth0Provider({ children }: Auth0ProviderProps) {
       authorizationParams={{
         redirect_uri: redirectUri,
         audience,
-        scope: 'openid profile email',
+        scope: 'openid profile email offline_access',
       }}
-      onRedirectCallback={(appState) => {
-        router.replace((appState as any)?.returnTo || '/')
-      }}
+      onRedirectCallback={handleRedirectCallback}
       useRefreshTokens
-      cacheLocation="memory"
+      cacheLocation="localstorage"
     >
       <Auth0TokenBridge />
       <Auth0SyncUser />
@@ -83,5 +113,4 @@ export function Auth0Provider({ children }: Auth0ProviderProps) {
   )
 }
 
-// Re-export hook so existing imports continue to work
 export const useAuth0 = useAuth0React

@@ -1,13 +1,30 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { CreditCard, Shield, Clock, AlertCircle, CheckCircle } from "lucide-react"
+import { CreditCard, Shield, Clock, AlertCircle, CheckCircle, LogIn } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { BookingDetails, PaymentError } from "@/types/payment"
 import { paymentApi, paymentUtils, PaymentErrorHandler } from "@/lib/api/payment"
 import { v4 as uuidv4 } from 'uuid'
+import { useAuth } from "@/contexts/auth-context"
+import { useAuth0 } from "@/contexts/auth0-context"
+
+// Deterministic date formatter to avoid SSR/CSR locale/timezone mismatches
+const formatDate = (isoDateString: string): string => {
+  try {
+    const date = new Date(isoDateString)
+    return new Intl.DateTimeFormat('vi-VN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      timeZone: 'UTC',
+    }).format(date)
+  } catch {
+    return isoDateString
+  }
+}
 
 interface ZaloPayPaymentProps {
   bookingDetails: BookingDetails
@@ -24,11 +41,13 @@ export function ZaloPayPayment({
   onPaymentError,
   onPaymentCancel
 }: ZaloPayPaymentProps) {
-  const [paymentState, setPaymentState] = useState<'idle' | 'creating' | 'redirecting' | 'verifying' | 'completed' | 'failed'>('idle')
+  const [paymentState, setPaymentState] = useState<'idle' | 'creating' | 'redirecting' | 'verifying' | 'completed' | 'failed' | 'auth_required'>('idle')
   const [error, setError] = useState<string | null>(null)
   const [appTransId, setAppTransId] = useState<string | null>(null)
   const [verificationAttempts, setVerificationAttempts] = useState(0)
   const maxVerificationAttempts = 10
+  const { isLoggedIn } = useAuth()
+  const { loginWithRedirect } = useAuth0()
 
   // Check for return from ZaloPay
   useEffect(() => {
@@ -40,10 +59,36 @@ export function ZaloPayPayment({
     }
   }, [])
 
+  const handleLogin = () => {
+    // Save current URL for return after login
+    if (typeof window !== 'undefined') {
+      const currentUrl = window.location.href
+      localStorage.setItem('auth_return_url', currentUrl)
+    }
+    
+    // Redirect to login
+    loginWithRedirect({
+      appState: { 
+        returnTo: typeof window !== 'undefined' ? window.location.href : '/' 
+      }
+    })
+  }
+
   const handlePaymentInitiation = async () => {
+    if (!isLoggedIn) {
+      setPaymentState('auth_required')
+      return
+    }
+
     if (!paymentUtils.validatePaymentAmount(amount)) {
       setError('Invalid payment amount')
       return
+    }
+
+    // Save current URL to localStorage for redirect after payment
+    if (typeof window !== 'undefined') {
+      const currentUrl = window.location.href
+      localStorage.setItem('payment_return_url', currentUrl)
     }
 
     // Mock mode: bypass backend and redirect to local session page
@@ -68,17 +113,15 @@ export function ZaloPayPayment({
       const orderInfo = paymentUtils.generateOrderInfo(
         bookingDetails.propertyName,
         bookingDetails.checkIn,
-        bookingDetails.checkOut
+        bookingDetails.checkOut,
       )
       const auctionId = uuidv4()
-      // get current url after first slash
-      const redirectParams = window.location.href.split('/')[1]
       const paymentRequest = {
         auctionId,
         selectedNights: bookingDetails.selectedNights,
         amount,
         orderInfo,
-        redirectParams
+        redirectParams: bookingDetails.redirectParams
       }
 
       const response = await paymentApi.createPayment(paymentRequest)
@@ -93,10 +136,16 @@ export function ZaloPayPayment({
 
     } catch (error: any) {
       console.error('Payment creation failed:', error)
-      const errorAction = PaymentErrorHandler.handlePaymentError(error)
-      setError(errorAction.message)
-      setPaymentState('failed')
-      onPaymentError(error)
+      
+      // Check if error is authentication related
+      if (error.status === 401 || error.code === 'AUTH_REQUIRED' || error.code === 'AUTH_FAILED' || error.code === 'AUTH_TOKEN_ERROR') {
+        setPaymentState('auth_required')
+      } else {
+        const errorAction = PaymentErrorHandler.handlePaymentError(error)
+        setError(errorAction.message)
+        setPaymentState('failed')
+        onPaymentError(error)
+      }
     }
   }
 
@@ -146,6 +195,13 @@ export function ZaloPayPayment({
       }
     } catch (error: any) {
       console.error('Payment verification failed:', error)
+      
+      // Check if error is authentication related
+      if (error.status === 401 || error.code === 'AUTH_REQUIRED' || error.code === 'AUTH_FAILED' || error.code === 'AUTH_TOKEN_ERROR') {
+        setPaymentState('auth_required')
+        return
+      }
+      
       setVerificationAttempts(prev => prev + 1)
       
       // Retry verification after delay
@@ -162,6 +218,23 @@ export function ZaloPayPayment({
 
   const renderPaymentState = () => {
     switch (paymentState) {
+      case 'auth_required':
+        return (
+          <div className="text-center py-8">
+            <LogIn className="h-12 w-12 text-blue-600 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Authentication Required</h3>
+            <p className="text-gray-600 mb-6">
+              You need to be logged in to make a payment. Please log in to continue.
+            </p>
+            <Button 
+              onClick={handleLogin}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              Log In to Continue
+            </Button>
+          </div>
+        )
+
       case 'creating':
         return (
           <div className="text-center py-8">
@@ -243,13 +316,13 @@ export function ZaloPayPayment({
                 <div className="flex justify-between">
                   <span className="text-gray-600">Check-in:</span>
                   <span className="font-medium">
-                    {new Date(bookingDetails.checkIn).toLocaleDateString()}
+                    {formatDate(bookingDetails.checkIn)}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Check-out:</span>
                   <span className="font-medium">
-                    {new Date(bookingDetails.checkOut).toLocaleDateString()}
+                    {formatDate(bookingDetails.checkOut)}
                   </span>
                 </div>
                 <div className="flex justify-between">

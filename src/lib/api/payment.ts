@@ -8,6 +8,9 @@ import { PaymentSession, PaymentStatus, PaymentError, BookingDetails } from '@/t
 
 export class PaymentErrorHandler {
   static handlePaymentError(error: any): { type: string, message: string } {
+    if (error.status === 401 || error.code === 'AUTH_REQUIRED' || error.code === 'AUTH_FAILED' || error.code === 'AUTH_TOKEN_ERROR') {
+      return { type: 'AUTH_ERROR', message: 'Authentication required. Please log in again.' }
+    }
     if (error.code === 'PAYMENT_CREATION_FAILED') {
       return { type: 'RETRY', message: 'Unable to create payment. Please try again.' }
     }
@@ -61,6 +64,30 @@ export const paymentUtils = {
     const timestamp = Date.now().toString()
     const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0')
     return `PAY${timestamp}${random}`
+  },
+
+  // Save payment return URL
+  savePaymentReturnUrl: (): void => {
+    if (typeof window !== 'undefined') {
+      const currentUrl = window.location.href
+      localStorage.setItem('payment_return_url', currentUrl)
+    }
+  },
+
+  // Get payment return URL
+  getPaymentReturnUrl: (): string => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('payment_return_url') || '/'
+    }
+    return '/'
+  },
+
+  // Handle authentication error
+  handleAuthError: (): void => {
+    if (typeof window !== 'undefined') {
+      // Save current URL for return after login
+      localStorage.setItem('auth_return_url', window.location.href)
+    }
   }
 }
 
@@ -77,7 +104,15 @@ export const paymentApi = {
     appTransId: string
     amount: number
   }> => {
-    return apiClient.post('/payment/zalopay/create', paymentData, { requireAuth: true })
+    try {
+      return await apiClient.post('/payment/zalopay/create', paymentData, { requireAuth: true })
+    } catch (error: any) {
+      // Handle authentication errors specially
+      if (error.status === 401 || error.code === 'AUTH_REQUIRED' || error.code === 'AUTH_FAILED') {
+        paymentUtils.handleAuthError()
+      }
+      throw error
+    }
   },
 
   // Verify payment status
@@ -87,22 +122,54 @@ export const paymentApi = {
     amount?: number
     paidAt?: string
   }> => {
-    return apiClient.get(`/payment/zalopay/status/${appTransId}`, { requireAuth: true })
+    try {
+      return await apiClient.get(`/payment/zalopay/status/${appTransId}`, { requireAuth: true })
+    } catch (error: any) {
+      // Handle authentication errors specially
+      if (error.status === 401 || error.code === 'AUTH_REQUIRED' || error.code === 'AUTH_FAILED') {
+        paymentUtils.handleAuthError()
+      }
+      throw error
+    }
   },
 
   // Handle payment callback
   handleCallback: async (callbackData: any): Promise<void> => {
-    return apiClient.post('/payment/zalopay/callback', callbackData, { requireAuth: true })
+    try {
+      return await apiClient.post('/payment/zalopay/callback', callbackData, { requireAuth: true })
+    } catch (error: any) {
+      // Handle authentication errors specially
+      if (error.status === 401 || error.code === 'AUTH_REQUIRED' || error.code === 'AUTH_FAILED') {
+        paymentUtils.handleAuthError()
+      }
+      throw error
+    }
   },
 
   // Get payment session by ID
   getPaymentSession: async (sessionId: string): Promise<PaymentSession> => {
-    return apiClient.get(`/payment/sessions/${sessionId}`, { requireAuth: true })
+    try {
+      return await apiClient.get(`/payment/sessions/${sessionId}`, { requireAuth: true })
+    } catch (error: any) {
+      // Handle authentication errors specially
+      if (error.status === 401 || error.code === 'AUTH_REQUIRED' || error.code === 'AUTH_FAILED') {
+        paymentUtils.handleAuthError()
+      }
+      throw error
+    }
   },
 
   // Get payment by transaction ID
   getPaymentByTransactionId: async (transactionId: string): Promise<PaymentSession> => {
-    return apiClient.get(`/payment/transactions/${transactionId}`, { requireAuth: true })
+    try {
+      return await apiClient.get(`/payment/transactions/${transactionId}`, { requireAuth: true })
+    } catch (error: any) {
+      // Handle authentication errors specially
+      if (error.status === 401 || error.code === 'AUTH_REQUIRED' || error.code === 'AUTH_FAILED') {
+        paymentUtils.handleAuthError()
+      }
+      throw error
+    }
   },
 
   // Create booking after successful payment
@@ -119,7 +186,15 @@ export const paymentApi = {
     status: 'CONFIRMED' | 'PENDING' | 'CANCELLED'
     createdAt: string
   }> => {
-    return apiClient.post(`/payment/${paymentId}/booking`, {}, { requireAuth: true })
+    try {
+      return await apiClient.post(`/payment/${paymentId}/booking`, {}, { requireAuth: true })
+    } catch (error: any) {
+      // Handle authentication errors specially
+      if (error.status === 401 || error.code === 'AUTH_REQUIRED' || error.code === 'AUTH_FAILED') {
+        paymentUtils.handleAuthError()
+      }
+      throw error
+    }
   },
 
   // Get booking by payment ID
@@ -136,23 +211,55 @@ export const paymentApi = {
     status: 'CONFIRMED' | 'PENDING' | 'CANCELLED'
     createdAt: string
   }> => {
-    return apiClient.get(`/payment/${paymentId}/booking`, { requireAuth: true })
+    try {
+      return await apiClient.get(`/payment/${paymentId}/booking`, { requireAuth: true })
+    } catch (error: any) {
+      // Handle authentication errors specially
+      if (error.status === 401 || error.code === 'AUTH_REQUIRED' || error.code === 'AUTH_FAILED') {
+        paymentUtils.handleAuthError()
+      }
+      throw error
+    }
   },
 
   // Update calendar availability after booking
   updateCalendarAvailability: async (bookingId: string): Promise<void> => {
-    return apiClient.post(`/bookings/${bookingId}/update-calendar`, {}, { requireAuth: true })
+    try {
+      return await apiClient.post(`/bookings/${bookingId}/update-calendar`, {}, { requireAuth: true })
+    } catch (error: any) {
+      // Handle authentication errors specially
+      if (error.status === 401 || error.code === 'AUTH_REQUIRED' || error.code === 'AUTH_FAILED') {
+        paymentUtils.handleAuthError()
+      }
+      throw error
+    }
   },
 
   // Create conversation thread with host
   createConversationThread: async (bookingId: string): Promise<{
     threadId: string
   }> => {
-    return apiClient.post(`/bookings/${bookingId}/conversation`, {}, { requireAuth: true })
+    try {
+      return await apiClient.post(`/bookings/${bookingId}/conversation`, {}, { requireAuth: true })
+    } catch (error: any) {
+      // Handle authentication errors specially
+      if (error.status === 401 || error.code === 'AUTH_REQUIRED' || error.code === 'AUTH_FAILED') {
+        paymentUtils.handleAuthError()
+      }
+      throw error
+    }
   },
 
   // Send booking confirmation email
   sendBookingConfirmationEmail: async (bookingId: string): Promise<void> => {
-    return apiClient.post(`/bookings/${bookingId}/send-confirmation`, {}, { requireAuth: true })
+    try {
+      return await apiClient.post(`/bookings/${bookingId}/send-confirmation`, {}, { requireAuth: true })
+    } catch (error: any) {
+      // Handle authentication errors specially
+      if (error.status === 401 || error.code === 'AUTH_REQUIRED' || error.code === 'AUTH_FAILED') {
+        paymentUtils.handleAuthError()
+      }
+      throw error
+    }
   }
 }

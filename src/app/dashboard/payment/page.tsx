@@ -60,6 +60,7 @@ export default function PaymentPage() {
         new Date(Date.now() + 24*60*60*1000).toISOString().split('T')[0]
       ],
       guestCount: guests,
+      redirectParams: 'demo'
     }
 
     return (

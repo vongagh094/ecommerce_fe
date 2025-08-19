@@ -20,11 +20,20 @@ export function LoginModal({ isOpen, onClose, onLogin, onSwitchToSignup }: Login
 	const [loading, setLoading] = useState<"none" | "google" | "email">("none")
 	const { loginWithRedirect } = useAuth0()
 
+	const currentReturnTo = typeof window !== 'undefined' ? `${window.location.pathname}${window.location.search}${window.location.hash}` : '/'
+
+	const saveReturnUrl = () => {
+		if (typeof window !== 'undefined') {
+			localStorage.setItem('auth_return_url', currentReturnTo)
+		}
+	}
+
 	const handleEmailLogin = async () => {
 		try {
 			setLoading("email")
+			saveReturnUrl()
 			await loginWithRedirect({
-				appState: { returnTo: "/" },
+				appState: { returnTo: currentReturnTo },
 			})
 			onLogin?.()
 		} finally {
@@ -35,8 +44,9 @@ export function LoginModal({ isOpen, onClose, onLogin, onSwitchToSignup }: Login
 	const handleGoogleLogin = async () => {
 		try {
 			setLoading("google")
+			saveReturnUrl()
 			await loginWithRedirect({
-				appState: { returnTo: "/" },
+				appState: { returnTo: currentReturnTo },
 				authorizationParams: { connection: "google-oauth2" },
 			})
 			onLogin?.()

@@ -92,6 +92,7 @@ export interface BookingDetails {
   checkOut: string
   selectedNights: string[]
   guestCount: number
+  redirectParams: string
 }
 
 export interface PaymentNotification {

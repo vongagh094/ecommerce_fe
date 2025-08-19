@@ -37,18 +37,24 @@ async function fetchApi<T>(endpoint: string, options: ApiRequestOptions = {}): P
 
   // Add authentication token if required or available (client-side only)
   const tokenGetter = getAccessTokenSilently || (typeof window !== 'undefined' ? (window as any).__getAccessTokenSilently : null)
+  let authError = null;
+  
   if ((requireAuth || !skipAuthRefresh) && typeof window !== 'undefined' && tokenGetter) {
     try {
       const token = await tokenGetter()
-      console.log('token', token)
       if (token) {
         headers.Authorization = `Bearer ${token}`
       } else if (requireAuth) {
-        throw new ApiError(401, 'Authentication required', 'AUTH_REQUIRED')
+        authError = new ApiError(401, 'Authentication required', 'AUTH_REQUIRED')
       }
     } catch (error) {
-      if (requireAuth) {
-        throw new ApiError(401, 'Failed to get authentication token', 'AUTH_TOKEN_ERROR')
+      // If we can't get a token but it's required, we'll continue without it
+      // and let the server decide if it can use the cookie
+      console.log('Could not get auth token, continuing with cookie-based auth if available')
+      
+      if (requireAuth && typeof error === 'object' && error !== null) {
+        // Store the error but don't throw it yet - let's try the request first
+        authError = new ApiError(401, 'Authentication token error', 'AUTH_TOKEN_ERROR')
       }
     }
   }
@@ -57,6 +63,7 @@ async function fetchApi<T>(endpoint: string, options: ApiRequestOptions = {}): P
     const response = await fetch(url, {
       ...fetchOptions,
       headers,
+      credentials: 'include', // Always include cookies
     })
 
     // Handle authentication errors
@@ -86,6 +93,12 @@ async function fetchApi<T>(endpoint: string, options: ApiRequestOptions = {}): P
     if (error instanceof ApiError) {
       throw error
     }
+    
+    // If we had an auth error earlier and now have another error, prioritize the auth error
+    if (authError) {
+      throw authError;
+    }
+    
     throw new ApiError(500, 'Network error occurred', 'NETWORK_ERROR')
   }
 }
