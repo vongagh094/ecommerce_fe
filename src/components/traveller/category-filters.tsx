@@ -3,28 +3,37 @@
 import { useState, useEffect } from "react"
 import { useRouter, usePathname, useSearchParams } from "next/navigation"
 import { propertyApi } from "@/lib/api"
-import { Category } from "@/types"
 import { getCategoryIconByCode, getCategoryLabelByCode } from "./category-icons"
 
-interface CategoryFiltersProps {
-  onCategoryChange: (category: string | null) => void
-  selectedCategory?: string | null
+interface CategoryItem {
+  name: string
+  display_name: string
 }
 
-export function CategoryFilters({ onCategoryChange, selectedCategory: propSelectedCategory }: CategoryFiltersProps) {
-  const [categories, setCategories] = useState<string []>([])
+interface CategoryFiltersProps {
+  onCategoryChange: (categories: string[]) => void
+  selectedCategories?: string[]
+}
+
+export function CategoryFilters({ onCategoryChange, selectedCategories: propSelectedCategories }: CategoryFiltersProps) {
+  const [categories, setCategories] = useState<CategoryItem[]>([])
   const [loading, setLoading] = useState(true)
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(propSelectedCategories || [])
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
 
-  // Fetch categories on component mount
   useEffect(() => {
     const fetchCategories = async () => {
       try {
         const data = await propertyApi.getCategories()
-        setCategories(data)
+        const normalized: CategoryItem[] = Array.isArray(data)
+          ? (typeof (data as any[])[0] === 'string'
+              ? (data as string[]).map(code => ({ name: code, display_name: getCategoryLabelByCode(code) }))
+              : (data as any[]).map((c: any) => ({ name: c.name, display_name: c.display_name ?? getCategoryLabelByCode(c.name) }))
+            )
+          : []
+        setCategories(normalized)
       } catch (error) {
         console.error("Failed to fetch categories:", error)
       } finally {
@@ -35,34 +44,37 @@ export function CategoryFilters({ onCategoryChange, selectedCategory: propSelect
     fetchCategories()
   }, [])
 
-  // Sync selected category with URL params or prop
+  // Sync selected categories with URL params or prop
   useEffect(() => {
-    const categoryFromUrl = searchParams.get('category')
-    const initialCategory = propSelectedCategory || categoryFromUrl
-    
-    if (initialCategory && initialCategory !== selectedCategory) {
-      setSelectedCategory(initialCategory)
+    const fromUrlPrimary = searchParams.getAll('categories')
+    const fromUrlLegacy = searchParams.getAll('category')
+    const fromUrl = fromUrlPrimary.length > 0 ? fromUrlPrimary : fromUrlLegacy
+    const initial = propSelectedCategories && propSelectedCategories.length > 0 ? propSelectedCategories : fromUrl
+    if (initial && initial.join('|') !== selectedCategories.join('|')) {
+      setSelectedCategories(initial)
     }
-  }, [searchParams, propSelectedCategory, selectedCategory])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, propSelectedCategories])
 
-  const handleCategoryClick = (categoryName: string) => {
-    const newCategory = selectedCategory === categoryName ? null : categoryName
-    setSelectedCategory(newCategory)
-    onCategoryChange(newCategory)
-    
-    // Update URL if we're on the search page
+  const toggleCategory = (categoryName: string) => {
+    const isSelected = selectedCategories.includes(categoryName)
+    const updated = isSelected
+      ? selectedCategories.filter(c => c !== categoryName)
+      : [...selectedCategories, categoryName]
+
+    setSelectedCategories(updated)
+    onCategoryChange(updated)
+
     if (pathname === '/search') {
       const params = new URLSearchParams(searchParams.toString())
-      
-      if (newCategory) {
-        params.set('category', newCategory)
-      } else {
-        params.delete('category')
-      }
-      
+      params.delete('categories')
+      params.delete('category')
+      updated.forEach(c => params.append('categories', c))
       router.push(`/search?${params.toString()}`)
     }
   }
+
+  const isSelected = (name: string) => selectedCategories.includes(name)
 
   if (loading) {
     return (
@@ -83,37 +95,32 @@ export function CategoryFilters({ onCategoryChange, selectedCategory: propSelect
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 border-b border-gray-200">
       <div className="flex space-x-8 overflow-x-auto pb-4">
         {categories.map((category) => {
-          const IconComp = getCategoryIconByCode(category)
-          const displayName = getCategoryLabelByCode(category)
+          const IconComp = getCategoryIconByCode(category.name)
+          const displayName = category.display_name || getCategoryLabelByCode(category.name)
+          const selected = isSelected(category.name)
 
           return (
             <button
-              key={category}
-              onClick={() => handleCategoryClick(category)}
+              key={category.name}
+              onClick={() => toggleCategory(category.name)}
               className={`flex flex-col items-center space-y-2 min-w-[80px] group ${
-                selectedCategory === category
-                  ? "opacity-100"
-                  : "opacity-70 hover:opacity-100"
+                selected ? "opacity-100" : "opacity-70 hover:opacity-100"
               }`}
             >
               <div
                 className={`w-16 h-16 rounded-full flex items-center justify-center bg-gray-100 group-hover:bg-gray-200 transition-colors ${
-                  selectedCategory === category
-                    ? "border-2 border-black"
-                    : "border border-gray-200"
+                  selected ? "border-2 border-black" : "border border-gray-200"
                 }`}
               >
                 {IconComp ? (
                   <IconComp className="h-6 w-6 text-gray-700" />
                 ) : (
-                  <span className="text-2xl">{getCategoryEmoji(category)}</span>
+                  <span className="text-2xl">{getCategoryEmoji(category.name)}</span>
                 )}
               </div>
               <span
                 className={`text-sm ${
-                  selectedCategory === category
-                    ? "font-medium"
-                    : "text-gray-600"
+                  selected ? "font-medium" : "text-gray-600"
                 }`}
               >
                 {displayName}
@@ -126,7 +133,6 @@ export function CategoryFilters({ onCategoryChange, selectedCategory: propSelect
   )
 }
 
-// Helper function to get emoji for category (fallback)
 function getCategoryEmoji(categoryName: string): string {
   const emojiMap: Record<string, string> = {
     beach: "🏖️",

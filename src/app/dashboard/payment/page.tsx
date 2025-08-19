@@ -4,6 +4,8 @@ import { useState } from "react"
 import { ChevronDown, HelpCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { ZaloPayPayment } from "@/components/payment/zalopay-payment"
+import type { BookingDetails } from "@/types/payment"
 
 export default function PaymentPage() {
   const [paymentData, setPaymentData] = useState({
@@ -16,6 +18,7 @@ export default function PaymentPage() {
   })
 
   const [guests, setGuests] = useState(1)
+  const [showDemo, setShowDemo] = useState(false)
 
   const handleInputChange = (field: string, value: string) => {
     setPaymentData((prev) => ({ ...prev, [field]: value }))
@@ -45,11 +48,52 @@ export default function PaymentPage() {
 
   const years = Array.from({ length: 20 }, (_, i) => (new Date().getFullYear() + i).toString())
 
+  if (process.env.NEXT_PUBLIC_PAYMENT_MOCK === '1' && showDemo) {
+    const demoBooking: BookingDetails = {
+      auctionId: 'demo_auction',
+      propertyId: 'prop_demo_1',
+      propertyName: 'Sky-high Demo Villa',
+      checkIn: new Date().toISOString().split('T')[0],
+      checkOut: new Date(Date.now() + 2*24*60*60*1000).toISOString().split('T')[0],
+      selectedNights: [
+        new Date().toISOString().split('T')[0],
+        new Date(Date.now() + 24*60*60*1000).toISOString().split('T')[0]
+      ],
+      guestCount: guests,
+    }
+
+    return (
+      <div className="max-w-6xl mx-auto p-4">
+        <ZaloPayPayment
+          bookingDetails={demoBooking}
+          amount={1200000}
+          onPaymentSuccess={(txn) => {
+            window.location.href = `/dashboard/payment/confirmation?transactionId=${txn}`
+          }}
+          onPaymentError={() => setShowDemo(false)}
+          onPaymentCancel={() => setShowDemo(false)}
+        />
+      </div>
+    )
+  }
+
   return (
     <div className="max-w-6xl mx-auto">
       <div className="mb-8">
         <h1 className="text-3xl font-semibold text-gray-900">Confirm and pay</h1>
       </div>
+
+      {/* Demo trigger when mock mode enabled */}
+      {process.env.NEXT_PUBLIC_PAYMENT_MOCK === '1' && (
+        <div className="mb-6 p-4 border rounded-lg bg-yellow-50 text-yellow-900">
+          <div className="flex items-center justify-between">
+            <div>
+              Payment mock mode is ON. You can run the end-to-end demo flow.
+            </div>
+            <Button onClick={() => setShowDemo(true)} className="bg-blue-600 hover:bg-blue-700">Run demo flow</Button>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
         {/* Left Side - Payment Form */}

@@ -6,7 +6,6 @@ import { NotificationDropdown } from "@/components/shared/notification-dropdown"
 import { SearchBar } from "@/components/shared/search-bar"
 import { useRouter, usePathname } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
-import Link from "next/link"
 
 export function AppHeader() {
   const router = useRouter()
@@ -30,10 +29,10 @@ export function AppHeader() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
-          <Link href="/" className="flex items-center">
-            <h1 className="text-2xl font-bold text-rose-500">Sky-high</h1>
+          <div className="flex items-center cursor-pointer caret-transparent select-none" onClick={() => router.push("/")}>
+            <h1 className="text-2xl font-bold text-blue-800 font-serif">Sky-high</h1>
             {!isHostPage && <p className="text-xs text-gray-500 ml-2 mt-1">YOUR HOLIDAY</p>}
-          </Link>
+          </div>
 
           {/* Search Bar - Show on all pages except host pages */}
           {!isHostPage && (

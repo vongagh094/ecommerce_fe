@@ -69,7 +69,7 @@ export function SearchSection({onSearchResults}: SearchSectionProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
-          <div className="flex items-center">
+          <div className="flex items-center cursor-pointer caret-transparent select-none" onClick={() => router.push("/")}>
             <h1 className="text-2xl font-bold text-blue-800 font-serif">Sky-high</h1>
           </div>
 

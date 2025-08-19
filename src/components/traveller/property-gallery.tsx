@@ -379,7 +379,7 @@ export function PropertyGallery({ images, onFavoriteToggle, isFavorite = false }
         </div>
 
         {/* Show All Photos Button */}
-        <button
+        {/* <button
           onClick={() => setShowAllPhotos(true)}
           className={`absolute right-4 bottom-4 bg-white text-black px-3 py-1.5 rounded-lg text-sm font-medium shadow-md flex items-center transition-opacity duration-300 ${
             showControls ? 'opacity-100' : 'opacity-0 md:opacity-0 md:group-hover:opacity-100'
@@ -387,7 +387,7 @@ export function PropertyGallery({ images, onFavoriteToggle, isFavorite = false }
         >
           <Grid3X3 className="h-4 w-4 mr-2" />
           Show all photos
-        </button>
+        </button> */}
 
         {/* Favorite Button */}
         {onFavoriteToggle && (

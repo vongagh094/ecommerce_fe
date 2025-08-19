@@ -117,17 +117,18 @@ export default function PropertyPage() {
 
           {/* Booking Panel */}
           <div className="lg:col-span-1">
-            <BookingPanel
-              currentBid={property.active_auctions[0]?.current_highest_bid || property.base_price}
-              lowestOffer={property.base_price}
-              timeLeft={property.active_auctions[0] ? "2h 30m" : "No active auction"}
-              propertyId={property.id}
-              basePrice={property.base_price}
-              cleaningFee={property.cleaning_fee}
-              serviceFee={property.service_fee}
-              availabilityCalendar={property.availability_calendar}
-              activeAuctions={property.active_auctions}
-            />
+                          <BookingPanel
+                currentBid={property.active_auctions[0]?.current_highest_bid || property.base_price}
+                lowestOffer={property.base_price}
+                timeLeft={property.active_auctions[0] ? "2h 30m" : "No active auction"}
+                propertyId={property.id}
+                propertyTitle={property.title}
+                basePrice={property.base_price}
+                cleaningFee={property.cleaning_fee}
+                serviceFee={property.service_fee}
+                availabilityCalendar={property.availability_calendar}
+                activeAuctions={property.active_auctions}
+              />
           </div>
         </div>
       </div>

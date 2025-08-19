@@ -273,48 +273,32 @@ Resilience
 - Emit PAYMENT_STATUS and BOOKING_CONFIRMED to the user’s channel (`userId`) to optimize UX.
 - Prefer backend orchestration for booking creation, calendar updates, and emails; frontend will reflect state.
 
-## Appendix: Types (frontend)
+## Environment and mock mode
 
-PaymentSession (excerpt):
-{
-  id: string;
-  auctionId: string;
-  userId: string;
-  amount: number;
-  currency: 'VND';
-  status: 'CREATED'|'PENDING'|'PAID'|'FAILED'|'CANCELLED'|'EXPIRED';
-  appTransId: string;
-  orderUrl?: string;
-  createdAt: string;
-  expiresAt: string;
-}
+Required env vars for real integration:
+- `NEXT_PUBLIC_API_URL` — Base REST API, e.g. `http://localhost:8000/api/v1`
+- `NEXT_PUBLIC_WS_URL` — Base WS URL, e.g. `ws://localhost:8080`
 
-PaymentVerificationResponse (excerpt):
-{
-  status: 'PAID'|'PENDING'|'FAILED'|'CANCELLED';
-  transactionId?: string;
-  amount?: number;
-  paidAt?: string;
-}
+Optional dev-only mock mode:
+- `NEXT_PUBLIC_PAYMENT_MOCK=1` — Enables a full client-side demo:
+  - `ZaloPayPayment` bypasses real create call and redirects to local session page with fake IDs
+  - Session page fabricates a pending session and auto-completes, or you can emit dev WS messages
+  - Confirmation page shows a fabricated booking summary
 
-WebSocket PaymentStatusMessage:
-{
-  type: 'PAYMENT_STATUS';
-  paymentId: string;
-  userId: string;
-  status: 'INITIATED'|'PROCESSING'|'COMPLETED'|'FAILED';
-  transactionId?: string;
-}
+Client WS dev helper:
+- In mock mode, buttons appear on the session page to emit local `PAYMENT_STATUS` messages:
+  - "Emit WS: Completed" → `{ type: 'PAYMENT_STATUS', status: 'COMPLETED', paymentId, userId, transactionId }`
+  - "Emit WS: Failed" → `{ type: 'PAYMENT_STATUS', status: 'FAILED', paymentId, userId }`
 
-WebSocket BookingConfirmationMessage:
-{
-  type: 'BOOKING_CONFIRMED';
-  bookingId: string;
-  userId: string;
-  propertyName: string;
-  checkIn: string;
-  checkOut: string;
-}
+Backend expectations summary
+- REST endpoints (create, status verify, sessions, transactions, booking read/create) as defined above
+- WebSocket channel at `${NEXT_PUBLIC_WS_URL}/payment-notifications`
+  - Accepts `SUBSCRIBE` with `{ userId, channels: [...] }`
+  - Emits typed JSON messages matching schemas above
+- ZaloPay callback handling server-side:
+  - Validate MAC; update a persistent session record: CREATED→PENDING→PAID/FAILED
+  - Map `sessionId` to `appTransId` and expose via `/payment/sessions/{sessionId}`
+  - Optionally create booking and emit `BOOKING_CONFIRMED`
 
 ---
 This documentation reflects the current Option 2 session-centric architecture with WebSocket acceleration and polling fallback, based on the code in this repository.

@@ -29,32 +29,30 @@ export default function HomePage() {
   const [isInitialized, setIsInitialized] = useState(false)
   const router = useRouter()
 
-  // Load initial properties on page load
   useEffect(() => {
     if (!isInitialized) {
-      console.log('Loading initial properties...')
-      search({}) // Load all properties (no filters)
+      search({})
       setIsInitialized(true)
     }
   }, [search, isInitialized])
 
   const handleSearchResults = (searchData: any) => {
-    // Redirect to search page with parameters
     const params = new URLSearchParams()
     Object.entries(searchData || {}).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== '') {
+      if (key === 'categories' && Array.isArray(value)) {
+        value.forEach(v => params.append('categories', String(v)))
+      } else if (Array.isArray(value)) {
+        value.forEach(v => params.append(key, String(v)))
+      } else if (value !== undefined && value !== null && value !== '') {
         params.append(key, String(value))
       }
     })
     router.push(`/search?${params.toString()}`)
   }
 
-  const handleCategoryChange = (category: string | null) => {
-    // Redirect to search page with category filter
+  const handleCategoryChange = (categories: string[]) => {
     const params = new URLSearchParams()
-    if (category) {
-      params.append('category', category)
-    }
+    categories.forEach(c => params.append('categories', c))
     router.push(`/search?${params.toString()}`)
   }
 
@@ -90,21 +88,8 @@ export default function HomePage() {
         onPrev={prevPage}
         onToggleFavorite={(propertyId) => {
           console.log('Toggle favorite for property:', propertyId)
-          // TODO: Implement favorite toggle API call
         }}
       />
-
-      {/* Debug info - remove in production */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="fixed bottom-4 right-4 bg-black text-white p-4 rounded text-xs max-w-xs">
-          <div>Properties: {properties.length}</div>
-          <div>Page: {currentPage}/{totalPages}</div>
-          <div>Total: {total}</div>
-          <div>Loading: {loading ? 'true' : 'false'}</div>
-          <div>Has Next: {hasNext ? 'true' : 'false'}</div>
-          <div>Has Prev: {hasPrev ? 'true' : 'false'}</div>
-        </div>
-      )}
 
       <InspirationSection />
       <Footer />

@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { BookingDetails, PaymentError } from "@/types/payment"
 import { paymentApi, paymentUtils, PaymentErrorHandler } from "@/lib/api/payment"
+import { v4 as uuidv4 } from 'uuid'
 
 interface ZaloPayPaymentProps {
   bookingDetails: BookingDetails
@@ -45,6 +46,21 @@ export function ZaloPayPayment({
       return
     }
 
+    // Mock mode: bypass backend and redirect to local session page
+    if (process.env.NEXT_PUBLIC_PAYMENT_MOCK === '1') {
+      setPaymentState('redirecting')
+      setError(null)
+      const mockAppTransId = `demo_${Date.now()}`
+      const mockSessionId = `session_${Date.now()}`
+      setAppTransId(mockAppTransId)
+      setTimeout(() => {
+        if (typeof window !== 'undefined') {
+          window.location.href = `/dashboard/payment/zalopay/${mockSessionId}?appTransId=${mockAppTransId}`
+        }
+      }, 800)
+      return
+    }
+
     setPaymentState('creating')
     setError(null)
 
@@ -54,12 +70,15 @@ export function ZaloPayPayment({
         bookingDetails.checkIn,
         bookingDetails.checkOut
       )
-
+      const auctionId = uuidv4()
+      // get current url after first slash
+      const redirectParams = window.location.href.split('/')[1]
       const paymentRequest = {
-        auctionId: bookingDetails.auctionId,
+        auctionId,
         selectedNights: bookingDetails.selectedNights,
         amount,
-        orderInfo
+        orderInfo,
+        redirectParams
       }
 
       const response = await paymentApi.createPayment(paymentRequest)
@@ -85,6 +104,17 @@ export function ZaloPayPayment({
     if (verificationAttempts >= maxVerificationAttempts) {
       setError('Payment verification timeout. Please contact support.')
       setPaymentState('failed')
+      return
+    }
+
+    // Mock mode: simulate pending → success
+    if (process.env.NEXT_PUBLIC_PAYMENT_MOCK === '1') {
+      const attempt = verificationAttempts + 1
+      setVerificationAttempts(attempt)
+      setTimeout(() => {
+        setPaymentState('completed')
+        onPaymentSuccess(`txn_${appTransId || transactionId}`)
+      }, 1200)
       return
     }
 

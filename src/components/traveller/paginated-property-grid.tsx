@@ -112,7 +112,7 @@ export function PaginatedPropertyGrid({
                             <div className="flex items-center text-sm text-gray-600">
                                 <MapPin className="h-3 w-3 mr-1" />
                                 <span className="truncate">
-                                    {property.location.city}, {property.location.state}
+                                    {property.location.city}, {property.location.country}
                                 </span>
                             </div>
                             <div className="flex items-center space-x-1">

@@ -71,6 +71,7 @@ export const paymentApi = {
     selectedNights: string[]
     amount: number
     orderInfo: string
+    redirectParams: string
   }): Promise<{
     orderUrl: string
     appTransId: string

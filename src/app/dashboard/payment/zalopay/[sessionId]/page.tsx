@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import { CreditCard, Shield, AlertCircle, CheckCircle, ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -13,9 +13,9 @@ import { paymentWebSocketHandler } from "@/lib/websocket"
 import type { PaymentNotificationMessage } from "@/types/auction-winners"
 import { useAuth0 } from "@auth0/auth0-react"
 
-export default function ZaloPayProcessingPage({ params }: { params: { sessionId: string } }) {
+export default function ZaloPayProcessingPage() {
   const router = useRouter()
-  const { sessionId } = params
+  const { sessionId } = useParams() as { sessionId: string }
   const { user } = useAuth0()
   
   const [isLoading, setIsLoading] = useState(true)
@@ -58,6 +58,31 @@ export default function ZaloPayProcessingPage({ params }: { params: { sessionId:
       setIsLoading(true)
       setError(null)
       
+      // Mock mode: fabricate a pending session
+      if (process.env.NEXT_PUBLIC_PAYMENT_MOCK === '1') {
+        const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '')
+        const appTransId = params.get('appTransId') || `demo_${Date.now()}`
+        const now = new Date()
+        const expires = new Date(now.getTime() + 15 * 60 * 1000)
+        const mock: PaymentSession = {
+          id: sessionId,
+          auctionId: 'demo_auction',
+          userId: 'demo_user',
+          amount: 1230000,
+          currency: 'VND',
+          status: 'PENDING',
+          appTransId,
+          orderUrl: '/demo-order-url',
+          createdAt: now.toISOString(),
+          expiresAt: expires.toISOString(),
+        }
+        setPaymentSession(mock)
+        setPaymentStatus('PENDING')
+        // Simulate verification
+        setTimeout(() => verifyPaymentStatus(appTransId), 800)
+        return
+      }
+      
       // Fetch the payment session details
       const session = await paymentApi.getPaymentSession(sessionId)
       
@@ -86,6 +111,18 @@ export default function ZaloPayProcessingPage({ params }: { params: { sessionId:
   const verifyPaymentStatus = async (appTransId: string) => {
     if (verificationAttempts >= maxVerificationAttempts) {
       setError('Payment verification timeout. Please check your payment status in your account.')
+      return
+    }
+
+    // Mock mode: succeed after short delay
+    if (process.env.NEXT_PUBLIC_PAYMENT_MOCK === '1') {
+      const attempt = verificationAttempts + 1
+      setVerificationAttempts(attempt)
+      setTimeout(() => {
+        setPaymentStatus('PAID')
+        const txn = `txn_${appTransId}`
+        router.push(`/dashboard/payment/confirmation?transactionId=${txn}&sessionId=${sessionId}`)
+      }, 1200)
       return
     }
 
@@ -130,6 +167,27 @@ export default function ZaloPayProcessingPage({ params }: { params: { sessionId:
 
   const handleCancel = () => {
     router.push('/dashboard/winners')
+  }
+
+  const emitWsComplete = () => {
+    if (process.env.NEXT_PUBLIC_PAYMENT_MOCK !== '1' || !paymentSession || !user?.sub) return
+    paymentWebSocketHandler.emitLocal({
+      type: 'PAYMENT_STATUS',
+      paymentId: paymentSession.id,
+      userId: user.sub,
+      status: 'COMPLETED',
+      transactionId: `txn_${paymentSession.appTransId}`,
+    } as PaymentNotificationMessage)
+  }
+
+  const emitWsFailed = () => {
+    if (process.env.NEXT_PUBLIC_PAYMENT_MOCK !== '1' || !paymentSession || !user?.sub) return
+    paymentWebSocketHandler.emitLocal({
+      type: 'PAYMENT_STATUS',
+      paymentId: paymentSession.id,
+      userId: user.sub,
+      status: 'FAILED',
+    } as PaymentNotificationMessage)
   }
 
   if (isLoading) {
@@ -215,6 +273,12 @@ export default function ZaloPayProcessingPage({ params }: { params: { sessionId:
               <p className="text-sm text-gray-500 mt-2">
                 Attempt {verificationAttempts + 1} of {maxVerificationAttempts}
               </p>
+              {process.env.NEXT_PUBLIC_PAYMENT_MOCK === '1' && (
+                <div className="mt-4 flex justify-center space-x-2">
+                  <Button size="sm" onClick={emitWsComplete}>Emit WS: Completed</Button>
+                  <Button size="sm" variant="destructive" onClick={emitWsFailed}>Emit WS: Failed</Button>
+                </div>
+              )}
             </div>
           )}
 

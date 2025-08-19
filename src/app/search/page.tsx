@@ -36,12 +36,12 @@ export default function SearchPage() {
         guests: searchParams.get('guests') ? parseInt(searchParams.get('guests')!) : undefined,
       }
 
-      // Check if we have a category filter
-      const category = searchParams.get('category')
-      if (category) {
+      // Check if we have category filters (multi)
+      const categoriesFromUrl = searchParams.getAll('categories')
+      if (categoriesFromUrl.length > 0) {
         const filterParams: FilterParams = {
           ...params,
-          categories: [category]
+          categories: categoriesFromUrl,
         }
         filter(filterParams)
       } else {
@@ -60,7 +60,7 @@ export default function SearchPage() {
     }
   }, [searchParams, search, filter, isInitialized])
 
-  const handleCategoryChange = (category: string | null) => {
+  const handleCategoryChange = (categories: string[]) => {
     const baseParams: SearchParams = {
       location: searchParams.get('location') || undefined,
       check_in: searchParams.get('check_in') || undefined,
@@ -68,14 +68,13 @@ export default function SearchPage() {
       guests: searchParams.get('guests') ? parseInt(searchParams.get('guests')!) : undefined,
     }
 
-    if (category) {
+    if (categories && categories.length > 0) {
       const filterParams: FilterParams = {
         ...baseParams,
-        categories: [category]
+        categories,
       }
       filter(filterParams)
     } else {
-      // Remove undefined values
       const cleanParams = Object.fromEntries(
         Object.entries(baseParams).filter(([_, value]) => value !== undefined)
       )
@@ -103,12 +102,6 @@ export default function SearchPage() {
     <div className="min-h-screen bg-white">
       <SearchSection onSearchResults={handleSearchResults} />
       <CategoryFilters onCategoryChange={handleCategoryChange} />
-      
-      {/* Temporary API Test Panel */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        <ApiTest />
-      </div>
-
       {/* Search Results Header */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="flex items-center justify-between">
@@ -165,9 +158,6 @@ export default function SearchPage() {
           <div className="mb-6">
             <p className="text-gray-600">
               Showing {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems} properties
-            </p>
-            <p className="text-xs text-gray-500 mt-1">
-              Debug: currentPage={currentPage}, totalPages={totalPages}, itemsPerPage={itemsPerPage}
             </p>
           </div>
         )}

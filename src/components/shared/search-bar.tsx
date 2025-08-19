@@ -26,6 +26,7 @@ export function SearchBar({ variant = "default", className = "", onSearchResults
     checkIn: null as Date | null,
     checkOut: null as Date | null,
     guests: { adults: 1, children: 0, infants: 0, pets: 0 } as GuestCounts,
+    categories: [] as string[],
   })
   const [isInitialized, setIsInitialized] = useState(false)
   const [showLoginModal, setShowLoginModal] = useState(false)
@@ -36,79 +37,73 @@ export function SearchBar({ variant = "default", className = "", onSearchResults
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  // Initialize search data from URL params only once
+  // Initialize from URL once for base fields
   useEffect(() => {
     if (!isInitialized) {
       const location = searchParams.get("location")
       const checkIn = searchParams.get("check_in")
       const checkOut = searchParams.get("check_out")
       const guests = searchParams.get("guests")
-      const mode = searchParams.get("mode")
+      const cats = searchParams.getAll("categories")
 
-      if (location || checkIn || checkOut || guests) {
-        setSearchData({
-          location: location || "",
-          checkIn: checkIn ? new Date(checkIn) : null,
-          checkOut: checkOut ? new Date(checkOut) : null,
-          guests: {
-            adults: guests ? Math.max(1, Number.parseInt(guests)) : 1,
-            children: 0,
-            infants: 0,
-            pets: 0,
-          },
-        })
-      }
+      setSearchData({
+        location: location || "",
+        checkIn: checkIn ? new Date(checkIn) : null,
+        checkOut: checkOut ? new Date(checkOut) : null,
+        guests: {
+          adults: guests ? Math.max(1, Number.parseInt(guests)) : 1,
+          children: 0,
+          infants: 0,
+          pets: 0,
+        },
+        categories: cats || [],
+      })
       setIsInitialized(true)
     }
   }, [searchParams, isInitialized])
 
+  // Keep categories in sync with URL changes (e.g., when toggling filters)
+  useEffect(() => {
+    const cats = searchParams.getAll("categories")
+    setSearchData(prev => {
+      const same = cats.join("|") === (prev.categories || []).join("|")
+      return same ? prev : { ...prev, categories: cats }
+    })
+  }, [searchParams])
+
   const handleSearch = useCallback(() => {
-    // Validate search data against database constraints
     const totalGuests = searchData.guests.adults + searchData.guests.children
+    if (totalGuests <= 0) return
+    if (searchData.checkIn && searchData.checkOut && searchData.checkOut <= searchData.checkIn) return
 
-    // Validate guest count (must be > 0, matches properties.max_guests constraint)
-    if (totalGuests <= 0) {
-      console.warn('Guest count must be at least 1')
-      return
-    }
-
-    // Validate date range (check_out > check_in, matches bids table constraint)
-    if (searchData.checkIn && searchData.checkOut && searchData.checkOut <= searchData.checkIn) {
-      console.warn('Check-out date must be after check-in date')
-      return
-    }
-
-    // Create search params that match database schema
     const params = new URLSearchParams()
 
-    // Location search - matches properties.city, properties.state, properties.country
     if (searchData.location) params.set("location", searchData.location)
-
-    // Date range - matches bids.check_in, bids.check_out format (YYYY-MM-DD)
     if (searchData.checkIn) params.set("check_in", searchData.checkIn.toISOString().split('T')[0])
     if (searchData.checkOut) params.set("check_out", searchData.checkOut.toISOString().split('T')[0])
-
-    // Guest count - matches properties.max_guests
     params.set("guests", totalGuests.toString())
 
-    // Add bidding mode if enabled (for auction searches)
+    // Always use categories from URL (latest source of truth)
+    const urlCats = searchParams.getAll("categories")
+    const categoriesToUse = urlCats.length > 0 ? urlCats : searchData.categories
+    for (const c of categoriesToUse) params.append("categories", c)
+
     if (showBiddingMode) params.set("mode", "bidding")
 
-    // Navigate to search results
     router.push(`/search?${params.toString()}`)
     setActiveModal(null)
 
-    // Notify parent component with search data
     if (onSearchResults) {
       onSearchResults({
         location: searchData.location,
         check_in: searchData.checkIn?.toISOString().split('T')[0],
         check_out: searchData.checkOut?.toISOString().split('T')[0],
         guests: totalGuests,
+        categories: categoriesToUse,
         mode: showBiddingMode ? 'bidding' : 'standard'
       })
     }
-  }, [searchData, router, showBiddingMode, onSearchResults])
+  }, [searchData, router, showBiddingMode, onSearchResults, searchParams])
 
   const formatGuests = useCallback(() => {
     const total = searchData.guests.adults + searchData.guests.children
@@ -118,20 +113,11 @@ export function SearchBar({ variant = "default", className = "", onSearchResults
 
   const formatDateRange = useCallback(() => {
     if (!searchData.checkIn || !searchData.checkOut) return "Add dates"
-
-    const checkInStr = searchData.checkIn.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-    })
-    const checkOutStr = searchData.checkOut.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-    })
-
+    const checkInStr = searchData.checkIn.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+    const checkOutStr = searchData.checkOut.toLocaleDateString("en-US", { month: "short", day: "numeric" })
     return `${checkInStr} - ${checkOutStr}`
   }, [searchData.checkIn, searchData.checkOut])
 
-  // Close modals when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {

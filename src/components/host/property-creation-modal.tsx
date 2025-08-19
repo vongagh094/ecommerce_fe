@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden"
+import { useRouter } from "next/navigation"
 
 interface PropertyCreationModalProps {
   isOpen: boolean
@@ -570,6 +571,8 @@ export function PropertyCreationModal({ isOpen, onClose }: PropertyCreationModal
     }
   }
 
+  const router = useRouter()
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-4xl p-0 gap-0 max-h-[90vh] overflow-y-auto">
@@ -578,7 +581,7 @@ export function PropertyCreationModal({ isOpen, onClose }: PropertyCreationModal
         </VisuallyHidden>
         <div className="p-8">
           <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-4 cursor-pointer caret-transparent select-none" onClick={() => router.push("/")}>
               <h1 className="text-xl font-bold text-blue-800 font-serif">Sky-high</h1>
               <div className="text-xs text-gray-500">YOUR HOLIDAY</div>
             </div>

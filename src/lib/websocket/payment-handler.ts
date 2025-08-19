@@ -31,7 +31,9 @@ export class PaymentWebSocketHandler {
       return
     }
 
-    const wsUrl = `${process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8080'}/payment-notifications`
+    const base = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8080'
+    const path = (process.env.NEXT_PUBLIC_WS_PATH ?? '/payment-notifications')
+    const wsUrl = `${base}${path}`
     
     try {
       this.ws = new WebSocket(wsUrl)
@@ -166,6 +168,25 @@ export class PaymentWebSocketHandler {
       this.ws.send(JSON.stringify(message))
     } else {
       console.warn('PaymentWebSocketHandler: Cannot send message, connection not open')
+    }
+  }
+
+  /**
+   * Dev-only: emit a local message directly to the onMessage callback
+   */
+  emitLocal(message: PaymentNotificationMessage): void {
+    if (process.env.NEXT_PUBLIC_PAYMENT_MOCK !== '1') {
+      console.warn('emitLocal is only available in mock mode')
+      return
+    }
+    if (!this.onMessageCallback) {
+      console.warn('emitLocal: no onMessage callback registered')
+      return
+    }
+    try {
+      this.onMessageCallback(message)
+    } catch (err) {
+      console.error('emitLocal failed:', err)
     }
   }
 
