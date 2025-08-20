@@ -1,219 +1,188 @@
-import { useState, useCallback, useEffect } from 'react';
+"use client";
 
-interface Wishlist {
-  id: number;
-  user_id: number;
-  name: string;
-  is_private: boolean;
-  created_at: string;
-  updated_at: string;
-}
+import { useState, useCallback, useRef } from "react";
+import { PropertyDisplay, WishlistResponseDTO } from "@/types/index";
 
-interface Property {
-  id: number;
-  title: string;
-  description: string | null;
-  city: string;
-  base_price: number;
-  max_guests: number;
-  bedrooms: number;
-  bathrooms: number;
-}
+const apiUrl = "http://127.0.0.1:8000";
 
-interface WishlistProperty {
-  wishlist_id: number;
-  property_id: number;
-  added_at: string;
-  property: Property;
-}
-
-export const useWishlists = (userId: number = 1) => {
-  const [wishlists, setWishlists] = useState<Wishlist[]>([]);
-  const [currentProperties, setCurrentProperties] = useState<WishlistProperty[]>([]);
-  const [properties, setProperties] = useState<Property[]>([]);
-  const [loading, setLoading] = useState(false);
+export function useWishlist(userId: number, wishlistOnly: boolean = false) {
+  const [properties, setProperties] = useState<PropertyDisplay[]>([]);
   const [error, setError] = useState<string | null>(null);
-
-  const fetchWishlists = useCallback(async () => {
-    setLoading(true);
-    try {
-      console.log(`Fetching wishlists for user ${userId}`);
-      const response = await fetch(`http://localhost:8000/wishlists/user/${userId}`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-      });
-      if (!response.ok) {
-        throw new Error(`Failed to fetch wishlists: ${response.status}`);
-      }
-      const data = await response.json();
-      console.log('Wishlists fetched:', data);
-      setWishlists(data);
-      setError(null);
-    } catch (err: any) {
-      setError('Failed to fetch wishlists');
-      console.error('Error fetching wishlists:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [userId]);
+  const [isLoading, setIsLoading] = useState(true);
+  const isFetchingRef = useRef(false);
 
   const fetchProperties = useCallback(async () => {
-    setLoading(true);
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
+    setIsLoading(true);
+    setError(null);
     try {
-      console.log('Fetching properties');
-      const response = await fetch('http://localhost:8000/properties', {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
+      console.log("Checking wishlist existence...");
+      const checkResponse = await fetch(`${apiUrl}/wishlist/check?user_id=${userId}`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!checkResponse.ok) {
+        const errorData = await checkResponse.json().catch(() => ({}));
+        console.error("Wishlist check error:", errorData);
+        throw new Error(errorData.detail?.detail || `Không thể kiểm tra wishlist: HTTP ${checkResponse.status}`);
+      }
+      const checkData = await checkResponse.json();
+      if (!checkData.exists) {
+        console.log("Wishlist does not exist, creating one...");
+        const createResponse = await fetch(`${apiUrl}/wishlist/create?user_id=${userId}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        });
+        if (!createResponse.ok) {
+          const errorData = await createResponse.json().catch(() => ({}));
+          console.error("Wishlist creation error:", errorData);
+          throw new Error(errorData.detail?.detail || `Không thể tạo wishlist: HTTP ${createResponse.status}`);
+        }
+        console.log("Wishlist created successfully");
+      }
+
+      console.log("Fetching wishlist property IDs...");
+      const wishlistResponse = await fetch(`${apiUrl}/wishlist/${userId}/properties`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      });
+      let wishlistData: WishlistResponseDTO = { property_ids: [] };
+      if (wishlistResponse.ok) {
+        wishlistData = await wishlistResponse.json();
+      } else {
+        const errorData = await wishlistResponse.json().catch(() => ({}));
+        console.warn("Wishlist fetch error:", errorData);
+      }
+      const wishlistPropertyIds = wishlistData.property_ids || [];
+      console.log("Wishlist property IDs:", wishlistPropertyIds);
+
+      if (wishlistOnly && wishlistPropertyIds.length === 0) {
+        setProperties([]);
+        setError("Danh sách yêu thích trống.");
+        return;
+      }
+
+      console.log("Fetching properties...");
+      const response = await fetch(`${apiUrl}/properties/list?limit=${wishlistOnly ? 100 : 12}&offset=0`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
       });
       if (!response.ok) {
-        throw new Error(`Failed to fetch properties: ${response.status}`);
+        const errorData = await response.json().catch(() => ({}));
+        console.error("Properties fetch error:", errorData);
+        throw new Error(
+          errorData.detail?.detail || `Không thể tải danh sách bất động sản: HTTP ${response.status}`
+        );
       }
       const data = await response.json();
-      console.log('Properties fetched:', data);
-      setProperties(data);
-      setError(null);
-    } catch (err: any) {
-      setError('Failed to fetch properties');
-      console.error('Error fetching properties:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const fetchWishlistProperties = useCallback(async (wishlistId: number) => {
-    setLoading(true);
-    try {
-      console.log(`Fetching properties for wishlist ${wishlistId}`);
-      const response = await fetch(`http://localhost:8000/wishlists/${wishlistId}/properties`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-      });
-      if (!response.ok) {
-        throw new Error(`Failed to fetch properties: ${response.status}`);
+      console.log("Properties response:", data);
+      if (!Array.isArray(data)) {
+        throw new Error("Dữ liệu bất động sản không phải là mảng");
       }
-      const data = await response.json();
-      console.log('Wishlist properties fetched:', data);
-      setCurrentProperties(data);
-      setError(null);
-    } catch (err: any) {
-      setError('Failed to fetch wishlist properties');
-      console.error('Error fetching properties:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const addPropertyToWishlist = useCallback(async (wishlistId: number, propertyId: number) => {
-    setLoading(true);
-    try {
-      console.log(`Adding property ${propertyId} to wishlist ${wishlistId}`);
-      const response = await fetch(`http://localhost:8000/wishlists/${wishlistId}/properties`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ property_id: propertyId }),
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || `Failed to add property: ${response.status}`);
+      const mappedProperties: PropertyDisplay[] = data
+        .filter((property: any) => property.id && (!wishlistOnly || wishlistPropertyIds.includes(property.id)))
+        .map((property: any) => ({
+          id: property.id.toString(),
+          title: property.title || "Untitled Property",
+          price: `₫${(property.base_price || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`,
+          rating: property.host?.host_rating_average || 4.5,
+          nights: 1,
+          image: property.images?.find((img: any) => img.is_primary)?.image_url || "/placeholder.svg",
+          isFavorite: wishlistPropertyIds.includes(property.id),
+          isGuestFavorite: property.is_guest_favorite || false,
+        }));
+      console.log("Mapped properties:", mappedProperties);
+      setProperties(mappedProperties);
+      if (mappedProperties.length === 0) {
+        setError(wishlistOnly ? "Danh sách yêu thích trống." : "Không tìm thấy bất động sản nào.");
       }
-      console.log(`Added property ${propertyId} to wishlist ${wishlistId}`);
-      await fetchWishlistProperties(wishlistId);
-      setError(null);
     } catch (err: any) {
-      setError(err.message);
-      console.error('Error adding property:', err);
+      console.error("fetchProperties error:", err);
+      setError(err.message || (wishlistOnly ? "Không thể tải danh sách yêu thích." : "Không thể tải bất động sản."));
     } finally {
-      setLoading(false);
+      setIsLoading(false);
+      isFetchingRef.current = false;
     }
-  }, [fetchWishlistProperties]);
+  }, [userId, wishlistOnly]);
 
-  const removePropertyFromWishlist = useCallback(async (wishlistId: number, propertyId: number) => {
-    setLoading(true);
-    try {
-      console.log(`Removing property ${propertyId} from wishlist ${wishlistId}`);
-      const response = await fetch(`http://localhost:8000/wishlists/${wishlistId}/properties/${propertyId}`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-      });
-      if (!response.ok) {
-        throw new Error(`Failed to remove property: ${response.status}`);
+  const handleFavoriteToggle = useCallback(
+    async (propertyId: string, isFavorite: boolean) => {
+      try {
+        const endpoint = isFavorite
+          ? `${apiUrl}/wishlist/${userId}/add-property?property_id=${propertyId}`
+          : `${apiUrl}/wishlist/${userId}/remove-property/${propertyId}`;
+        const method = isFavorite ? "POST" : "DELETE";
+        console.log(`Toggling favorite: propertyId=${propertyId}, isFavorite=${isFavorite}`);
+
+        // Optimistic update
+        if (wishlistOnly && !isFavorite) {
+          setProperties((prev) => prev.filter((p) => p.id !== propertyId));
+        } else {
+          setProperties((prev) =>
+            prev.map((p) => (p.id === propertyId ? { ...p, isFavorite } : p))
+          );
+        }
+
+        const response = await fetch(endpoint, {
+          method,
+          headers: { "Content-Type": "application/json" },
+        });
+
+        if (!response.ok) {
+          let errorData;
+          try {
+            errorData = await response.json();
+          } catch (e) {
+            errorData = { detail: { detail: `HTTP ${response.status}` } };
+          }
+          console.error("Favorite toggle error:", errorData);
+          if (
+            errorData.detail?.detail?.includes("Bất động sản đã có trong wishlist") ||
+            errorData.detail?.detail?.includes("đã tồn tại")
+          ) {
+            return; // Property already in wishlist, no need to update
+          }
+          throw new Error(
+            errorData.detail?.detail ||
+              errorData.message ||
+              `Không thể ${isFavorite ? "thêm vào" : "xóa khỏi"} wishlist: HTTP ${response.status}`
+          );
+        }
+
+        const updatedWishlist: WishlistResponseDTO = await response.json();
+        console.log("Updated wishlist:", updatedWishlist);
+
+        // Update properties to reflect the new wishlist state
+        setProperties((prev) =>
+          wishlistOnly
+            ? prev
+                .filter((p) => updatedWishlist.property_ids.includes(parseInt(p.id)))
+                .map((p) => ({
+                  ...p,
+                  isFavorite: true,
+                }))
+            : prev.map((p) => ({
+                ...p,
+                isFavorite: updatedWishlist.property_ids.includes(parseInt(p.id)),
+              }))
+        );
+        setError(null);
+      } catch (error: any) {
+        console.error("handleFavoriteToggle error:", error.message, error);
+        // Refetch to ensure consistency
+        await fetchProperties();
+        throw error; // Re-throw for PropertyGrid to handle
       }
-      console.log(`Removed property ${propertyId} from wishlist ${wishlistId}`);
-      await fetchWishlistProperties(wishlistId);
-      setError(null);
-    } catch (err: any) {
-      setError(err.message);
-      console.error('Error removing property:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [fetchWishlistProperties]);
-
-  const createWishlist = useCallback(async (name: string, isPrivate: boolean = false) => {
-    setLoading(true);
-    try {
-      console.log(`Creating wishlist: ${name}`);
-      const response = await fetch('http://localhost:8000/wishlists', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: userId, name, is_private: isPrivate }),
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || `Failed to create wishlist: ${response.status}`);
-      }
-      const data = await response.json();
-      console.log('Wishlist created:', data);
-      setWishlists([...wishlists, data]);
-      setError(null);
-    } catch (err: any) {
-      setError(err.message);
-      console.error('Error creating wishlist:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [userId, wishlists]);
-
-  const deleteWishlist = useCallback(async (wishlistId: number) => {
-    setLoading(true);
-    try {
-      console.log(`Deleting wishlist ${wishlistId}`);
-      const response = await fetch(`http://localhost:8000/wishlists/${wishlistId}`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-      });
-      if (!response.ok) {
-        throw new Error(`Failed to delete wishlist: ${response.status}`);
-      }
-      console.log(`Deleted wishlist ${wishlistId}`);
-      setWishlists(wishlists.filter((w) => w.id !== wishlistId));
-      setCurrentProperties([]);
-      setError(null);
-    } catch (err: any) {
-      setError(err.message);
-      console.error('Error deleting wishlist:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [wishlists]);
-
-  useEffect(() => {
-    fetchWishlists();
-    fetchProperties();
-  }, [fetchWishlists, fetchProperties]);
+    },
+    [fetchProperties, userId, wishlistOnly]
+  );
 
   return {
-    wishlists,
-    currentProperties,
     properties,
-    loading,
     error,
-    fetchWishlists,
+    isLoading,
     fetchProperties,
-    fetchWishlistProperties,
-    addPropertyToWishlist,
-    removePropertyFromWishlist,
-    createWishlist,
-    deleteWishlist,
+    handleFavoriteToggle,
   };
-};
+}

@@ -6,9 +6,14 @@ export interface BookingPanelProps {
     timeLeft: string;
 }
 export interface BidData{
-    user_id: string;
-    auction_id: string;
-    bid_amount: string;
-    bid_time: string;
-    created_at: string;
+    user_id: number
+    property_id: number
+    auction_id: string
+    bid_amount: string
+    bid_time: string
+    check_in: string
+    check_out: string
+    allow_partial: boolean
+    partial_awarded: boolean
+    created_at: string
 }

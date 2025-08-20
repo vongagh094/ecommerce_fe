@@ -2,7 +2,6 @@ import {BidData} from "@/types/bidding";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 export const biddingAPI = {
     async fetch_sending_bid(bidData: BidData) {
-        console.log(bidData);
         try {
             const response = await fetch(`${API_URL}/sending_bid`, {
                 method: "POST",

@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect, useRef, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -7,12 +9,19 @@ import { Send, CheckCircle, Circle, Search, ArrowDown } from "lucide-react"
 import Pusher from "pusher-js"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
-import { Conversation, Message } from "@/types"
+import type { Conversation, Message } from "@/types"
 
-const temporaryUserId = Math.random() > 0.5 ? 1 : 2 // Simulating a temporary user ID (number)
+const useTemporaryUserId = () => {
+  const searchParams = useSearchParams()
+  const hostIdFromUrl = searchParams.get("hostId")
+  return hostIdFromUrl ? Number.parseInt(hostIdFromUrl) : Math.random() > 0.5 ? 1 : 2
+}
+
 const apiUrl = "http://127.0.0.1:8000"
 
 export default function MessagesPage() {
+  const temporaryUserId = useTemporaryUserId()
+
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
@@ -284,7 +293,7 @@ export default function MessagesPage() {
       ([entry]) => {
         setShowScrollButton(!entry.isIntersecting)
       },
-      { root: messagesContainerRef.current, threshold: 0.1 }
+      { root: messagesContainerRef.current, threshold: 0.1 },
     )
 
     if (messagesEndRef.current) {
@@ -297,6 +306,16 @@ export default function MessagesPage() {
       }
     }
   }, [visibleMessages])
+
+  useEffect(() => {
+    const conversationIdFromUrl = searchParams.get("conversationId")
+    if (conversationIdFromUrl && conversations.length > 0) {
+      const targetConversation = conversations.find((conv) => conv.id === Number.parseInt(conversationIdFromUrl))
+      if (targetConversation) {
+        setSelectedConversation(targetConversation)
+      }
+    }
+  }, [searchParams, conversations])
 
   const fetchConversations = async () => {
     try {
@@ -314,7 +333,7 @@ export default function MessagesPage() {
         data.map(async (conv: Conversation) => {
           try {
             const messagesResponse = await fetch(
-              `${apiUrl}/messages/list/${conv.id}?user_id=${temporaryUserId}&limit=10`
+              `${apiUrl}/messages/list/${conv.id}?user_id=${temporaryUserId}&limit=10`,
             )
             if (!messagesResponse.ok) {
               const errorText = await messagesResponse.text()
@@ -330,9 +349,14 @@ export default function MessagesPage() {
             }
           } catch (error: any) {
             console.error(`Error fetching messages for conversation ${conv.id}:`, error.message)
-            return { ...conv, has_unread: false, name: conv.other_user?.full_name || "Unknown User", last_message_at: null }
+            return {
+              ...conv,
+              has_unread: false,
+              name: conv.other_user?.full_name || "Unknown User",
+              last_message_at: null,
+            }
           }
-        })
+        }),
       )
 
       setConversations(conversationsWithUnread)
@@ -350,7 +374,7 @@ export default function MessagesPage() {
     try {
       setIsLoadingMessages(true)
       const response = await fetch(
-        `${apiUrl}/messages/list/${conversationId}?user_id=${temporaryUserId}&limit=${messagesPerPage}&offset=${(pageNum - 1) * messagesPerPage}`
+        `${apiUrl}/messages/list/${conversationId}?user_id=${temporaryUserId}&limit=${messagesPerPage}&offset=${(pageNum - 1) * messagesPerPage}`,
       )
       if (!response.ok) {
         const errorText = await response.text()
@@ -387,16 +411,12 @@ export default function MessagesPage() {
 
       // Update state immediately to reflect is_read change
       setMessages((prev) => {
-        const updated = prev.map((msg) =>
-          msg.id === messageId ? { ...msg, is_read: true } : msg
-        )
+        const updated = prev.map((msg) => (msg.id === messageId ? { ...msg, is_read: true } : msg))
         console.log("Updated messages with is_read locally:", updated)
         return sortMessages(updated)
       })
       setVisibleMessages((prev) => {
-        const updatedVisible = prev.map((msg) =>
-          msg.id === messageId ? { ...msg, is_read: true } : msg
-        )
+        const updatedVisible = prev.map((msg) => (msg.id === messageId ? { ...msg, is_read: true } : msg))
         console.log("Updated visibleMessages with is_read locally:", updatedVisible)
         return sortMessages(updatedVisible)
       })
@@ -543,10 +563,20 @@ export default function MessagesPage() {
           <div className="w-1/3 border-r border-gray-200 flex flex-col">
             <div className="p-4 border-b border-gray-200">
               <div className="flex space-x-2 mb-2">
-                <Button variant={filter === "all" ? "default" : "outline"} size="sm" onClick={() => setFilter("all")} className="rounded-full">
+                <Button
+                  variant={filter === "all" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setFilter("all")}
+                  className="rounded-full"
+                >
                   All
                 </Button>
-                <Button variant={filter === "unread" ? "default" : "outline"} size="sm" onClick={() => setFilter("unread")} className="rounded-full">
+                <Button
+                  variant={filter === "unread" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setFilter("unread")}
+                  className="rounded-full"
+                >
                   Unread
                 </Button>
               </div>
@@ -572,7 +602,7 @@ export default function MessagesPage() {
                   <div className="flex items-center space-x-3">
                     <div className="flex-1 min-w-0">
                       <h3 className="font-medium text-gray-900 text-sm leading-tight">
-                        {conversation.name + ' '}
+                        {conversation.name + " "}
                         <Link href={`/property/${conversation.property_id}`} className="text-blue-500 hover:underline">
                           {conversation.property_title || "Xem chi tiết phòng"}
                         </Link>
@@ -599,7 +629,10 @@ export default function MessagesPage() {
                   <span className="text-sm text-gray-500">
                     {" - hosting "}
                     {selectedConversation.property_id ? (
-                      <Link href={`/property/${selectedConversation.property_id}`} className="text-blue-500 hover:underline">
+                      <Link
+                        href={`/property/${selectedConversation.property_id}`}
+                        className="text-blue-500 hover:underline"
+                      >
                         {selectedConversation.property_title}
                       </Link>
                     ) : (
@@ -613,7 +646,7 @@ export default function MessagesPage() {
               {canLoadMore && (
                 <Button
                   onClick={handleLoadMore}
-                  className="w-full mt-2 rounded-full"
+                  className="w-full mt-2 rounded-full bg-transparent"
                   variant="outline"
                   disabled={isLoadingMessages}
                 >
@@ -637,9 +670,16 @@ export default function MessagesPage() {
                           message.sender_id === temporaryUserId ? "text-blue-200" : "text-gray-500"
                         }`}
                       >
-                        <span>{new Date(message.sent_at).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}</span>
+                        <span>
+                          {new Date(message.sent_at).toLocaleTimeString("vi-VN", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
                         {message.sender_id === temporaryUserId && (
-                          <span>{message.is_read ? <CheckCircle className="h-3 w-3" /> : <Circle className="h-3 w-3" />}</span>
+                          <span>
+                            {message.is_read ? <CheckCircle className="h-3 w-3" /> : <Circle className="h-3 w-3" />}
+                          </span>
                         )}
                       </div>
                     </div>

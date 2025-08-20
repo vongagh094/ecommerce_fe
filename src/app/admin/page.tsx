@@ -1,18 +1,22 @@
 "use client"
 
+import { useState } from "react"
 import { useAdminData } from "@/hooks/use-admin-data"
 import { AdminStatsCards } from "@/components/admin/admin-stats-cards"
 import { RevenueChart } from "@/components/admin/charts/revenue-chart"
 import { UserGrowthChart } from "@/components/admin/charts/user-growth-chart"
 import { BiddingActivityChart } from "@/components/admin/charts/bidding-activity-chart"
-import { ActiveBiddingsTable } from "@/components/admin/active-biddings-table"
+import { UserRoleChart } from "@/components/admin/charts/user-role-chart"
+import { TopPropertiesChart } from "@/components/admin/charts/top-properties-chart"
 import { AnomalyReportsTable } from "@/components/admin/anomaly-reports-table"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { BarChart3, Users, TrendingUp } from "lucide-react"
+import { BarChart3, Users, TrendingUp, PieChart, Trophy } from 'lucide-react'
 
 export default function AdminDashboard() {
   const { stats, revenueData, userGrowthData, loading } = useAdminData()
+  const [propertyMetric, setPropertyMetric] = useState<"bookings" | "earnings">("bookings")
 
   if (loading) {
     return (
@@ -82,7 +86,7 @@ export default function AdminDashboard() {
         <AdminStatsCards stats={stats} />
       </div>
 
-      {/* Charts Section */}
+      {/* Main Charts Section */}
       <div className="grid gap-6 lg:grid-cols-2 mb-8">
         {/* Revenue Chart */}
         <Card>
@@ -111,8 +115,25 @@ export default function AdminDashboard() {
         </Card>
       </div>
 
-      {/* Bidding Activity Chart */}
-      <div className="mb-8">
+      {/* Secondary Charts Section */}
+      <div className="grid gap-6 lg:grid-cols-2 mb-8">
+        {/* User Role Distribution */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <PieChart className="h-5 w-5 text-purple-500" />
+              User Role Breakdown
+            </CardTitle>
+            <p className="text-sm text-gray-600 mt-1">
+              Distribution of users by their roles on the platform
+            </p>
+          </CardHeader>
+          <CardContent>
+            <UserRoleChart data={stats.userRoleDistribution} />
+          </CardContent>
+        </Card>
+
+        {/* Bidding Activity Chart */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -128,12 +149,46 @@ export default function AdminDashboard() {
         </Card>
       </div>
 
-      {/* Tables Section */}
-      <div className="grid gap-6 lg:grid-cols-1 xl:grid-cols-2">
-        {/* Active Biddings */}
-        <ActiveBiddingsTable biddings={stats.activeBiddings} />
+      {/* Top Performing Properties */}
+      <div className="mb-8">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Trophy className="h-5 w-5 text-yellow-500" />
+                  Top Performing Properties
+                </CardTitle>
+                <p className="text-sm text-gray-600 mt-1">
+                  Properties ranked by number of bookings or total earnings
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant={propertyMetric === "bookings" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setPropertyMetric("bookings")}
+                >
+                  By Bookings
+                </Button>
+                <Button
+                  variant={propertyMetric === "earnings" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setPropertyMetric("earnings")}
+                >
+                  By Earnings
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <TopPropertiesChart data={stats.topProperties} metric={propertyMetric} />
+          </CardContent>
+        </Card>
+      </div>
 
-        {/* Anomaly Reports */}
+      {/* Anomaly Reports Table */}
+      <div className="mb-8">
         <AnomalyReportsTable reports={stats.anomalyReports} />
       </div>
     </div>

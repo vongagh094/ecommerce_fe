@@ -1,0 +1,110 @@
+
+global_notes:
+  - Các chart dùng data trong use-admin-data.ts trong hook
+  - Mỗi chart nhận 1 mảng tên "data". Mỗi phần tử phải đúng schema bên dưới.
+  - Tên field là bắt buộc và viết đúng y hệt (case-sensitive).
+  - Số tiền là số thuần (VND); frontend tự format.
+  - Tháng dùng dạng viết tắt tiếng Anh 3 ký tự: Jan..Dec.
+  - Ngày (nếu có) dùng ISO 'YYYY-MM-DD'.
+  - Thứ tự mảng ảnh hưởng trục/đường; tuân thủ phần "ordering" của từng chart.
+
+charts:
+  - id: revenue_chart
+    component: RevenueChart
+    purpose: "Biểu đồ đường hiển thị doanh thu và phí nền tảng theo tháng."
+    dataset: data
+    fields:
+      - name: month
+        type: string
+        required: true
+        constraints: {{ enum: [Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec] }}
+      - name: revenue
+        type: number
+        required: true
+        constraints: {{ min: 0 }}
+        unit: VND
+      - name: platformFee
+        type: number
+        required: true
+        constraints: {{ min: 0 }}
+        unit: VND
+
+  - id: user_growth_chart
+    component: UserGrowthChart
+    purpose: "Biểu đồ đường đa series: tổng người dùng, khách, và chủ nhà theo tháng."
+    dataset: data
+    fields:
+      - name: month
+        type: string
+        required: true
+        constraints: {{ enum: [Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec] }}
+      - name: total
+        type: number
+        required: true
+        constraints: {{ min: 0 }}
+      - name: guests
+        type: number
+        required: true
+        constraints: {{ min: 0 }}
+      - name: hosts
+        type: number
+        required: true
+        constraints: {{ min: 0 }}
+    
+  - id: bidding_activity_chart
+    component: BiddingActivityChart
+    purpose: "Biểu đồ donut thể hiện phân bổ lượt đấu giá theo nhóm hoạt động."
+    dataset: data
+    fields:
+      - name: label
+        type: string
+        required: true
+        constraints: {{ enum_recommended: [Daily, Weekly, Monthly] }}
+      - name: value
+        type: number
+        required: true
+        constraints: {{ min: 0 }}
+        unit: bids
+      - name: color
+        type: string
+        required: true
+        constraints: {{ format: css-color }}
+
+  - id: top_properties_chart
+    component: TopPropertiesChart
+    purpose: "Bar chart Top 10 bất động sản theo 'bookings' hoặc 'earnings'."
+    dataset: data
+    fields:
+      - name: name
+        type: string
+        required: true
+      - name: location
+        type: string
+        required: true
+      - name: bookings
+        type: integer
+        required: true
+        constraints: {{ min: 0 }}
+      - name: earnings
+        type: number
+        required: true
+        constraints: {{ min: 0 }}
+        unit: VND
+    
+  - id: user_role_chart
+    component: UserRoleChart
+    purpose: "Biểu đồ donut phân bổ người dùng theo vai trò, hiển thị % và tổng ở giữa."
+    dataset: data
+    fields:
+      - name: role
+        type: string
+        required: true
+        constraints: {{ enum_recommended: [Guests, Hosts, Both] }}
+      - name: count
+        type: integer
+        required: true
+        constraints: {{ min: 0 }}
+      - name: percentage
+        type: number
+        required: true
+        constraints: {{ min: 0, max: 100 }}

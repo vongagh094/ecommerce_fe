@@ -1,62 +1,61 @@
-export interface AdminStats {
-  totalUsers: {
-    total: number
-    guests: number
-    hosts: number
-    both: number
-  }
-  activeRooms: number
-  bidding: {
-    daily: number
-    weekly: number
-    monthly: number
-  }
-  revenue: {
+export type AdminDashboardData = {
+  revenueChartData: { month: string; revenue: number; platformFee: number }[]
+  userGrowthChartData: { month: string; total: number; guests: number; hosts: number }[]
+  biddingActivityChartData: { month: string; bids: number }[]
+  adminStats: {
     totalRevenue: number
-    platformFees: number
-    growth: number
+    totalUsers: number
+    activeListings: number
+    newSignups: number
   }
-  activeBiddings: ActiveBidding[]
+  activeBiddings: {
+    id: string
+    property: string
+    currentBid: number
+    highestBidder: string
+    timeRemaining: string
+    status: "Active" | "Ended"
+  }[]
   anomalyReports: AnomalyReport[]
+  topProperties: {
+    id: string
+    name: string
+    location: string
+    bookings: number
+    earnings: number
+    imageUrl: string
+  }[]
+  userRoleDistribution: {
+    role: "Guest" | "Host" | "Both"
+    count: number
+  }[]
 }
 
-export interface ActiveBidding {
+export type AnomalyReport = {
   id: string
-  propertyTitle: string
-  currentBid: number
-  bidderCount: number
-  timeRemaining: string
-  status: "active" | "closing-soon"
-  endTime: Date
-}
-
-export interface AnomalyReport {
-  id: string
-  type: "reported-account" | "fraud-behavior" | "suspicious-activity"
-  severity: "high" | "medium" | "low"
-  status: "pending" | "investigating" | "resolved"
+  type: "Reported Account" | "Fraud Behavior" | "Suspicious Activity"
+  status: "Resolved" | "Pending"
   description: string
   userName: string
   userId: string
-  createdAt: Date
-  updatedAt: Date
+  createdAt: string
+  updatedAt: string
 }
 
-export interface RevenueData {
-  month: string
-  revenue: number
-  platformFees: number
+export type User = {
+  id: string
+  fullName: string
+  email: string
+  phoneNumber: string
+  role: "Guest" | "Host" | "Both"
+  status: "Active" | "Banned"
+  avatarUrl?: string
 }
 
-export interface UserGrowthData {
-  month: string
-  guests: number
-  hosts: number
-  total: number
-}
-
-export interface BiddingActivityData {
-  period: string
-  count: number
-  type: "daily" | "weekly" | "monthly"
+export type Property = {
+  id: string
+  name: string
+  hostName: string
+  location: string
+  status: "Visible" | "Hidden"
 }

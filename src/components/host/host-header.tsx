@@ -21,7 +21,6 @@ export function HostHeader() {
   const isActive = (path: string) => pathname === path
 
   const navigationItems = [
-    { path: "/host/dashboard", label: "Dashboard" },
     { path: "/host/messages", label: "Messages" },
     { path: "/host/properties", label: "Your properties" },
     { path: "/host/bid-manager", label: "Bid Manager" },
