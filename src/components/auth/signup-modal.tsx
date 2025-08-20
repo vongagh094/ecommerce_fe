@@ -3,124 +3,78 @@
 import type React from "react"
 
 import { useState } from "react"
-import { ArrowLeft, Eye, EyeOff } from "lucide-react"
+import { ArrowLeft, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+// import { Input } from "@/components/ui/input"  // removed form inputs
 import { Dialog, DialogContent } from "@/components/ui/dialog"
+import { useAuth0 } from "@auth0/auth0-react"
 
 interface SignupModalProps {
-  isOpen: boolean
-  onClose: () => void
-  onSignup: () => void
-  onSwitchToLogin: () => void
+	isOpen: boolean
+	onClose: () => void
+	onSignup?: () => void // optional
+	onSwitchToLogin: () => void
 }
 
 export function SignupModal({ isOpen, onClose, onSignup, onSwitchToLogin }: SignupModalProps) {
-  const [name, setName] = useState("")
-  const [email, setEmail] = useState("hello@simiakinbode.com")
-  const [password, setPassword] = useState("")
-  const [showPassword, setShowPassword] = useState(false)
+	const [loading, setLoading] = useState(false)
+	const { loginWithRedirect } = useAuth0()
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    console.log("Signup attempt:", { name, email, password })
-    onSignup()
-    onClose()
-  }
+	const currentReturnTo = typeof window !== 'undefined' ? `${window.location.pathname}${window.location.search}${window.location.hash}` : '/'
 
-  return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md p-0 gap-0">
-        <div className="p-6">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-8">
-            <Button variant="ghost" size="sm" onClick={onClose} className="p-0 h-auto">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <h2 className="text-lg font-semibold">Sign up</h2>
-            <div className="w-4" /> {/* Spacer for centering */}
-          </div>
+	const saveReturnUrl = () => {
+		if (typeof window !== 'undefined') {
+			localStorage.setItem('auth_return_url', currentReturnTo)
+		}
+	}
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Name Field */}
-            <div className="space-y-2">
-              <label htmlFor="name" className="text-sm font-medium text-gray-700">
-                Name
-              </label>
-              <Input
-                id="name"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="h-14 text-base border-gray-300 rounded-lg"
-                required
-              />
-            </div>
+	const handleSignup = async () => {
+		try {
+			setLoading(true)
+			saveReturnUrl()
+			await loginWithRedirect({
+				appState: { returnTo: currentReturnTo },
+				authorizationParams: { screen_hint: "signup" as any },
+			})
+			onSignup?.()
+		} finally {
+			setLoading(false)
+		}
+	}
 
-            {/* Email Field */}
-            <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium text-gray-700">
-                Email
-              </label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="h-14 text-base border-gray-300 rounded-lg"
-                required
-              />
-              <p className="text-xs text-gray-500">We'll email you trip confirmation and receipts.</p>
-            </div>
+	return (
+		<Dialog open={isOpen} onOpenChange={onClose}>
+			<DialogContent className="sm:max-w-md p-0 gap-0">
+				<div className="p-6">
+					{/* Header */}
+					<div className="flex items-center justify-between mb-8">
+						<Button variant="ghost" size="sm" onClick={onClose} className="p-0 h-auto">
+							<ArrowLeft className="h-4 w-4" />
+						</Button>
+						<h2 className="text-lg font-semibold">Sign up</h2>
+						<div className="w-4" />
+					</div>
 
-            {/* Password Field */}
-            <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-medium text-gray-700">
-                Password
-              </label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="h-14 text-base border-gray-300 rounded-lg pr-16"
-                  required
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  <span className="ml-1 text-sm">Show</span>
-                </Button>
-              </div>
-            </div>
+					<Button
+						onClick={handleSignup}
+						disabled={loading}
+						className="w-full h-14 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg text-base flex items-center justify-center"
+					>
+						{loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+						Continue to Sign up / Login
+					</Button>
 
-            {/* Submit Button */}
-            <Button
-              type="submit"
-              className="w-full h-14 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg text-base"
-            >
-              Sign up
-            </Button>
-          </form>
-
-          {/* Switch to Login */}
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
-              Already have an account?{" "}
-              <button onClick={onSwitchToLogin} className="text-blue-500 hover:text-blue-600 font-medium">
-                Log in
-              </button>
-            </p>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-  )
+					{/* Switch to Login */}
+					<div className="mt-6 text-center">
+						<p className="text-sm text-gray-600">
+							Already have an account?{" "}
+							<button onClick={onSwitchToLogin} className="text-blue-500 hover:text-blue-600 font-medium">
+								Log in
+							</button>
+						</p>
+					</div>
+				</div>
+			</DialogContent>
+		</Dialog>
+	)
 }

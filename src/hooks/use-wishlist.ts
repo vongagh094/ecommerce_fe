@@ -86,7 +86,7 @@ export function useWishlist(userId: number, wishlistOnly: boolean = false) {
           id: property.id.toString(),
           title: property.title || "Untitled Property",
           price: `₫${(property.base_price || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`,
-          rating: property.host?.host_rating_average || 4.5,
+          rating: property.rating?.average.substring(0, 4) || '0',
           nights: 1,
           image: property.images?.find((img: any) => img.is_primary)?.image_url || "/placeholder.svg",
           isFavorite: wishlistPropertyIds.includes(property.id),

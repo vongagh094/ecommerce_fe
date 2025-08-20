@@ -10,7 +10,10 @@
 !.yarn/releases
 !.yarn/versions
 data_dump.sql
-
+.next/
+Repository/db_data/
+Repository/logs/
+node_modules/
 # testing
 /coverage
 
@@ -50,3 +53,6 @@ next-env.d.ts
 *.pyc
 /Repository
 /ws-server/node_modules
+.env
+.serena
+.vscode

@@ -1,122 +1,162 @@
-import { PropertyHeader } from "@/components/traveller/property-header"
+"use client"
+
+import { useState, useCallback } from "react"
+import { useParams } from "next/navigation"
+import { usePropertyDetails } from "@/hooks/use-property-details"
 import { PropertyGallery } from "@/components/traveller/property-gallery"
-import { PropertyDetails } from "@/components/traveller/property-details"
-import { BookingPanel } from "@/components/traveller/booking-panel"
-import { PropertyAmenities } from "@/components/traveller/property-amenities"
-import { PropertyReviews } from "@/components/traveller/property-reviews"
+import { PropertyHeader } from "@/components/traveller/property-header"
+import { PropertyDetails as PropertyDetailsComponent } from "@/components/traveller/property-details"
+import { EnhancedPropertyAmenities } from "@/components/traveller/enhanced-property-amenities"
 import { PropertyLocation } from "@/components/traveller/property-location"
+import { PropertyReviews } from "@/components/traveller/property-reviews"
 import { HostProfile } from "@/components/traveller/host-profile"
+import { BookingPanel } from "@/components/traveller/booking-panel"
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner"
 import {CalenderBidingFeature} from "@/components/traveller/calender-biding-feature"
 import {CalendarProvider} from "@/contexts/calender-context"
 import SimpleAuctionSelector from "@/components/traveller/auction-infor-biding"
 import {AuctionProvider} from "@/contexts/auction-calendar-context"
-interface PropertyPageProps {
-  params: {
-    id: string
-  }
-}
+import { useAuth } from "@/contexts/auth-context"
 
-export default function PropertyPage({ params }: PropertyPageProps) {
-  // In a real app, you'd fetch property data based on params.id
-  const property = {
-    id: params.id,
-    title: "Ponta Delgada",
-    location: "Portugal",
-    images: [
-      "/placeholder.svg?height=600&width=800",
-      "/placeholder.svg?height=300&width=400",
-      "/placeholder.svg?height=300&width=400",
-      "/placeholder.svg?height=300&width=400",
-      "/placeholder.svg?height=300&width=400",
-    ],
-    host: {
-        id: 3631,
-      name: "Dorothy",
-      experience: "3 years hosting",
-      responseRate: "100%",
-      responseTime: "within an hour",
-    },
-    details: {
-      guests: 4,
-      bedrooms: 2,
-      beds: 1,
-      bathrooms: 1,
-    },
-    description:
-      "Adaaran Club Rannalhi is featured among the best Hotels in Maldives and sits exclusively at the tip of the South Male atoll within the exotic collection of islands known as the Maldives. Its unique location offers access to pristine beaches, excellent scuba diving opportunities and a relaxed environment with easy access to the capital city of Male.",
-    amenities: ["WiFi", "TV", "Hot dryer", "Long-term stays allowed", "Pool", "Air conditioning", "Breakfast"],
-    reviews: {
-      rating: 5.0,
-      count: 7,
-      breakdown: {
-        cleanliness: 5.0,
-        accuracy: 5.0,
-        location: 4.9,
-        checkin: 5.0,
-        communication: 5.0,
-        value: 4.9,
-      },
-    },
+export default function PropertyPage() {
+  const params = useParams()
+  const propertyId = params.id as string
+  const { property, loading, error, refetch } = usePropertyDetails(propertyId)
+  const [isFavorite, setIsFavorite] = useState(false)
+  const { user } = useAuth()
+
+  const handleFavoriteToggle = useCallback(() => {
+    setIsFavorite(prev => !prev)
+    // Here you would call your API to update the favorite status
+    console.log(`Property ${propertyId} favorite status toggled to: ${!isFavorite}`)
+  }, [propertyId, isFavorite])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Property Not Found</h1>
+          <p className="text-gray-600 mb-6">{error}</p>
+          <button
+            onClick={() => refetch()}
+            className="bg-rose-500 text-white px-6 py-2 rounded-lg hover:bg-rose-600 transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (!property) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Property Not Found</h1>
+          <p className="text-gray-600">The property you're looking for doesn't exist.</p>
+        </div>
+      </div>
+    )
   }
     const booking = "10000002-1000-1000-1000-100000000002"
     const users = 1
   // @ts-ignore
     // @ts-ignore
 
-    return (
-            <div className="min-h-screen bg-white">
-              <PropertyHeader />
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <div className="mb-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h1 className="text-2xl font-semibold text-gray-900">{property.title}</h1>
-                      <p className="text-gray-600">{property.location}</p>
-                    </div>
-                    <div className="flex items-center space-x-4">
-                      <button className="flex items-center space-x-2 text-gray-600 hover:text-gray-900">
-                        <span className="text-sm font-medium">Report</span>
-                      </button>
-                      <button className="flex items-center space-x-2 text-gray-600 hover:text-gray-900">
-                        <span className="text-sm font-medium">Share</span>
-                      </button>
-                      <button className="flex items-center space-x-2 text-gray-600 hover:text-gray-900">
-                        <span className="text-sm font-medium">Save</span>
-                      </button>
-                    </div>
+  return (
+    <AuctionProvider>
+      <CalendarProvider>
+        <div className="min-h-screen bg-white">
+          {/* Property Header */}
+          <PropertyHeader
+            title={property.title}
+            rating={property.rating.average}
+            reviewCount={property.rating.count}
+            location={`${property.location.city}, ${property.location.state}, ${property.location.country}`}
+            isSuperhost={property.host.is_super_host}
+          />
+
+          {/* Property Gallery */}
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+            <PropertyGallery 
+              images={property.images} 
+              onFavoriteToggle={handleFavoriteToggle}
+              isFavorite={isFavorite}
+            />
+          </div>
+
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Main Content */}
+              <div className="lg:col-span-2 space-y-8">
+                {/* Property Details */}
+                <PropertyDetailsComponent
+                  propertyType={property.property_type}
+                  maxGuests={property.max_guests}
+                  bedrooms={property.bedrooms}
+                  bathrooms={property.bathrooms}
+                  description={property.description}
+                  highlights={property.highlights}
+
+                />
+
+                {/* Amenities */}
+                <EnhancedPropertyAmenities amenities={property.amenities} />
+                <div className="lg:col-span-2 space-y-12">
+                      <CalenderBidingFeature property_id={Number(property.id)}/>
+                    {/*<HostProfile />*/}
+                </div>
+                {/* Location */}
+                <PropertyLocation
+                  location={property.location}
+                  locationDescriptions={property.location_descriptions}
+                />
+
+
+                {/* Reviews */}
+                <PropertyReviews
+                  reviews={{
+                    average_rating: property.reviews.average_rating,
+                    total_reviews: property.reviews.total_reviews,
+                    rating_breakdown: {
+                      cleanliness: property.reviews.rating_breakdown.cleanliness,
+                      accuracy: property.reviews.rating_breakdown.accuracy,
+                      location: property.reviews.rating_breakdown.location,
+                      checking: property.reviews.rating_breakdown.checking,
+                      communication: property.reviews.rating_breakdown.communication,
+                      value: property.reviews.rating_breakdown.value,
+                    },
+                    recent_reviews: property.reviews.recent_reviews,
+                  }}
+                  propertyId={property.id}
+                  reviewerId={Number(user?.id ?? 0)}
+                  revieweeId={Number(property.host.id)}
+                /> 
+              </div>
+
+                {/* Host Profile */}
+                <div className="lg:col-span-1">
+                  <div className="lg:col-span-1 space-y-6">
+                        <SimpleAuctionSelector propertyId={Number(property.id)}/>
+                        <BookingPanel user_id={users}
+                                  property_id={Number(property.id)}
+                        />
+                        <HostProfile host={property.host} />
                   </div>
                 </div>
-
-                <PropertyGallery images={property.images} />
-
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 mt-12">
-                    <AuctionProvider>
-                        <CalendarProvider>
-                          <div className="lg:col-span-2 space-y-12">
-                              <CalenderBidingFeature property_id={Number(property.id)}/>
-                              <PropertyDetails host={property.host} details={property.details} description={property.description} />
-                              <PropertyAmenities amenities={property.amenities} />
-                              <PropertyReviews reviews = {property.reviews}
-                                               propertyId={property.id}
-                                               reviewerId={1}
-                                               revieweeId={property.host.id}
-                                               bookingId = {booking}
-                              />
-                              <PropertyLocation />
-
-                            {/*<HostProfile />*/}
-                          </div>
-
-                          <div className="lg:col-span-1">
-                                <SimpleAuctionSelector propertyId={Number(property.id)}/>
-                                <BookingPanel user_id={users}
-                                          property_id={Number(property.id)}
-                                />
-                          </div>
-                        </CalendarProvider>
-                    </AuctionProvider>
-                </div>
-              </div>
             </div>
+          </div>
+        </div>
+      </CalendarProvider>
+    </AuctionProvider>
+
   )
 }

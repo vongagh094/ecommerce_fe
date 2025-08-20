@@ -10,7 +10,11 @@ import { useAuth } from "@/contexts/auth-context"
 import { LoginModal } from "@/components/auth/login-modal"
 import { SignupModal } from "@/components/auth/signup-modal"
 
-export function SearchSection() {
+type SearchSectionProps = {
+  onSearchResults: (results: any) => void
+}
+
+export function SearchSection({onSearchResults}: SearchSectionProps) {
   const [userType, setUserType] = useState<"traveller" | "host">("traveller")
   const [showLoginModal, setShowLoginModal] = useState(false)
   const [showSignupModal, setShowSignupModal] = useState(false)
@@ -22,6 +26,7 @@ export function SearchSection() {
       setShowLoginModal(true)
       return
     }
+
 
     const newUserType = userType === "traveller" ? "host" : "traveller"
     setUserType(newUserType)
@@ -64,13 +69,13 @@ export function SearchSection() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
-          <div className="flex items-center">
+          <div className="flex items-center cursor-pointer caret-transparent select-none" onClick={() => router.push("/")}>
             <h1 className="text-2xl font-bold text-blue-800 font-serif">Sky-high</h1>
           </div>
 
           {/* Search Bar */}
           <div className="hidden md:flex">
-            <SearchBar />
+            <SearchBar onSearchResults={onSearchResults}/>
           </div>
 
           {/* Right Side */}
