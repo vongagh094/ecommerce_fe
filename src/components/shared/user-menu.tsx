@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { LoginModal } from "@/components/auth/login-modal"
 import { SignupModal } from "@/components/auth/signup-modal"
 import { useRouter } from "next/navigation"
-import { useAuth } from "@/contexts/auth-context"
+import { useAuth0 } from "@auth0/auth0-react"
 
 export function UserMenu() {
   const [isOpen, setIsOpen] = useState(false)
@@ -14,36 +14,10 @@ export function UserMenu() {
   const [showSignupModal, setShowSignupModal] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
-  const { isLoggedIn, login, logout } = useAuth()
-
-  const handleLogin = () => {
-    // Simulate user data - in real app this would come from the login form
-    const userData = {
-      id: "1",
-      name: "Moni Roy",
-      email: "jaskolski.brent@gmail.com",
-      avatar: "/placeholder.svg?height=40&width=40",
-    }
-    login(userData)
-    setShowLoginModal(false)
-    setIsOpen(false)
-  }
-
-  const handleSignup = () => {
-    // Simulate user data - in real app this would come from the signup form
-    const userData = {
-      id: "1",
-      name: "Moni Roy",
-      email: "jaskolski.brent@gmail.com",
-      avatar: "/placeholder.svg?height=40&width=40",
-    }
-    login(userData)
-    setShowSignupModal(false)
-    setIsOpen(false)
-  }
+  const { isAuthenticated, loginWithRedirect, logout } = useAuth0()
 
   const handleLogout = () => {
-    logout()
+    logout({ logoutParams: { returnTo: window.location.origin } })
     setIsOpen(false)
     router.push("/")
   }
@@ -80,7 +54,7 @@ export function UserMenu() {
         {/* Dropdown Menu */}
         {isOpen && (
           <div className="absolute right-0 top-full mt-2 w-60 bg-gray-100 border border-gray-200 rounded-2xl shadow-lg z-50 p-4">
-            {!isLoggedIn ? (
+            {!isAuthenticated ? (
               // Non-logged-in user menu
               <div className="space-y-3">
                 <button
@@ -172,7 +146,7 @@ export function UserMenu() {
       <LoginModal
         isOpen={showLoginModal}
         onClose={() => setShowLoginModal(false)}
-        onLogin={handleLogin}
+        onLogin={() => loginWithRedirect({ appState: { returnTo: "/" } })}
         onSwitchToSignup={() => {
           setShowLoginModal(false)
           setShowSignupModal(true)
@@ -183,7 +157,7 @@ export function UserMenu() {
       <SignupModal
         isOpen={showSignupModal}
         onClose={() => setShowSignupModal(false)}
-        onSignup={handleSignup}
+        onSignup={() => loginWithRedirect({ appState: { returnTo: "/" } })}
         onSwitchToLogin={() => {
           setShowSignupModal(false)
           setShowLoginModal(true)

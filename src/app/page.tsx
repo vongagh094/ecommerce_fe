@@ -1,72 +1,99 @@
-"use client";
+"use client"
 
-import { useEffect } from "react";
-import { SearchSection } from "@/components/traveller/search-section";
-import { CategoryFilters } from "@/components/traveller/category-filters";
-import { HeroSection } from "@/components/traveller/hero-section";
-import { PropertyGrid } from "@/components/traveller/property-grid";
-import { InspirationSection } from "@/components/traveller/inspiration-section";
-import { Footer } from "@/components/shared/footer";
-import { AiChatBubble } from "@/components/shared/ai-chat-bubble";
-import { useWishlist } from "@/hooks/use-wishlist";
-
-const userId = 1; // Temporary hardcoded userId
+import { useEffect, useState } from "react"
+import { SearchSection } from "@/components/traveller/search-section"
+import { CategoryFilters } from "@/components/traveller/category-filters"
+import { HeroSection } from "@/components/traveller/hero-section"
+import { PaginatedPropertyGrid } from "@/components/traveller/paginated-property-grid"
+import { InspirationSection } from "@/components/traveller/inspiration-section"
+import { Footer } from "@/components/shared/footer"
+import { AiChatBubble } from "@/components/shared/ai-chat-bubble"
+import { usePagination } from "@/hooks/use-pagination"
+import { useRouter } from "next/navigation"
 
 export default function HomePage() {
-  const { properties, error, isLoading, fetchProperties, handleFavoriteToggle } = useWishlist(userId);
+  const { 
+    properties, 
+    loading, 
+    error,
+    currentPage,
+    totalPages,
+    total,
+    hasNext,
+    hasPrev,
+    search,
+    goToPage,
+    nextPage,
+    prevPage
+  } = usePagination()
+  const [isInitialized, setIsInitialized] = useState(false)
+  const router = useRouter()
 
   useEffect(() => {
-    fetchProperties();
-  }, [fetchProperties]);
+    if (!isInitialized) {
+      search({})
+      setIsInitialized(true)
+    }
+  }, [search, isInitialized])
+
+  const handleSearchResults = (searchData: any) => {
+    const params = new URLSearchParams()
+    Object.entries(searchData || {}).forEach(([key, value]) => {
+      if (key === 'categories' && Array.isArray(value)) {
+        value.forEach(v => params.append('categories', String(v)))
+      } else if (Array.isArray(value)) {
+        value.forEach(v => params.append(key, String(v)))
+      } else if (value !== undefined && value !== null && value !== '') {
+        params.append(key, String(value))
+      }
+    })
+    router.push(`/search?${params.toString()}`)
+  }
+
+  const handleCategoryChange = (categories: string[]) => {
+    const params = new URLSearchParams()
+    categories.forEach(c => params.append('categories', c))
+    router.push(`/search?${params.toString()}`)
+  }
 
   return (
     <main className="min-h-screen bg-white">
-      <SearchSection />
-      <CategoryFilters />
+      <SearchSection onSearchResults={handleSearchResults} />
+      <CategoryFilters onCategoryChange={handleCategoryChange} />
       <HeroSection />
-      {/* {isLoading ? (
-        <div className="text-center py-8">
-          <svg
-            className="animate-spin h-8 w-8 text-blue-600 mx-auto"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-            />
-          </svg>
-          <p className="text-lg font-medium text-gray-700 mt-2">Đang tải bất động sản...</p>
+      
+      {/* Featured Properties Section */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-2">
+          <h2 className="text-2xl font-semibold text-gray-900 mb-2">
+            Featured Properties
+          </h2>
+          <p className="text-gray-600">
+            Discover unique places to stay around the world
+          </p>
         </div>
-      ) : error ? (
-        <div className="text-center py-8">
-          <p className="text-red-600 text-lg font-medium">{error}</p>
-          <button
-            onClick={() => fetchProperties()}
-            className="mt-4 bg-gray-900 text-white px-6 py-2 rounded-lg hover:bg-gray-800 transition-colors"
-          >
-            Thử lại
-          </button>
-        </div>
-      ) : properties.length === 0 ? (
-        <div className="text-center py-8">
-          <p className="text-gray-600 text-lg font-medium">Không có bất động sản nào để hiển thị.</p>
-          <p className="text-gray-500 mt-2">Hãy kiểm tra lại sau hoặc thử tìm kiếm khác!</p>
-        </div>
-      ) : (
-        <PropertyGrid
-          properties={properties}
-          userId={userId}
-          onFavoriteToggle={handleFavoriteToggle}
-          setIsMessageModalOpen={(open) => console.log("Message modal open:", open)}
-        />
-      )} */}
+      </div>
+
+      <PaginatedPropertyGrid
+        properties={properties}
+        loading={loading}
+        error={error}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        total={total}
+        hasNext={hasNext}
+        hasPrev={hasPrev}
+        onPageChange={goToPage}
+        onNext={nextPage}
+        onPrev={prevPage}
+        onToggleFavorite={(propertyId) => {
+          console.log('Toggle favorite for property:', propertyId)
+        }}
+      />
+
       <InspirationSection />
       <Footer />
       <AiChatBubble />
     </main>
-  );
+  )
 }

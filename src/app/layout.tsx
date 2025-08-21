@@ -5,6 +5,8 @@ import "./globals.css"
 import { AuthProvider } from "@/contexts/auth-context"
 import ServiceWorkerLayout from "./service-worker-layout"
 import { ToastProvider  } from "@/components/ui/toast"
+import { Auth0Provider } from "@/contexts/auth0-context"
+
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
@@ -22,9 +24,11 @@ export default function RootLayout({
       <ToastProvider />
       <body className={inter.className}>
         <AuthProvider>
-          <ServiceWorkerLayout>
-            {children}
-          </ServiceWorkerLayout>
+          <Auth0Provider>
+            <ServiceWorkerLayout>
+              {children}
+            </ServiceWorkerLayout>
+          </Auth0Provider>
         </AuthProvider>
       </body>
     </html>

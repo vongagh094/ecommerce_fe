@@ -4,7 +4,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button"
 import { useLazyLoad } from "@/hooks/use-lazyloading"
-
+import { ChevronDown } from "lucide-react"
+import { ReviewSummary } from "@/types/index"
 interface ReviewItem {
     id: string
     user: {
@@ -19,7 +20,7 @@ interface ReviewItem {
 interface Review {
     rating: number
     count: number
-    breakdown: {
+    rating_breakdown: {
         cleanliness: number
         accuracy: number
         location: number
@@ -30,7 +31,7 @@ interface Review {
 }
 
 interface PropertyReviewsProps {
-    reviews: Review
+    reviews: ReviewSummary
     propertyId?: string
     reviewerId: number // ID người đánh giá
     revieweeId: number // ID người được đánh giá (host)
@@ -49,12 +50,12 @@ interface CreateReviewRequest {
 }
 
 export function PropertyReviews({
-                                    reviews,
-                                    propertyId,
-                                    reviewerId,
-                                    revieweeId,
-                                    bookingId
-                                }: PropertyReviewsProps) {
+        reviews,
+        propertyId,
+        reviewerId,
+        revieweeId,
+        bookingId
+    }: PropertyReviewsProps) {
     // State cho form đánh giá mới
     const [newRating, setNewRating] = useState<number>(0)
     const [newReviewText, setNewReviewText] = useState<string>("")
@@ -156,7 +157,7 @@ export function PropertyReviews({
                     } else if (errorData.detail) {
                         if (Array.isArray(errorData.detail)) {
                             // FastAPI validation errors thường là array
-                            apiErrorMessage = errorData.detail.map(err =>
+                            apiErrorMessage = errorData.detail.map((err: any) =>
                                 `${err.loc?.join('.')}: ${err.msg}`
                             ).join(', ')
                         } else {
@@ -281,7 +282,7 @@ export function PropertyReviews({
                     <div className="flex items-center space-x-2 mb-8">
                         <Star className="h-5 w-5 fill-current text-gray-900" />
                         <span className="text-xl font-semibold">
-                            {reviews.rating} · {total > 0 ? total : reviews.count} đánh giá
+                            {reviews.average_rating} · {total > 0 ? total : reviews.total_reviews} đánh giá
                         </span>
                     </div>
 
@@ -294,10 +295,10 @@ export function PropertyReviews({
                                     <div className="w-24 h-1 bg-gray-200 rounded">
                                         <div
                                             className="h-full bg-gray-900 rounded"
-                                            style={{ width: `${(reviews.breakdown.cleanliness / 5) * 100}%` }}
+                                            style={{ width: `${(reviews.rating_breakdown.cleanliness / 5) * 100}%` }}
                                         />
                                     </div>
-                                    <span className="text-sm font-medium">{reviews.breakdown.cleanliness}</span>
+                                    <span className="text-sm font-medium">{reviews.rating_breakdown.cleanliness}</span>
                                 </div>
                             </div>
                             <div className="flex items-center justify-between">
@@ -306,10 +307,10 @@ export function PropertyReviews({
                                     <div className="w-24 h-1 bg-gray-200 rounded">
                                         <div
                                             className="h-full bg-gray-900 rounded"
-                                            style={{ width: `${(reviews.breakdown.communication / 5) * 100}%` }}
+                                            style={{ width: `${(reviews.rating_breakdown.communication / 5) * 100}%` }}
                                         />
                                     </div>
-                                    <span className="text-sm font-medium">{reviews.breakdown.communication}</span>
+                                    <span className="text-sm font-medium">{reviews.rating_breakdown.communication}</span>
                                 </div>
                             </div>
                             <div className="flex items-center justify-between">
@@ -318,10 +319,10 @@ export function PropertyReviews({
                                     <div className="w-24 h-1 bg-gray-200 rounded">
                                         <div
                                             className="h-full bg-gray-900 rounded"
-                                            style={{ width: `${(reviews.breakdown.checkin / 5) * 100}%` }}
+                                            style={{ width: `${(reviews.rating_breakdown.checking / 5) * 100}%` }}
                                         />
                                     </div>
-                                    <span className="text-sm font-medium">{reviews.breakdown.checkin}</span>
+                                    <span className="text-sm font-medium">{reviews.rating_breakdown.checking}</span>
                                 </div>
                             </div>
                         </div>
@@ -333,10 +334,10 @@ export function PropertyReviews({
                                     <div className="w-24 h-1 bg-gray-200 rounded">
                                         <div
                                             className="h-full bg-gray-900 rounded"
-                                            style={{ width: `${(reviews.breakdown.accuracy / 5) * 100}%` }}
+                                            style={{ width: `${(reviews.rating_breakdown.accuracy / 5) * 100}%` }}
                                         />
                                     </div>
-                                    <span className="text-sm font-medium">{reviews.breakdown.accuracy}</span>
+                                    <span className="text-sm font-medium">{reviews.rating_breakdown.accuracy}</span>
                                 </div>
                             </div>
                             <div className="flex items-center justify-between">
@@ -345,10 +346,10 @@ export function PropertyReviews({
                                     <div className="w-24 h-1 bg-gray-200 rounded">
                                         <div
                                             className="h-full bg-gray-900 rounded"
-                                            style={{ width: `${(reviews.breakdown.location / 5) * 100}%` }}
+                                            style={{ width: `${(reviews.rating_breakdown.location / 5) * 100}%` }}
                                         />
                                     </div>
-                                    <span className="text-sm font-medium">{reviews.breakdown.location}</span>
+                                    <span className="text-sm font-medium">{reviews.rating_breakdown.location}</span>
                                 </div>
                             </div>
                             <div className="flex items-center justify-between">
@@ -357,10 +358,10 @@ export function PropertyReviews({
                                     <div className="w-24 h-1 bg-gray-200 rounded">
                                         <div
                                             className="h-full bg-gray-900 rounded"
-                                            style={{ width: `${(reviews.breakdown.value / 5) * 100}%` }}
+                                            style={{ width: `${(reviews.rating_breakdown.value / 5) * 100}%` }}
                                         />
                                     </div>
-                                    <span className="text-sm font-medium">{reviews.breakdown.value}</span>
+                                    <span className="text-sm font-medium">{reviews.rating_breakdown.value}</span>
                                 </div>
                             </div>
                         </div>
@@ -368,7 +369,7 @@ export function PropertyReviews({
                 </>
             )}
 
-            {/* Show total from API if no reviews breakdown provided */}
+            {/* Show total from API if no reviews rating_breakdown provided */}
             {!reviews && total > 0 && (
                 <div className="flex items-center space-x-2 mb-8">
                     <Star className="h-5 w-5 fill-current text-gray-900" />
@@ -479,3 +480,4 @@ export function PropertyReviews({
         </div>
     )
 }
+

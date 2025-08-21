@@ -1,57 +1,156 @@
 "use client"
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Filter } from "lucide-react"
+import { useState, useEffect } from "react"
+import { useRouter, usePathname, useSearchParams } from "next/navigation"
+import { propertyApi } from "@/lib/api"
+import { getCategoryIconByCode, getCategoryLabelByCode } from "./category-icons"
 
-const categories = [
-  { id: "amazing-views", label: "Amazing views", icon: "🏔️" },
-  { id: "farms", label: "Farms", icon: "🚜" },
-  { id: "design", label: "Design", icon: "🎨" },
-  { id: "bed-breakfast", label: "Bed & breakfasts", icon: "🛏️" },
-  { id: "iconic-cities", label: "Iconic cities", icon: "🏙️" },
-  { id: "treehouses", label: "Treehouses", icon: "🌳" },
-  { id: "countryside", label: "Countryside", icon: "🌾" },
-  { id: "amazing-pool", label: "Amazing pool", icon: "🏊" },
-  { id: "beach", label: "Beach", icon: "🏖️" },
-  { id: "camper-vans", label: "Camper vans", icon: "🚐" },
-  { id: "islands", label: "Islands", icon: "🏝️" },
-  { id: "national-parks", label: "National parks", icon: "🏞️" },
-  { id: "omg", label: "OMG!", icon: "😱" },
-  { id: "camping", label: "Camping", icon: "⛺" },
-  { id: "arctic", label: "Arctic", icon: "🧊" },
-  { id: "cabin", label: "Cabin", icon: "🏘️" },
-]
+interface CategoryItem {
+  name: string
+  display_name: string
+}
 
-export function CategoryFilters() {
-  const [selectedCategory, setSelectedCategory] = useState("amazing-views")
+interface CategoryFiltersProps {
+  onCategoryChange: (categories: string[]) => void
+  selectedCategories?: string[]
+}
+
+export function CategoryFilters({ onCategoryChange, selectedCategories: propSelectedCategories }: CategoryFiltersProps) {
+  const [categories, setCategories] = useState<CategoryItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(propSelectedCategories || [])
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const data = await propertyApi.getCategories()
+        const normalized: CategoryItem[] = Array.isArray(data)
+          ? (typeof (data as any[])[0] === 'string'
+              ? (data as string[]).map(code => ({ name: code, display_name: getCategoryLabelByCode(code) }))
+              : (data as any[]).map((c: any) => ({ name: c.name, display_name: c.display_name ?? getCategoryLabelByCode(c.name) }))
+            )
+          : []
+        setCategories(normalized)
+      } catch (error) {
+        console.error("Failed to fetch categories:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchCategories()
+  }, [])
+
+  // Sync selected categories with URL params or prop
+  useEffect(() => {
+    const fromUrlPrimary = searchParams.getAll('categories')
+    const fromUrlLegacy = searchParams.getAll('category')
+    const fromUrl = fromUrlPrimary.length > 0 ? fromUrlPrimary : fromUrlLegacy
+    const initial = propSelectedCategories && propSelectedCategories.length > 0 ? propSelectedCategories : fromUrl
+    if (initial && initial.join('|') !== selectedCategories.join('|')) {
+      setSelectedCategories(initial)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, propSelectedCategories])
+
+  const toggleCategory = (categoryName: string) => {
+    const isSelected = selectedCategories.includes(categoryName)
+    const updated = isSelected
+      ? selectedCategories.filter(c => c !== categoryName)
+      : [...selectedCategories, categoryName]
+
+    setSelectedCategories(updated)
+    onCategoryChange(updated)
+
+    if (pathname === '/search') {
+      const params = new URLSearchParams(searchParams.toString())
+      params.delete('categories')
+      params.delete('category')
+      updated.forEach(c => params.append('categories', c))
+      router.push(`/search?${params.toString()}`)
+    }
+  }
+
+  const isSelected = (name: string) => selectedCategories.includes(name)
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="flex space-x-6 overflow-x-auto pb-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="flex flex-col items-center space-y-2 min-w-[80px]">
+              <div className="w-16 h-16 rounded-full bg-gray-200 animate-pulse"></div>
+              <div className="h-4 w-16 bg-gray-200 rounded animate-pulse"></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="border-b bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between py-4">
-          <div className="flex items-center space-x-8 overflow-x-auto scrollbar-hide">
-            {categories.map((category) => (
-              <button
-                key={category.id}
-                onClick={() => setSelectedCategory(category.id)}
-                className={`flex flex-col items-center space-y-2 min-w-0 flex-shrink-0 pb-2 border-b-2 transition-colors ${
-                  selectedCategory === category.id
-                    ? "border-gray-900 text-gray-900"
-                    : "border-transparent text-gray-500 hover:text-gray-700"
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 border-b border-gray-200">
+      <div className="flex space-x-8 overflow-x-auto pb-4">
+        {categories.map((category) => {
+          const IconComp = getCategoryIconByCode(category.name)
+          const displayName = category.display_name || getCategoryLabelByCode(category.name)
+          const selected = isSelected(category.name)
+
+          return (
+            <button
+              key={category.name}
+              onClick={() => toggleCategory(category.name)}
+              className={`flex flex-col items-center space-y-2 min-w-[80px] group ${
+                selected ? "opacity-100" : "opacity-70 hover:opacity-100"
+              }`}
+            >
+              <div
+                className={`w-16 h-16 rounded-full flex items-center justify-center bg-gray-100 group-hover:bg-gray-200 transition-colors ${
+                  selected ? "border-2 border-black" : "border border-gray-200"
                 }`}
               >
-                <span className="text-2xl">{category.icon}</span>
-                <span className="text-xs font-medium whitespace-nowrap">{category.label}</span>
-              </button>
-            ))}
-          </div>
-          <Button variant="outline" size="sm" className="ml-4 flex-shrink-0">
-            <Filter className="h-4 w-4 mr-2" />
-            Filters
-          </Button>
-        </div>
+                {IconComp ? (
+                  <IconComp className="h-6 w-6 text-gray-700" />
+                ) : (
+                  <span className="text-2xl">{getCategoryEmoji(category.name)}</span>
+                )}
+              </div>
+              <span
+                className={`text-sm ${
+                  selected ? "font-medium" : "text-gray-600"
+                }`}
+              >
+                {displayName}
+              </span>
+            </button>
+          )
+        })}
       </div>
     </div>
   )
+}
+
+function getCategoryEmoji(categoryName: string): string {
+  const emojiMap: Record<string, string> = {
+    beach: "🏖️",
+    mountain: "⛰️",
+    city: "🏙️",
+    countryside: "🏞️",
+    lake: "🌊",
+    ski: "⛷️",
+    tropical: "🌴",
+    desert: "🏜️",
+    cabin: "🏡",
+    castle: "🏰",
+    amazing_views: "🌄",
+    design: "🎨",
+    camping: "⛺",
+    historic: "🏛️",
+    default: "🏠",
+  }
+
+  return emojiMap[categoryName] || emojiMap.default
 }

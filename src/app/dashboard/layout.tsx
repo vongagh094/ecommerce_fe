@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button"
 import { UserMenu } from "@/components/shared/user-menu"
 import { NotificationDropdown } from "@/components/shared/notification-dropdown"
 import { useAuth } from "@/contexts/auth-context"
+import { SecondChanceOfferModal } from "@/components/traveller/second-chance-offer-modal"
+import { useSecondChanceOffers } from "@/hooks/use-second-chance-offers"
 
 const navigationTabs = [
   { id: "dashboard", label: "Dashboard", path: "/dashboard" },
@@ -33,6 +35,16 @@ export default function DashboardLayout({
     router.push("/")
   }
 
+  // Second chance offers
+  const {
+    currentOffer,
+    property,
+    isModalOpen,
+    setIsModalOpen,
+    acceptOffer,
+    declineOffer,
+  } = useSecondChanceOffers()
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -40,7 +52,7 @@ export default function DashboardLayout({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
             {/* Logo */}
-            <div className="flex items-center">
+            <div className="flex items-center cursor-pointer caret-transparent select-none" onClick={() => router.push("/")}>
               <h1 className="text-2xl font-bold text-blue-800 font-serif">Sky-high</h1>
               <p className="text-xs text-gray-500 ml-2 mt-1">YOUR HOLIDAY</p>
             </div>
@@ -90,6 +102,18 @@ export default function DashboardLayout({
 
         {children}
       </div>
+
+      {/* Second Chance Offer Modal */}
+      {isLoggedIn && currentOffer && property && (
+        <SecondChanceOfferModal
+          offer={currentOffer}
+          property={property}
+          isOpen={isModalOpen}
+          onOpenChange={setIsModalOpen}
+          onAccept={acceptOffer}
+          onDecline={() => declineOffer()}
+        />
+      )}
     </div>
   )
 }

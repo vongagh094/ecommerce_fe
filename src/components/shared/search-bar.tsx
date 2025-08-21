@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react"
 import { Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { LocationSearchModal } from "@/components/traveller/search/location-search-modal"
+import { EnhancedLocationSearchModal } from "@/components/traveller/search/enhanced-location-search-modal"
 import { DatePickerModal } from "@/components/traveller/search/date-picker-modal"
 import { GuestSelectorModal, type GuestCounts } from "@/components/traveller/search/guest-selector-modal"
 import { useRouter, useSearchParams } from "next/navigation"
@@ -15,15 +15,18 @@ import { useAuth } from "@/contexts/auth-context"
 interface SearchBarProps {
   variant?: "default" | "compact"
   className?: string
+  onSearchResults?: (results: any) => void
+  showBiddingMode?: boolean // For auction-specific searches
 }
 
-export function SearchBar({ variant = "default", className = "" }: SearchBarProps) {
+export function SearchBar({ variant = "default", className = "", onSearchResults, showBiddingMode = false }: SearchBarProps) {
   const [activeModal, setActiveModal] = useState<"location" | "dates" | "guests" | null>(null)
   const [searchData, setSearchData] = useState({
     location: "",
     checkIn: null as Date | null,
     checkOut: null as Date | null,
     guests: { adults: 1, children: 0, infants: 0, pets: 0 } as GuestCounts,
+    categories: [] as string[],
   })
   const [isInitialized, setIsInitialized] = useState(false)
   const [showLoginModal, setShowLoginModal] = useState(false)
@@ -34,42 +37,73 @@ export function SearchBar({ variant = "default", className = "" }: SearchBarProp
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  // Initialize search data from URL params only once
+  // Initialize from URL once for base fields
   useEffect(() => {
     if (!isInitialized) {
       const location = searchParams.get("location")
-      const checkIn = searchParams.get("checkIn")
-      const checkOut = searchParams.get("checkOut")
+      const checkIn = searchParams.get("check_in")
+      const checkOut = searchParams.get("check_out")
       const guests = searchParams.get("guests")
+      const cats = searchParams.getAll("categories")
 
-      if (location || checkIn || checkOut || guests) {
-        setSearchData({
-          location: location || "",
-          checkIn: checkIn ? new Date(checkIn) : null,
-          checkOut: checkOut ? new Date(checkOut) : null,
-          guests: {
-            adults: guests ? Math.max(1, Number.parseInt(guests)) : 1,
-            children: 0,
-            infants: 0,
-            pets: 0,
-          },
-        })
-      }
+      setSearchData({
+        location: location || "",
+        checkIn: checkIn ? new Date(checkIn) : null,
+        checkOut: checkOut ? new Date(checkOut) : null,
+        guests: {
+          adults: guests ? Math.max(1, Number.parseInt(guests)) : 1,
+          children: 0,
+          infants: 0,
+          pets: 0,
+        },
+        categories: cats || [],
+      })
       setIsInitialized(true)
     }
   }, [searchParams, isInitialized])
 
+  // Keep categories in sync with URL changes (e.g., when toggling filters)
+  useEffect(() => {
+    const cats = searchParams.getAll("categories")
+    setSearchData(prev => {
+      const same = cats.join("|") === (prev.categories || []).join("|")
+      return same ? prev : { ...prev, categories: cats }
+    })
+  }, [searchParams])
+
   const handleSearch = useCallback(() => {
-    // Create search params
+    const totalGuests = searchData.guests.adults + searchData.guests.children
+    if (totalGuests <= 0) return
+    if (searchData.checkIn && searchData.checkOut && searchData.checkOut <= searchData.checkIn) return
+
     const params = new URLSearchParams()
+
     if (searchData.location) params.set("location", searchData.location)
-    if (searchData.checkIn) params.set("checkIn", searchData.checkIn.toISOString())
-    if (searchData.checkOut) params.set("checkOut", searchData.checkOut.toISOString())
-    params.set("guests", (searchData.guests.adults + searchData.guests.children).toString())
+    if (searchData.checkIn) params.set("check_in", searchData.checkIn.toISOString().split('T')[0])
+    if (searchData.checkOut) params.set("check_out", searchData.checkOut.toISOString().split('T')[0])
+    params.set("guests", totalGuests.toString())
+
+    // Always use categories from URL (latest source of truth)
+    const urlCats = searchParams.getAll("categories")
+    const categoriesToUse = urlCats.length > 0 ? urlCats : searchData.categories
+    for (const c of categoriesToUse) params.append("categories", c)
+
+    if (showBiddingMode) params.set("mode", "bidding")
 
     router.push(`/search?${params.toString()}`)
     setActiveModal(null)
-  }, [searchData, router])
+
+    if (onSearchResults) {
+      onSearchResults({
+        location: searchData.location,
+        check_in: searchData.checkIn?.toISOString().split('T')[0],
+        check_out: searchData.checkOut?.toISOString().split('T')[0],
+        guests: totalGuests,
+        categories: categoriesToUse,
+        mode: showBiddingMode ? 'bidding' : 'standard'
+      })
+    }
+  }, [searchData, router, showBiddingMode, onSearchResults, searchParams])
 
   const formatGuests = useCallback(() => {
     const total = searchData.guests.adults + searchData.guests.children
@@ -79,20 +113,11 @@ export function SearchBar({ variant = "default", className = "" }: SearchBarProp
 
   const formatDateRange = useCallback(() => {
     if (!searchData.checkIn || !searchData.checkOut) return "Add dates"
-
-    const checkInStr = searchData.checkIn.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-    })
-    const checkOutStr = searchData.checkOut.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-    })
-
+    const checkInStr = searchData.checkIn.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+    const checkOutStr = searchData.checkOut.toLocaleDateString("en-US", { month: "short", day: "numeric" })
     return `${checkInStr} - ${checkOutStr}`
   }, [searchData.checkIn, searchData.checkOut])
 
-  // Close modals when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
@@ -161,7 +186,7 @@ export function SearchBar({ variant = "default", className = "" }: SearchBarProp
         </div>
 
         {/* Modals for compact version */}
-        <LocationSearchModal
+        <EnhancedLocationSearchModal
           isOpen={activeModal === "location"}
           onClose={() => setActiveModal(null)}
           onSelect={(location) => {
@@ -205,7 +230,7 @@ export function SearchBar({ variant = "default", className = "" }: SearchBarProp
             <div className="text-xs font-semibold text-gray-800">Where</div>
             <div className="text-sm text-gray-600 w-32 truncate">{searchData.location || "Search destinations"}</div>
           </button>
-          <LocationSearchModal
+          <EnhancedLocationSearchModal
             isOpen={activeModal === "location"}
             onClose={() => setActiveModal(null)}
             onSelect={handleLocationSelect}

@@ -1,5 +1,4 @@
 import type { PropertyImageAPI } from "./api"
-
 export interface PropertyDetails {
   id: number
   title: string
@@ -67,3 +66,4 @@ export interface PropertyCategory {
   name: string
   description?: string | null
 }
+
