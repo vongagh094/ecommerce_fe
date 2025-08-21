@@ -2,6 +2,8 @@ import { Clock, Play, AlertTriangle } from 'lucide-react';
 import {useAuctionCountdown} from "@/hooks/use-countdown";
 import {auctionAPI} from "@/lib/auction-service"
 import {useEffect, useRef} from "react";
+import {useWinner} from "@/contexts/winner-context";
+
 // Simple countdown component
 interface SimpleCountdownProps {
     auction_id: string,
@@ -24,6 +26,7 @@ export const SimpleCountdown: React.FC<SimpleCountdownProps> = ({
         auctionStartTime,
         auctionEndTime
     );
+
     // Ref để track xem đã update status chưa
     const hasUpdatedStatus = useRef(false);
     const previousIsEnded = useRef(false);// Thêm vào đầu componen
@@ -59,11 +62,27 @@ export const SimpleCountdown: React.FC<SimpleCountdownProps> = ({
         }
     }
 
+    // có alart ui
+    const { showWinnerAlert } = useWinner();
+    const handleWinner = async () => {
+        try {
+            // Hiển thị alert nhỏ thay vì modal to
+            showWinnerAlert(auction_id);
+            console.log(`Auction ${auction_id} ended, showing winner alert`);
+        } catch (error) {
+            console.error('Error handling winner:', error);
+            showWinnerAlert(auction_id);
+        }
+    };
+    // const handleWinner = async () => {
+    //
+    // }
     // Effect để theo dõi khi auction kết thúc
     useEffect(() => {
         // Chỉ update khi isEnded thay đổi từ false sang true
         if (isEnded && !previousIsEnded.current) {
             handleUpdateStatus("COMPLETED");
+            handleWinner();
         }
 
         previousIsEnded.current = isEnded;
@@ -113,63 +132,5 @@ export const SimpleCountdown: React.FC<SimpleCountdownProps> = ({
         </div>
     );
 };
-
-// // Usage example trong auction card
-// export const AuctionCardWithSimpleCountdown: React.FC<{
-//     auction: any;
-//     onClick?: () => void;
-//     isSelected?: boolean;
-// }> = ({ auction, onClick, isSelected }) => {
-//     const formatCurrency = (amount: number) => {
-//         return `${amount.toLocaleString()} đ`;
-//     };
-//
-//     return (
-//         <button
-//             onClick={onClick}
-//             className={`w-full p-4 rounded-xl border-2 transition-all duration-200 text-left ${
-//                 isSelected
-//                     ? 'border-blue-500 bg-blue-50'
-//                     : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-//             }`}
-//         >
-//             {/* Header với countdown */}
-//             <div className="flex items-center justify-between mb-3">
-//                 <h4 className="font-medium text-gray-900">Property #{auction.property_id}</h4>
-//                 <SimpleCountdown
-//                     auctionStartTime={auction.auction_start_time}
-//                     auctionEndTime={auction.auction_end_time}
-//                 />
-//             </div>
-//
-//             {/* Auction info */}
-//             <div className="grid grid-cols-3 gap-4 text-sm">
-//                 <div>
-//                     <div className="text-xs text-gray-500">Starting Price</div>
-//                     <div className="font-medium text-gray-900">
-//                         {formatCurrency(auction.starting_price)}
-//                     </div>
-//                 </div>
-//
-//                 <div>
-//                     <div className="text-xs text-gray-500">Current Highest</div>
-//                     <div className="font-medium text-green-600">
-//                         {auction.current_highest_bid
-//                             ? formatCurrency(auction.current_highest_bid)
-//                             : 'No bids'
-//                         }
-//                     </div>
-//                 </div>
-//
-//                 <div>
-//                     <div className="text-xs text-gray-500">Total Bids</div>
-//                     <div className="font-medium text-blue-600">
-//                         {auction.total_bids}
-//                     </div>
-//                 </div>
-//             </div>
-//         </button>
-//     );
-// };
 
 export default SimpleCountdown;

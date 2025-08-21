@@ -10,13 +10,19 @@ import {CalenderBidingFeature} from "@/components/traveller/calender-biding-feat
 import {CalendarProvider} from "@/contexts/calender-context"
 import SimpleAuctionSelector from "@/components/traveller/auction-infor-biding"
 import {AuctionProvider} from "@/contexts/auction-calendar-context"
+import {WinnerProvider} from "@/contexts/winner-context";
+// import {useAuth} from "@/contexts/auth-context";
 interface PropertyPageProps {
   params: {
-    id: string
+    id: string,
   }
+    searchParams:{
+        users?: string
+    }
 }
 
-export default function PropertyPage({ params }: PropertyPageProps) {
+// @ts-ignore
+export default function PropertyPage({ params,searchParams }: PropertyPageProps) {
   // In a real app, you'd fetch property data based on params.id
   const property = {
     id: params.id,
@@ -59,10 +65,8 @@ export default function PropertyPage({ params }: PropertyPageProps) {
     },
   }
     const booking = "10000002-1000-1000-1000-100000000002"
-    const users = 1
   // @ts-ignore
     // @ts-ignore
-
     return (
             <div className="min-h-screen bg-white">
               <PropertyHeader />
@@ -92,27 +96,28 @@ export default function PropertyPage({ params }: PropertyPageProps) {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 mt-12">
                     <AuctionProvider>
                         <CalendarProvider>
-                          <div className="lg:col-span-2 space-y-12">
-                              <CalenderBidingFeature property_id={Number(property.id)}/>
-                              <PropertyDetails host={property.host} details={property.details} description={property.description} />
-                              <PropertyAmenities amenities={property.amenities} />
-                              <PropertyReviews reviews = {property.reviews}
-                                               propertyId={property.id}
-                                               reviewerId={1}
-                                               revieweeId={property.host.id}
-                                               bookingId = {booking}
-                              />
-                              <PropertyLocation />
+                            <WinnerProvider>
+                              <div className="lg:col-span-2 space-y-12">
+                                  <CalenderBidingFeature property_id={Number(property.id)}/>
+                                  <PropertyDetails host={property.host} details={property.details} description={property.description} />
+                                  <PropertyAmenities amenities={property.amenities} />
+                                  <PropertyReviews reviews = {property.reviews}
+                                                   propertyId={property.id}
+                                                   reviewerId={1}
+                                                   revieweeId={property.host.id}
+                                                   bookingId = {booking}
+                                  />
+                                  <PropertyLocation />
 
-                            {/*<HostProfile />*/}
-                          </div>
-
-                          <div className="lg:col-span-1">
-                                <SimpleAuctionSelector propertyId={Number(property.id)}/>
-                                <BookingPanel user_id={users}
-                                          property_id={Number(property.id)}
-                                />
-                          </div>
+                                {/*<HostProfile />*/}
+                              </div>
+                              <div className="lg:col-span-1">
+                                    <SimpleAuctionSelector propertyId={Number(property.id)}/>
+                                    <BookingPanel user_id={Number(searchParams.users)}
+                                              property_id={Number(property.id)}
+                                    />
+                              </div>
+                            </WinnerProvider>
                         </CalendarProvider>
                     </AuctionProvider>
                 </div>

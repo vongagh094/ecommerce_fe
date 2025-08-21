@@ -11,6 +11,9 @@ import { useCalendarContext } from "@/contexts/calender-context"
 import {BidData} from "@/types/bidding";
 import { useBidding } from "@/hooks/use-bidding";
 import { useAuctionCalendarContext } from "@/contexts/auction-calendar-context";
+import {WinLossStatusFromAPI} from "@/components/traveller/win-lose-status"
+import {useAuth} from "@/contexts/auth-context";
+import {useWinner} from "@/contexts/winner-context";
 import {
     CalendarDays,
     DollarSign,
@@ -51,7 +54,8 @@ export function BookingPanel({
         bidPerNight
     } = useCalendarContext()
 
-
+    const {setCurrenUserId} = useWinner()
+    setCurrenUserId(user_id)
     // @ts-ignore
     const bidData : BidData = {
         user_id: user_id,
@@ -180,7 +184,7 @@ export function BookingPanel({
                                             <div className="text-center">
                                                 <div className="text-green-800 text-sm">Per night</div>
                                                 <div className="font-bold text-green-600 text-xl">
-                                                    ${bidPerNight}
+                                                    {bidPerNight}.000đ
                                                 </div>
                                             </div>
                                         </div>
@@ -230,43 +234,11 @@ export function BookingPanel({
                         )}
                     </CardContent>
                 </Card>
-
-                {/* Market Insights - Static data hoặc từ API */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="text-lg flex items-center">
-                            <BarChart3 className="h-5 w-5 mr-2" />
-                            Market Insights
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="text-center p-3 bg-blue-50 rounded-lg">
-                                <div className="text-xl font-bold text-blue-600">$245</div>
-                                <div className="text-xs text-blue-800">Avg. winning bid</div>
-                            </div>
-                            <div className="text-center p-3 bg-green-50 rounded-lg">
-                                <div className="text-xl font-bold text-green-600">82%</div>
-                                <div className="text-xs text-green-800">Success rate</div>
-                            </div>
-                        </div>
-                        <div className="space-y-2 text-sm">
-                            <div className="flex items-center space-x-2">
-                                <TrendingDown className="h-4 w-4 text-green-600" />
-                                <span>Best deals: March 15-18 (30% below avg)</span>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                <Clock className="h-4 w-4 text-blue-600" />
-                                <span>Peak season: Dec-Feb (+40% avg bid)</span>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                <Eye className="h-4 w-4 text-purple-600" />
-                                <span>12 people viewed this in the last hour</span>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
+                {/* bided date Status */}
+                {/*<WinLossStatusFromAPI user_id={user_id}*/}
+                {/*                      property_id={property_id}*/}
+                {/*                      auction_id={selectedAuction?.id || "00000000-0000-0000-0000-000000000000"}*/}
+                {/*/>*/}
                 {/* Host Info */}
                 <Card>
                     <CardContent className="pt-6">

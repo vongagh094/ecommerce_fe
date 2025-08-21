@@ -627,12 +627,6 @@ export function CalenderBidingFeature({ property_id }: CalendarBidingProps) {
                                 <CardTitle className="flex items-center">
                                     <CalendarIcon className="h-5 w-5 mr-2" />
                                     Bidding Calendar
-                                    {/* 🎯 Add refresh indicator */}
-                                    {refreshCount > 0 && (
-                                        <Badge variant="outline" className="ml-2 text-green-600 border-green-200">
-                                            🔄 {refreshCount} updates
-                                        </Badge>
-                                    )}
                                 </CardTitle>
 
                                 {/* 🎯 Enhanced timer display */}
@@ -765,9 +759,9 @@ export function CalenderBidingFeature({ property_id }: CalendarBidingProps) {
                                                                             ) : (
                                                                                 <>
                                                                                     <div className="text-xs font-bold text-green-600">
-                                                                                        {formatVND(day.highest_bid).slice(0, -3)}K
+                                                                                        {formatVND(day.highest_bid).slice(0, -2)}K
                                                                                     </div>
-                                                                                    <div className="text-xs text-gray-500">{day.active_bids} bids</div>
+                                                                                    {/*<div className="text-xs text-gray-500">{day.active_bids} bids</div>*/}
                                                                                 </>
                                                                             )}
                                                                         </div>
@@ -793,10 +787,9 @@ export function CalenderBidingFeature({ property_id }: CalendarBidingProps) {
                                                                             <div className="text-red-600">This date is already booked</div>
                                                                         ) : (
                                                                             <>
-                                                                                <div>Current highest: {formatVND(day.highest_bid)}</div>
-                                                                                <div>Min to win: {formatVND(day.minimum_to_win)}</div>
-                                                                                <div>Active bids: {day.active_bids}</div>
-                                                                                <div>Win rate: {Math.round(day.success_rate * 100)}%</div>
+                                                                                <div>Current highest: {formatVND(day.highest_bid * 1000)}</div>
+                                                                                <div>Min to win: {formatVND(day.minimum_to_win * 1000)}</div>
+                                                                                <div>Win rate: {Math.round(day.success_rate)}%</div>
                                                                                 <Badge className={getDemandColor(day.demand_level)} variant="outline">
                                                                                     {day.demand_level} demand
                                                                                 </Badge>

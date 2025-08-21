@@ -194,7 +194,7 @@ export function PropertyReviews({
                 errorMessage = error
             } else if (error && typeof error === 'object') {
                 // Nếu error là object, thử extract message
-                errorMessage = error.message || error.detail || JSON.stringify(error)
+                errorMessage = error.message() || error.detail || JSON.stringify(error)
             }
 
             setSubmitError(errorMessage)
