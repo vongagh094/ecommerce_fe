@@ -27,6 +27,7 @@ export const SimpleCountdown: React.FC<SimpleCountdownProps> = ({
         auctionEndTime
     );
 
+    //
     // Ref để track xem đã update status chưa
     const hasUpdatedStatus = useRef(false);
     const previousIsEnded = useRef(false);// Thêm vào đầu componen
@@ -65,14 +66,9 @@ export const SimpleCountdown: React.FC<SimpleCountdownProps> = ({
     // có alart ui
     const { showWinnerAlert } = useWinner();
     const handleWinner = async () => {
-        try {
-            // Hiển thị alert nhỏ thay vì modal to
-            showWinnerAlert(auction_id);
-            console.log(`Auction ${auction_id} ended, showing winner alert`);
-        } catch (error) {
-            console.error('Error handling winner:', error);
-            showWinnerAlert(auction_id);
-        }
+        showWinnerAlert(auction_id);
+        const result = await auctionAPI.updateAuctionStatus(auction_id, "COMPLETED");
+        console.log(result);
     };
     // const handleWinner = async () => {
     //

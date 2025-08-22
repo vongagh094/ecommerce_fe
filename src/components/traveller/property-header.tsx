@@ -1,6 +1,8 @@
 "use client"
 
 import { Star, Share2, Heart } from "lucide-react"
+import {useWinner} from "@/contexts/winner-context";
+import {useEffect} from "react";
 
 interface PropertyHeaderProps {
 	title: string
@@ -29,6 +31,10 @@ export function PropertyHeader({
 			// You could show a toast notification here
 		}
 	}
+    const {setPropertyName} = useWinner();
+    useEffect(() => {
+        setPropertyName(title);
+    }, [title, setPropertyName])
 
 	const handleSave = () => {
 		// TODO: Implement save to wishlist functionality

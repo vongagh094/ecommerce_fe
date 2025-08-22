@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_URL ='http://localhost:8000';
 
 export interface UpdateStatusResponse {
     success: boolean;
@@ -11,7 +11,7 @@ export const auctionAPI = {
     // Hàm update status auction
     async updateAuctionStatus(auctionId: string, status: string): Promise<UpdateStatusResponse> {
         try {
-            const response = await fetch(`${API_URL}/auctions/update/${auctionId}?status=${status}`, {
+            const response = await fetch(`${API_URL}/auctions/update/status/${auctionId}?status=${status}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json'

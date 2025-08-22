@@ -60,27 +60,27 @@ export function useBidingState() {
         return { success: true, hasBookedDates: false }
     }, [selectedDates])
 
-    // // Handle booked date confirmation
-    // const handleBookedDateConfirmation = useCallback((
-    //     acceptPartial: boolean,
-    //     calendarData: DayData[]
-    // ) => {
-    //     if (acceptPartial) {
-    //         const availableDates = pendingDateSelection.filter((date) => {
-    //             const dayData = calendarData.find((d) => isSameDay(d.date, date))
-    //             return !dayData?.is_booked
-    //         })
-    //         setSelectedDates(availableDates)
-    //         setAllowPartial(true)
-    //         setShowBookedDateModal(false)
-    //         setPendingDateSelection([])
-    //         return { success: true, selectedCount: availableDates.length }
-    //     } else {
-    //         setShowBookedDateModal(false)
-    //         setPendingDateSelection([])
-    //         return { success: false, selectedCount: 0 }
-    //     }
-    // }, [pendingDateSelection])
+    // Handle booked date confirmation
+    const handleBookedDateConfirmation = useCallback((
+        acceptPartial: boolean,
+        calendarData: DayData[]
+    ) => {
+        if (acceptPartial) {
+            const availableDates = pendingDateSelection.filter((date) => {
+                const dayData = calendarData.find((d) => isSameDay(d.date, date))
+                return !dayData?.is_booked
+            })
+            setSelectedDates(availableDates)
+            setAllowPartial(true)
+            setShowBookedDateModal(false)
+            setPendingDateSelection([])
+            return { success: true, selectedCount: availableDates.length }
+        } else {
+            setShowBookedDateModal(false)
+            setPendingDateSelection([])
+            return { success: false, selectedCount: 0 }
+        }
+    }, [pendingDateSelection])
 
     // Clear selection
     const clearSelection = useCallback(() => {

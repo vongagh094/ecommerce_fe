@@ -151,13 +151,13 @@ export function CalenderBidingFeature({ property_id }: CalendarBidingProps) {
                 date: new Date(day.date)
             }))
 
-            console.log('✅ Calendar data received:', {
-                count: calendarDataWithDates.length,
-                source,
-                firstDay: calendarDataWithDates[0]?.date.toDateString(),
-                lastDay: calendarDataWithDates[calendarDataWithDates.length - 1]?.date.toDateString(),
-                sampleData: calendarDataWithDates.slice(0, 2)
-            });
+            // console.log('✅ Calendar data received:', {
+            //     count: calendarDataWithDates.length,
+            //     source,
+            //     firstDay: calendarDataWithDates[0]?.date.toDateString(),
+            //     lastDay: calendarDataWithDates[calendarDataWithDates.length - 1]?.date.toDateString(),
+            //     sampleData: calendarDataWithDates.slice(0, 2)
+            // });
 
             // 🎯 UPDATE STATE - This should trigger calendarGrid recalculation
             setCalendarData(calendarDataWithDates)
@@ -260,11 +260,11 @@ export function CalenderBidingFeature({ property_id }: CalendarBidingProps) {
         return calendarGrid
     }
     const calendarGrid = useMemo(() => {
-        console.log('🔄 Regenerating calendar grid...', {
-            calendarDataLength: calendarData.length,
-            currentMonth: format(currentMonth, "MMM yyyy"),
-            timestamp: new Date().toLocaleTimeString()
-        });
+        // console.log('🔄 Regenerating calendar grid...', {
+        //     calendarDataLength: calendarData.length,
+        //     currentMonth: format(currentMonth, "MMM yyyy"),
+        //     timestamp: new Date().toLocaleTimeString()
+        // });
 
         const year = currentMonth.getFullYear()
         const month = currentMonth.getMonth()
@@ -331,11 +331,11 @@ export function CalenderBidingFeature({ property_id }: CalendarBidingProps) {
             }
         }
 
-        console.log('✅ Calendar grid generated:', {
-            totalCells: grid.length,
-            validDays: grid.filter(d => d !== null).length,
-            availableDays: grid.filter(d => d && d.is_available).length
-        });
+        // console.log('✅ Calendar grid generated:', {
+        //     totalCells: grid.length,
+        //     validDays: grid.filter(d => d !== null).length,
+        //     availableDays: grid.filter(d => d && d.is_available).length
+        // });
 
         return grid
     }, [calendarData, currentMonth, selectedAuction, isDateInBiddingWindow])
@@ -541,83 +541,6 @@ export function CalenderBidingFeature({ property_id }: CalendarBidingProps) {
                         </CardHeader>
                     </Card>
                 )}
-
-                {/* Smart Trip Suggestions */}
-                <Card className="border-2 border-purple-100 bg-gradient-to-r from-purple-50/50 to-pink-50/50">
-                    <CardHeader>
-                        <CardTitle className="flex items-center">
-                            <Sparkles className="h-5 w-5 mr-2 text-purple-600" />
-                            Smart Trip Suggestions
-                        </CardTitle>
-                        <CardDescription>Optimized suggestions for property {property_id}</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        {loading ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {[1, 2, 3, 4].map((i) => (
-                                    <div key={i} className="p-4 bg-white border rounded-lg animate-pulse">
-                                        <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                                        <div className="h-3 bg-gray-200 rounded w-1/2 mb-2"></div>
-                                        <div className="h-3 bg-gray-200 rounded w-2/3"></div>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : tripSuggestions.length > 0 ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {tripSuggestions.map((suggestion) => (
-                                    <div
-                                        key={suggestion.id}
-                                        className="p-4 bg-white border rounded-lg hover:shadow-md transition-all cursor-pointer group"
-                                        onClick={() => selectSuggestion(suggestion)}
-                                    >
-                                        <div className="flex items-center justify-between mb-3">
-                                            <div className="font-semibold text-lg">{suggestion.dateRange}</div>
-                                            <Badge className={getDemandColor(suggestion.demandLevel)} variant="outline">
-                                                {suggestion.demandLevel} demand
-                                            </Badge>
-                                        </div>
-                                        <div className="space-y-2 text-sm">
-                                            <div className="flex justify-between items-center">
-                                                <span className="text-gray-600">{suggestion.nights} nights</span>
-                                                <span className="font-bold text-green-600 text-lg">
-                                                    {formatVND(suggestion.avgBidPerNight)}/night
-                                                </span>
-                                            </div>
-                                            <div className="flex justify-between items-center">
-                                                <span className="text-gray-600">Win probability</span>
-                                                <span className="font-semibold text-blue-600">
-                                                    {Math.round(suggestion.successRate * 100)}%
-                                                </span>
-                                            </div>
-                                            <div className="flex justify-between items-center">
-                                                <span className="text-gray-600">Total estimate</span>
-                                                <span className="font-bold text-lg">{formatVND(suggestion.totalEstimate)}</span>
-                                            </div>
-                                            {suggestion.savings > 0 && (
-                                                <div className="flex justify-between items-center text-green-600">
-                                                    <span className="font-medium">You save</span>
-                                                    <span className="font-bold">{formatVND(suggestion.savings)}</span>
-                                                </div>
-                                            )}
-                                        </div>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            className="w-full mt-3 group-hover:bg-purple-50 group-hover:border-purple-200 bg-transparent"
-                                        >
-                                            <Target className="h-4 w-4 mr-1" />
-                                            Select This Trip
-                                        </Button>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="text-center py-8 text-gray-500">
-                                {selectedAuction ? "No trip suggestions available for this auction period" : "Please select an auction to see trip suggestions"}
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
 
                 {/* Smart Bidding Calendar */}
                 <Card>
