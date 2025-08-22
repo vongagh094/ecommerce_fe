@@ -89,7 +89,7 @@ export function LocationSection({
                 only_map
                 addressData={{
                   address: property.address_line1 || "",
-                  city: property.city,
+                  city: property.city || "",
                   state: property.state || null,
                   country: property.country,
                   postcode: property.postal_code || null,
