@@ -10,17 +10,13 @@ import Pusher from "pusher-js"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import type { Conversation, Message } from "@/types"
+import {useAuth} from "@/contexts/auth-context"
 
-const useTemporaryUserId = () => {
-  const searchParams = useSearchParams()
-  const hostIdFromUrl = searchParams.get("hostId")
-  return hostIdFromUrl ? Number.parseInt(hostIdFromUrl) : Math.random() > 0.5 ? 1 : 2
-}
-
-const apiUrl = "http://127.0.0.1:8000"
+const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
 export default function MessagesPage() {
-  const temporaryUserId = useTemporaryUserId()
+  const {user} = useAuth()
+  const user_id = parseInt(user?.id || "0")
 
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null)
@@ -91,10 +87,10 @@ export default function MessagesPage() {
           forceTLS: true,
           enabledTransports: ["ws", "wss"],
         })
-        console.log("Pusher initialized for user:", temporaryUserId)
+        console.log("Pusher initialized for user:", user_id)
 
         pusherRef.current.connection.bind("connected", () => {
-          console.log("Pusher connected successfully for user:", temporaryUserId)
+          console.log("Pusher connected successfully for user:", user_id)
         })
         pusherRef.current.connection.bind("error", (err: any) => {
           console.error("Pusher connection error:", JSON.stringify(err, null, 2))
@@ -111,7 +107,7 @@ export default function MessagesPage() {
 
     // Cleanup when component unmounts
     return () => {
-      console.log("Disconnecting Pusher for user:", temporaryUserId)
+      console.log("Disconnecting Pusher for user:", user_id)
       if (pusherRef.current) {
         pusherRef.current.allChannels().forEach((channel) => {
           console.log("Unsubscribing from channel:", channel.name)
@@ -138,7 +134,7 @@ export default function MessagesPage() {
     }
 
     const subscribeToChannel = async (conversationId: number) => {
-      console.log("Subscribing to conversation:", conversationId, "user:", temporaryUserId)
+      console.log("Subscribing to conversation:", conversationId, "user:", user_id)
 
       // Disconnect and reconnect Pusher to reset state
       if (pusherRef.current) {
@@ -173,7 +169,7 @@ export default function MessagesPage() {
       channel.bind("pusher:subscription_succeeded", () => {
         console.log("Successfully subscribed to channel:", channelName)
         channel.bind("new-message", (data: Message) => {
-          console.log("Received new-message event:", data, "user:", temporaryUserId)
+          console.log("Received new-message event:", data, "user:", user_id)
           setMessages((prev) => {
             if (!prev.some((msg) => msg.id === data.id)) {
               const updatedMessages = sortMessages([...prev, data])
@@ -199,7 +195,7 @@ export default function MessagesPage() {
             }, 100)
           }
 
-          if (data.sender_id !== temporaryUserId) {
+          if (data.sender_id !== user_id) {
             markMessageAsRead(conversationId, data.id)
           }
         })
@@ -320,7 +316,7 @@ export default function MessagesPage() {
   const fetchConversations = async () => {
     try {
       setError(null)
-      const response = await fetch(`${apiUrl}/conversations/list/${temporaryUserId}`)
+      const response = await fetch(`${apiUrl}/conversations/list/${user_id}`)
       if (!response.ok) {
         const errorText = await response.text()
         console.error("Fetch conversations error:", errorText)
@@ -333,7 +329,7 @@ export default function MessagesPage() {
         data.map(async (conv: Conversation) => {
           try {
             const messagesResponse = await fetch(
-              `${apiUrl}/messages/list/${conv.id}?user_id=${temporaryUserId}&limit=10`,
+              `${apiUrl}/messages/list/${conv.id}?user_id=${user_id}&limit=10`,
             )
             if (!messagesResponse.ok) {
               const errorText = await messagesResponse.text()
@@ -343,7 +339,7 @@ export default function MessagesPage() {
             const messages = await messagesResponse.json()
             return {
               ...conv,
-              has_unread: messages.some((msg: Message) => msg.sender_id !== temporaryUserId && !msg.is_read),
+              has_unread: messages.some((msg: Message) => msg.sender_id !== user_id && !msg.is_read),
               name: conv.name || conv.other_user?.full_name || "Unknown User",
               last_message_at: conv.last_message_at || null,
             }
@@ -374,7 +370,7 @@ export default function MessagesPage() {
     try {
       setIsLoadingMessages(true)
       const response = await fetch(
-        `${apiUrl}/messages/list/${conversationId}?user_id=${temporaryUserId}&limit=${messagesPerPage}&offset=${(pageNum - 1) * messagesPerPage}`,
+        `${apiUrl}/messages/list/${conversationId}?user_id=${user_id}&limit=${messagesPerPage}&offset=${(pageNum - 1) * messagesPerPage}`,
       )
       if (!response.ok) {
         const errorText = await response.text()
@@ -471,7 +467,7 @@ export default function MessagesPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           conversation_id: selectedConversation.id,
-          sender_id: temporaryUserId,
+          sender_id: user_id,
           message_text: messageInput,
         }),
       })
@@ -658,16 +654,16 @@ export default function MessagesPage() {
                   {isDifferentDay(visibleMessagesMemo[index - 1], message) && (
                     <div className="text-center text-xs text-gray-500 my-2">{formatDate(message.sent_at)}</div>
                   )}
-                  <div className={`flex ${message.sender_id === temporaryUserId ? "justify-end" : "justify-start"}`}>
+                  <div className={`flex ${message.sender_id === user_id ? "justify-end" : "justify-start"}`}>
                     <div
                       className={`max-w-xs px-4 py-2 rounded-2xl text-sm ${
-                        message.sender_id === temporaryUserId ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-900"
+                        message.sender_id === user_id ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-900"
                       }`}
                     >
                       <div>{message.message_text}</div>
                       <div
                         className={`text-xs mt-1 flex items-center justify-end space-x-1 ${
-                          message.sender_id === temporaryUserId ? "text-blue-200" : "text-gray-500"
+                          message.sender_id === user_id ? "text-blue-200" : "text-gray-500"
                         }`}
                       >
                         <span>
@@ -676,7 +672,7 @@ export default function MessagesPage() {
                             minute: "2-digit",
                           })}
                         </span>
-                        {message.sender_id === temporaryUserId && (
+                        {message.sender_id === user_id && (
                           <span>
                             {message.is_read ? <CheckCircle className="h-3 w-3" /> : <Circle className="h-3 w-3" />}
                           </span>

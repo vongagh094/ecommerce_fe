@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef } from "react";
 import { PropertyDisplay, WishlistResponseDTO } from "@/types/index";
 
-const apiUrl = "http://127.0.0.1:8000";
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 export function useWishlist(userId: number, wishlistOnly: boolean = false) {
   const [properties, setProperties] = useState<PropertyDisplay[]>([]);
@@ -64,7 +64,7 @@ export function useWishlist(userId: number, wishlistOnly: boolean = false) {
       }
 
       console.log("Fetching properties...");
-      const response = await fetch(`${apiUrl}/properties/list?limit=${wishlistOnly ? 100 : 12}&offset=0`, {
+      const response = await fetch(`${apiUrl}/properties-host/list?limit=${wishlistOnly ? 100 : 12}&offset=0`, {
         method: "GET",
         headers: { "Content-Type": "application/json" },
       });

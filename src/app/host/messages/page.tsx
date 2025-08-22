@@ -11,16 +11,10 @@ import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import type { Conversation, Message } from "@/types"
 
-const useTemporaryUserId = () => {
-  const searchParams = useSearchParams()
-  const hostIdFromUrl = searchParams.get("hostId")
-  return hostIdFromUrl ? Number.parseInt(hostIdFromUrl) : Math.random() > 0.5 ? 1 : 2
-}
-
-const apiUrl = "http://127.0.0.1:8000"
+const apiUrl = process.env.NEXT_PUBLIC_API_URL
 
 export default function HostMessagesPage() {
-  const temporaryUserId = useTemporaryUserId()
+  const temporaryUserId = 1
 
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null)

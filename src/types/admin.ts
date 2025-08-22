@@ -41,16 +41,15 @@ export type AnomalyReport = {
   createdAt: string
   updatedAt: string
 }
-
 export type User = {
-  id: string
-  fullName: string
-  email: string
-  phoneNumber: string
-  role: "Guest" | "Host" | "Both"
-  status: "Active" | "Banned"
-  avatarUrl?: string
-}
+  id: string;
+  fullName: string;
+  email: string;
+  phoneNumber: string;
+  role: "Guest" | "Host" | "Both";
+  status: "Active" | "Inactive";
+  avatarUrl: string;
+};
 
 export type Property = {
   id: string

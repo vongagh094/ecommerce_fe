@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button"
 import type { AuctionListModalProps } from "@/types/modal"
 import type { AuctionAPI } from "@/types/api"
 
-const apiUrl = "http://127.0.0.1:8000"
+const apiUrl = process.env.NEXT_PUBLIC_API_URL
 
 export function AuctionListModal({ isOpen, onClose, propertyId }: AuctionListModalProps) {
   const [auctions, setAuctions] = useState<AuctionAPI[]>([])

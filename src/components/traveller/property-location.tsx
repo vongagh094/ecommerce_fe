@@ -1,7 +1,8 @@
-"use client"
+'use client'
 
 import { MapPin, Navigation } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import AddressMap from "@/components/shared/map"
 import { LocationDescription } from "@/types"
 
 interface PropertyLocationProps {
@@ -58,7 +59,18 @@ export function PropertyLocation({ location, locationDescriptions }: PropertyLoc
     }
     return addressString.join(', ')
   }
-    
+
+  // Map location to AddressData format for AddressMap
+  const addressData = {
+    address: location.address_line1 || '',
+    city: location.city || '',
+    state: location.state || '',
+    country: location.country || '',
+    postcode: location.postal_code || '',
+    latitude: location.latitude || null,
+    longitude: location.longitude || null,
+  }
+
   return (
     <div className="border-t pt-8">
       <h3 className="text-lg font-semibold text-gray-900 mb-6">Where you'll be</h3>
@@ -78,18 +90,13 @@ export function PropertyLocation({ location, locationDescriptions }: PropertyLoc
         </div>
       </div>
 
-      {/* Map Placeholder */}
-      <div className="bg-gray-100 rounded-lg h-64 mb-6 flex items-center justify-center">
-        <div className="text-center">
-          <MapPin className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-          <p className="text-gray-500 text-sm">Interactive map would be displayed here</p>
-          <p className="text-gray-400 text-xs">
-            {location.latitude && location.longitude 
-              ? `${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}`
-              : 'Coordinates not available'
-            }
-          </p>
-        </div>
+      {/* Interactive Map */}
+      <div className="mb-6">
+        <AddressMap
+          only_map={true}
+          addressData={addressData}
+          onSave={() => {}} // No-op function since only_map is true
+        />
       </div>
 
       {/* Action Buttons */}
