@@ -8,14 +8,17 @@ interface User {
   name: string
   email: string
   avatar?: string
+  role?: 'user' | 'host' | 'admin'
 }
 
 interface AuthContextType {
   isLoggedIn: boolean
   user: User | null
+  isAdmin: boolean
   login: (userData: User, accessToken?: string) => Promise<void>
   logout: () => Promise<void>
   checkSession: () => Promise<boolean>
+  loginAsAdmin: (email: string, password: string) => Promise<boolean>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -42,6 +45,7 @@ function getCookie(name: string): string | undefined {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [user, setUser] = useState<User | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
   const [isInitialized, setIsInitialized] = useState(false)
 
   // Check if we have a valid session
@@ -54,6 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (userData) {
           setIsLoggedIn(true)
           setUser(userData)
+          setIsAdmin(userData.role === 'admin')
           return true
         }
       }
@@ -62,10 +67,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const savedAuthState = localStorage.getItem("sky-high-auth")
       if (savedAuthState) {
         try {
-          const { isLoggedIn: savedIsLoggedIn, user: savedUser } = JSON.parse(savedAuthState)
+          const { isLoggedIn: savedIsLoggedIn, user: savedUser, isAdmin: savedIsAdmin } = JSON.parse(savedAuthState)
           if (savedUser && savedUser.id) {
             setIsLoggedIn(savedIsLoggedIn)
             setUser(savedUser)
+            setIsAdmin(savedIsAdmin || savedUser.role === 'admin')
             return true
           }
         } catch {
@@ -93,14 +99,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Save auth state to localStorage whenever it changes (secondary persistence)
   useEffect(() => {
     if (isInitialized) {
-      const authState = { isLoggedIn, user }
+      const authState = { isLoggedIn, user, isAdmin }
       localStorage.setItem("sky-high-auth", JSON.stringify(authState))
     }
-  }, [isLoggedIn, user, isInitialized])
+  }, [isLoggedIn, user, isAdmin, isInitialized])
 
   const login = async (userData: User, accessToken?: string) => {
     setIsLoggedIn(true)
     setUser(userData)
+    setIsAdmin(userData.role === 'admin')
     try {
       await fetch('/api/auth/session', {
         method: 'POST',
@@ -115,6 +122,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     setIsLoggedIn(false)
     setUser(null)
+    setIsAdmin(false)
     localStorage.removeItem("sky-high-auth")
     try {
       await fetch('/api/auth/session', { method: 'DELETE' })
@@ -123,8 +131,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  // Admin login function
+  const loginAsAdmin = async (email: string, password: string): Promise<boolean> => {
+    // Simple admin credentials check (in production, this should be server-side)
+    if (email === 'admin@skyhigh.com' && password === 'admin123') {
+      const adminUser: User = {
+        id: 'admin-1',
+        name: 'Admin User',
+        email: email,
+        role: 'admin'
+      }
+      
+      await login(adminUser)
+      return true
+    }
+    return false
+  }
+
   return (
-    <AuthContext.Provider value={{ isLoggedIn, user, login, logout, checkSession }}>
+    <AuthContext.Provider value={{
+      isLoggedIn,
+      user,
+      isAdmin,
+      login,
+      logout,
+      checkSession,
+      loginAsAdmin
+    }}>
       {children}
     </AuthContext.Provider>
   )
@@ -138,9 +171,11 @@ export function useAuth() {
     return {
       isLoggedIn: false,
       user: null,
+      isAdmin: false,
       login: async () => {},
       logout: async () => {},
       checkSession: async () => false,
+      loginAsAdmin: async () => false,
     }
   }
   return context

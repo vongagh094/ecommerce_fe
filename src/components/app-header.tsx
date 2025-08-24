@@ -6,11 +6,14 @@ import { NotificationDropdown } from "@/components/shared/notification-dropdown"
 import { SearchBar } from "@/components/shared/search-bar"
 import { useRouter, usePathname } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
+import { useState } from "react"
+import { AdminLoginModal } from "@/components/admin/admin-login-modal"
 
 export function AppHeader() {
   const router = useRouter()
   const pathname = usePathname()
-  const { isLoggedIn } = useAuth()
+  const { isLoggedIn, isAdmin } = useAuth()
+  const [showAdminLogin, setShowAdminLogin] = useState(false)
 
   const handleHostToggle = () => {
     if (pathname.startsWith("/host")) {
@@ -20,9 +23,18 @@ export function AppHeader() {
     }
   }
 
+  const handleAdminClick = () => {
+    if (isAdmin) {
+      router.push("/admin")
+    } else {
+      setShowAdminLogin(true)
+    }
+  }
+
   const isHostPage = pathname.startsWith("/host")
   const isSearchPage = pathname.startsWith("/search")
   const isPropertyPage = pathname.startsWith("/property")
+  const isAdminPage = pathname.startsWith("/admin")
 
   return (
     <header className="border-b bg-white sticky top-0 z-50">
@@ -46,11 +58,27 @@ export function AppHeader() {
             <Button variant="ghost" className="text-sm font-semibold" onClick={handleHostToggle}>
               {isHostPage ? "Switch to travelling" : "Switch to hosting"}
             </Button>
+            
+            {/* Admin Button */}
+            <Button 
+              variant={isAdmin ? (isAdminPage ? "default" : "outline") : "outline"} 
+              className="text-sm font-semibold" 
+              onClick={handleAdminClick}
+            >
+              {isAdmin ? (isAdminPage ? "Admin Dashboard" : "Go to Admin") : "Admin Login"}
+            </Button>
+            
             {isLoggedIn && <NotificationDropdown />}
             <UserMenu />
           </div>
         </div>
       </div>
+      
+      {/* Admin Login Modal */}
+      <AdminLoginModal 
+        isOpen={showAdminLogin} 
+        onClose={() => setShowAdminLogin(false)} 
+      />
     </header>
   )
 }

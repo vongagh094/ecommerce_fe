@@ -17,6 +17,7 @@ import {CalendarProvider} from "@/contexts/calender-context"
 import SimpleAuctionSelector from "@/components/traveller/auction-infor-biding"
 import {AuctionProvider} from "@/contexts/auction-calendar-context"
 import { useAuth } from "@/contexts/auth-context"
+import { ArrowLeft } from "lucide-react"
 
 export default function PropertyPage() {
   const params = useParams()

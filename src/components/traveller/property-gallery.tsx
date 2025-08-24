@@ -417,14 +417,6 @@ export function PropertyGallery({ images, onFavoriteToggle, isFavorite = false }
                 <div className="absolute inset-0 bg-gray-200 animate-pulse" />
               )}
 
-              {/* Show "See all photos" on the last image if there are more than 5 */}
-              {index === 3 && sortedImages.length > 5 && (
-                <div className="absolute inset-0 bg-black/30 flex items-center justify-center transition-opacity group-hover:bg-black/40">
-                  <span className="bg-white/90 px-4 py-2 rounded-lg font-medium text-sm">
-                    Show all photos
-                  </span>
-                </div>
-              )}
             </div>
           ))}
         </div>

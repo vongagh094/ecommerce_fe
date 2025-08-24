@@ -1,6 +1,6 @@
 "use client"
 
-import { Star, Share2, Heart } from "lucide-react"
+import { Star, Share2, Heart, ArrowLeft } from "lucide-react"
 
 interface PropertyHeaderProps {
 	title: string
@@ -43,8 +43,21 @@ export function PropertyHeader({
 		return str.length > 4 ? str.slice(0, 4) : str
 	})()
 
+	const handleBackClick = () => {
+		if (typeof window !== 'undefined') {
+			window.history.back()
+		}
+	}
+
 	return (
 		<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+			<button
+				onClick={handleBackClick}
+				className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors duration-200 mb-4"
+				>
+				<ArrowLeft className="h-5 w-5" />
+				<span>Back</span>
+			</button>
 			<div className="flex flex-col space-y-4">
 				{/* Title */}
 				<h1 className="text-2xl md:text-3xl font-semibold text-gray-900">
