@@ -109,7 +109,7 @@ export function useBidingState() {
 
         // Methods
         handleDateSelect,
-        handleBookedDateConfirmation,
+        // handleBookedDateConfirmation,
         clearSelection,
 
         // Computed

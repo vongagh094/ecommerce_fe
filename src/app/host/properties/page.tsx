@@ -13,7 +13,7 @@ import { AuctionCreationModal } from "@/components/host/auction-creation-modal"
 import { AuctionListModal } from "@/components/host/auction-list-modal"
 import type { PropertyAPI } from "@/types/api"
 
-const apiUrl = "http://127.0.0.1:8000" // API URL
+const apiUrl = process.env.NEXT_PUBLIC_API_URL
 
 interface HostProperty {
   id: number
@@ -76,7 +76,7 @@ export default function HostPropertiesPage() {
     try {
       const offset = (page - 1) * propertiesPerPage
       const response = await fetch(
-        `${apiUrl}/properties/host/${hostId}/properties?limit=${propertiesPerPage}&offset=${offset}`,
+        `${apiUrl}/properties-host/host/${hostId}/properties?limit=${propertiesPerPage}&offset=${offset}`,
       )
       if (!response.ok) {
         throw new Error(`Failed to fetch properties: ${response.statusText}`)
@@ -160,7 +160,7 @@ export default function HostPropertiesPage() {
 
   const handleDeleteProperty = async (propertyId: number) => {
     try {
-      const response = await fetch(`${apiUrl}/properties/delete/${propertyId}`, {
+      const response = await fetch(`${apiUrl}/properties-host/delete/${propertyId}`, {
         method: "DELETE",
       })
       if (!response.ok) {

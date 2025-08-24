@@ -21,7 +21,7 @@ import { AmenitiesSection } from "@/components/host/amenities-section"
 import { LocationSection } from "@/components/host/location-section"
 import { BookingSection } from "@/components/host/booking-section"
 
-const apiUrl = "http://127.0.0.1:8000"
+const apiUrl = process.env.NEXT_PUBLIC_API_URL
 const AMENITIES_PER_PAGE = 50
 
 interface PropertyUpdatePayload {
@@ -123,7 +123,7 @@ export default function PropertyDetailsPage() {
     setLoading(true)
     setError(null)
     try {
-      const response = await fetch(`${apiUrl}/properties/${propertyId}`)
+      const response = await fetch(`${apiUrl}/properties-host/${propertyId}`)
       if (!response.ok) {
         const errorData = await response.json()
         throw new Error(errorData.detail || `Failed to fetch property: ${response.statusText}`)
@@ -642,7 +642,7 @@ export default function PropertyDetailsPage() {
         bedrooms: editingData.bedrooms ?? undefined,
         bathrooms: editingData.bathrooms ?? undefined,
         address_line1: editingData.address_line1 ?? undefined,
-        city: editingData.city,
+        city: editingData.city ?? undefined,
         state: editingData.state ?? undefined,
         country: editingData.country,
         postal_code: editingData.postal_code ?? undefined,
@@ -674,7 +674,7 @@ export default function PropertyDetailsPage() {
       // Gửi request
       formData.append("data", JSON.stringify(payload))
 
-      const response = await fetch(`${apiUrl}/properties/update/${propertyId}`, {
+      const response = await fetch(`${apiUrl}/properties-host/update/${propertyId}`, {
         method: "PUT",
         body: formData,
       })
@@ -747,7 +747,7 @@ export default function PropertyDetailsPage() {
       const formDataToSend = new FormData()
       formDataToSend.append("data", JSON.stringify({ status: newStatus }))
 
-      const response = await fetch(`${apiUrl}/properties/update/${property.id}`, {
+      const response = await fetch(`${apiUrl}/properties-host/update/${property.id}`, {
         method: "PUT",
         body: formDataToSend,
       })
@@ -769,7 +769,7 @@ export default function PropertyDetailsPage() {
     if (!property) return
 
     try {
-      const response = await fetch(`${apiUrl}/properties/delete/${property.id}`, {
+      const response = await fetch(`${apiUrl}/properties-host/delete/${property.id}`, {
         method: "DELETE",
       })
       if (!response.ok) {

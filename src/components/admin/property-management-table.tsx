@@ -1,10 +1,10 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -12,119 +12,266 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Skeleton } from "@/components/ui/skeleton"
-import { usePropertyManagementData } from "@/hooks/use-property-management-data"
-import type { Property } from "@/types/admin"
+} from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import { MapPin, RefreshCcw } from "lucide-react";
+import { usePropertyManagementData } from "@/hooks/use-property-management-data";
+import type { PropertyDetails } from "@/types/property";
 
 export default function PropertyManagementTable() {
-  const { properties, loading, togglePropertyStatus } = usePropertyManagementData()
-  const router = useRouter()
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [selectedProperty, setSelectedProperty] = useState<Property | null>(null)
+  const {
+    properties,
+    loading,
+    error,
+    hasMore,
+    loadingMore,
+    actionLoading,
+    postActionMessage,
+    setPostActionMessage,
+    fetchProperties,
+    loadMore,
+    togglePropertyStatus,
+    deleteProperty,
+  } = usePropertyManagementData();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedProperty, setSelectedProperty] = useState<PropertyDetails | null>(null);
+  const [actionType, setActionType] = useState<"toggle" | "delete">("toggle");
+  const router = useRouter();
 
-  const handleViewDetails = (propertyId: string) => {
-    router.push(`/property/${propertyId}`)
-  }
+  const handleViewDetails = (propertyId: number) => {
+    router.push(`/property/${propertyId}`);
+  };
 
-  const handleToggleVisibilityClick = (property: Property) => {
-    setSelectedProperty(property)
-    setIsDialogOpen(true)
-  }
+  const handleToggleVisibilityClick = (property: PropertyDetails) => {
+    setSelectedProperty(property);
+    setActionType("toggle");
+    setIsDialogOpen(true);
+  };
 
-  const handleConfirmToggle = () => {
+  const handleDeleteClick = (property: PropertyDetails) => {
+    setSelectedProperty(property);
+    setActionType("delete");
+    setIsDialogOpen(true);
+  };
+
+  const handleConfirmAction = () => {
     if (selectedProperty) {
-      togglePropertyStatus(selectedProperty.id)
-      setIsDialogOpen(false)
-      setSelectedProperty(null)
+      if (actionType === "toggle") {
+        togglePropertyStatus(selectedProperty.id);
+      } else if (actionType === "delete") {
+        deleteProperty(selectedProperty.id);
+      }
     }
-  }
+  };
 
-  const getStatusColor = (status: Property["status"]) => {
-    return status === "Visible" ? "text-green-600" : "text-red-600"
-  }
+  const getStatusBadge = (status: string) => {
+    const statusConfig = {
+      ACTIVE: { label: "Hiển thị", variant: "default" as const, className: "bg-green-500 text-white" },
+      INACTIVE: { label: "Ẩn", variant: "secondary" as const, className: "bg-gray-500 text-white" },
+      DRAFT: { label: "Bản nháp", variant: "outline" as const, className: "border-gray-400 text-gray-600" },
+      SUSPENDED: { label: "Tạm ngưng", variant: "destructive" as const, className: "bg-red-500 text-white" },
+    };
+    const config = statusConfig[status as keyof typeof statusConfig] || {
+      label: status,
+      variant: "outline" as const,
+      className: "border-gray-400 text-gray-600",
+    };
+    return <Badge variant={config.variant} className={config.className}>{config.label}</Badge>;
+  };
 
-  if (loading) {
+  const formatLocation = (property: PropertyDetails) => {
+    return property.location || "Không rõ";
+  };
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(price);
+  };
+
+  if (loading && properties.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Property Manager</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Skeleton className="h-[400px] w-full" />
-        </CardContent>
-      </Card>
-    )
+      <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+        <Card className="shadow-lg border-none">
+          <CardHeader className="bg-gray-50">
+            <CardTitle className="text-xl font-semibold text-gray-800">Quản Lý Bất Động Sản</CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <Skeleton className="h-10 w-full mb-4" />
+            <Skeleton className="h-64 w-full" />
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Property Manager</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Property</TableHead>
-              <TableHead>Host name</TableHead>
-              <TableHead>Location</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Action</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {properties.map((property) => (
-              <TableRow key={property.id}>
-                <TableCell className="font-medium">{property.name}</TableCell>
-                <TableCell>{property.hostName}</TableCell>
-                <TableCell>{property.location}</TableCell>
-                <TableCell className={getStatusColor(property.status)}>{property.status}</TableCell>
-                <TableCell>
-                  <Button
-                    variant="link"
-                    onClick={() => handleViewDetails(property.id)}
-                    className="p-0 h-auto text-blue-600 hover:underline"
-                  >
-                    [View detail]
-                  </Button>
-                  <span className="mx-1">|</span>
-                  <Button
-                    variant="link"
-                    onClick={() => handleToggleVisibilityClick(property)}
-                    className={`p-0 h-auto ${property.status === "Visible" ? "text-red-600" : "text-green-600"} hover:underline`}
-                  >
-                    [{property.status === "Visible" ? "Hide" : "Show"}]
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{selectedProperty?.status === "Visible" ? "Confirm Hide" : "Confirm Show"}</DialogTitle>
-              <DialogDescription>
-                Are you sure you want to {selectedProperty?.status === "Visible" ? "hide" : "show"} "
-                {selectedProperty?.name}"?
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                Cancel
-              </Button>
+    <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+      <Card className="shadow-lg border-none">
+        <CardHeader className="bg-gray-50">
+          <CardTitle className="text-xl font-semibold text-gray-800">Quản Lý Bất Động Sản</CardTitle>
+        </CardHeader>
+        <CardContent className="p-6">
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex items-center justify-between">
+              <div className="flex items-center gap-2 text-red-800">
+                <RefreshCcw className="h-5 w-5" />
+                <p>Lỗi: {error}</p>
+              </div>
               <Button
-                variant={selectedProperty?.status === "Visible" ? "destructive" : "default"}
-                onClick={handleConfirmToggle}
+                onClick={() => fetchProperties(0)}
+                className="bg-red-600 hover:bg-red-700 text-white"
+                size="sm"
+                disabled={actionLoading.size > 0}
               >
-                {selectedProperty?.status === "Visible" ? "Hide" : "Show"}
+                Thử lại
               </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </CardContent>
-    </Card>
-  )
+            </div>
+          )}
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-gray-100">
+                <TableHead className="font-semibold text-gray-700">ID</TableHead>
+                <TableHead className="font-semibold text-gray-700">Tiêu đề</TableHead>
+                <TableHead className="font-semibold text-gray-700">Host ID</TableHead>
+                <TableHead className="font-semibold text-gray-700">Vị trí</TableHead>
+                <TableHead className="font-semibold text-gray-700">Giá</TableHead>
+                <TableHead className="font-semibold text-gray-700">Loại</TableHead>
+                <TableHead className="font-semibold text-gray-700">Trạng thái</TableHead>
+                <TableHead className="font-semibold text-gray-700 text-right">Hành động</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {properties.map((property) => (
+                <TableRow key={property.id} className="hover:bg-gray-50">
+                  <TableCell className="font-medium text-gray-800">{property.id}</TableCell>
+                  <TableCell className="font-medium text-gray-800">{property.title}</TableCell>
+                  <TableCell>{property.host?.id ?? "N/A"}</TableCell>
+                  <TableCell className="text-gray-600">{formatLocation(property)}</TableCell>
+                  <TableCell className="text-gray-600">{formatPrice(property.basePrice)}</TableCell>
+                  <TableCell className="text-gray-600">{property.propertyType}</TableCell>
+                  <TableCell>{getStatusBadge(property.status)}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleViewDetails(property.id)}
+                        className="border-blue-500 text-blue-500 hover:bg-blue-50"
+                        disabled={actionLoading.has(property.id)}
+                      >
+                        Xem
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleToggleVisibilityClick(property)}
+                        className={
+                          property.status === "ACTIVE"
+                            ? "border-orange-500 text-orange-500 hover:bg-orange-50"
+                            : "border-green-500 text-green-500 hover:bg-green-50"
+                        }
+                        disabled={actionLoading.has(property.id)}
+                      >
+                        {actionLoading.get(property.id) === "toggle" ? (
+                          <RefreshCcw className="h-4 w-4 animate-spin" />
+                        ) : (
+                          property.status === "ACTIVE" ? "Ẩn" : "Hiển thị"
+                        )}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDeleteClick(property)}
+                        className="border-red-500 text-red-500 hover:bg-red-50"
+                        disabled={actionLoading.has(property.id)}
+                      >
+                        {actionLoading.get(property.id) === "delete" ? (
+                          <RefreshCcw className="h-4 w-4 animate-spin" />
+                        ) : (
+                          "Xóa"
+                        )}
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          {properties.length === 0 && !loading && (
+            <div className="text-center py-8 text-gray-500 flex flex-col items-center gap-2">
+              <MapPin className="h-8 w-8 text-gray-400" />
+              <p>Không tìm thấy bất động sản</p>
+            </div>
+          )}
+          {hasMore && (
+            <div className="flex justify-center mt-6">
+              <Button
+                onClick={loadMore}
+                disabled={loadingMore || actionLoading.size > 0}
+                className="bg-blue-600 text-white hover:bg-blue-700 px-6 py-2"
+              >
+                {loadingMore ? "Đang tải..." : "Tải thêm"}
+              </Button>
+            </div>
+          )}
+          <Dialog
+            open={isDialogOpen}
+            onOpenChange={(open) => {
+              setIsDialogOpen(open);
+              if (!open) setPostActionMessage(null);
+            }}
+          >
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle className="text-lg font-semibold">
+                  {actionType === "toggle"
+                    ? `Xác nhận ${selectedProperty?.status === "ACTIVE" ? "Ẩn" : "Hiển thị"}`
+                    : "Xác nhận xóa"}
+                </DialogTitle>
+                <DialogDescription>
+                  {actionType === "toggle"
+                    ? `Bạn có chắc muốn ${selectedProperty?.status === "ACTIVE" ? "ẩn" : "hiển thị"} bất động sản "${selectedProperty?.title}"?`
+                    : `Bạn có chắc muốn xóa bất động sản "${selectedProperty?.title}"? Hành động này không thể hoàn tác.`}
+                </DialogDescription>
+              </DialogHeader>
+              {postActionMessage && (
+                <div
+                  className={`p-4 rounded-lg ${
+                    postActionMessage.type === "success" ? "bg-green-50 text-green-800" : "bg-red-50 text-red-800"
+                  }`}
+                >
+                  <p>{postActionMessage.message}</p>
+                </div>
+              )}
+              <DialogFooter className="mt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsDialogOpen(false);
+                    setPostActionMessage(null);
+                  }}
+                  disabled={!!selectedProperty && actionLoading.has(selectedProperty.id)}
+                >
+                  {postActionMessage ? "Đóng" : "Hủy"}
+                </Button>
+                {!postActionMessage && (
+                  <Button
+                    variant={actionType === "delete" ? "destructive" : "default"}
+                    onClick={handleConfirmAction}
+                    className={actionType === "delete" ? "bg-red-600 hover:bg-red-700" : ""}
+                    disabled={!!selectedProperty && actionLoading.has(selectedProperty.id)}
+                  >
+                    {selectedProperty && actionLoading.has(selectedProperty.id) ? (
+                      <RefreshCcw className="h-4 w-4 animate-spin mr-2" />
+                    ) : null}
+                    {actionType === "toggle" ? (selectedProperty?.status === "ACTIVE" ? "Ẩn" : "Hiển thị") : "Xóa"}
+                  </Button>
+                )}
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </CardContent>
+      </Card>
+    </div>
+  );
 }

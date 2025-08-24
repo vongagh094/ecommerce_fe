@@ -127,7 +127,7 @@ const SimpleAuctionSelector: React.FC<SimpleAuctionSelectorProps> = ({ propertyI
                 : auction
         ).filter(auction =>
             // Filter out COMPLETED auctions
-            auction.status === 'ACTIVE' || auction.status === 'PENDING'
+            auction.status === 'ACTIVE' || auction.status === 'PENDING' || auction.status === 'activate'
         ));
 
         // Clear selection if completed
@@ -150,7 +150,7 @@ const SimpleAuctionSelector: React.FC<SimpleAuctionSelectorProps> = ({ propertyI
     };
 
     const getStatusBadge = (status: string) => {
-        const isActive = status === 'ACTIVE';
+        const isActive = status === 'ACTIVE' || status === 'activate';
         return (
             <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                 isActive
@@ -245,19 +245,6 @@ const SimpleAuctionSelector: React.FC<SimpleAuctionSelectorProps> = ({ propertyI
                     </button>
                 ))}
             </div>
-
-            {/* Selected auction info */}
-            {selectedAuction && (
-                <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
-                    <div className="flex items-center space-x-2 text-blue-700 mb-2">
-                        <Calendar className="h-4 w-4" />
-                        <span className="font-medium">Selected Auction</span>
-                    </div>
-                    <p className="text-blue-600 text-sm">
-                        You can bid for dates between {formatDate(selectedAuction.start_date)} and {formatDate(selectedAuction.end_date)}
-                    </p>
-                </div>
-            )}
         </div>
     );
 };

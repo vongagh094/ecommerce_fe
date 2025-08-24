@@ -477,11 +477,11 @@ export interface Booking {
 }
 
 export interface Conversation {
-  id: string;
+  id: number;
   name: string;
   property_id: string | null;
-  guest_id: string;
-  host_id: string;
+  guest_id: number;
+  host_id: number;
   last_message_at: string | null;
   is_archived: boolean;
   has_unread: boolean;
@@ -490,9 +490,9 @@ export interface Conversation {
 }
 
 export interface Message {
-  id: string;
-  conversation_id: string;
-  sender_id: string;
+  id: number;
+  conversation_id: number;
+  sender_id: number;
   message_text: string;
   sent_at: string;
   is_read: boolean;

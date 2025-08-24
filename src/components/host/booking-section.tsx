@@ -11,7 +11,7 @@ import type { BookingResponse } from "@/types/booking"
 
 interface BookingSectionProps {
   propertyId: number
-  apiUrl: string
+  apiUrl: string | undefined
 }
 
 export function BookingSection({ propertyId, apiUrl }: BookingSectionProps) {

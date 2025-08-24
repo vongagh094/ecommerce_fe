@@ -27,7 +27,7 @@ export interface PropertyDetails {
   latitude: number | null
   longitude: number | null
   address_line1: string | null // Updated to allow null
-  city: string
+  city: string | null
   state: string | null // Updated to allow null
   country: string
 }

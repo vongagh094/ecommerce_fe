@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar, Users, DollarSign, Clock, Search, RefreshCw, MessageCircle, Trash2, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import type { BookingResponse } from "@/types/booking"
+import { useAuth } from "@/contexts/auth-context"
 
 export default function BookingManager() {
   const router = useRouter()
@@ -21,13 +22,15 @@ export default function BookingManager() {
   const [statusFilter, setStatusFilter] = useState("all")
   const [paymentFilter, setPaymentFilter] = useState("all")
   const [dateFilter, setDateFilter] = useState("all")
+  const {user} = useAuth();
+  const [hostId] = useState(user?.id || "")
 
   const fetchBookings = async () => {
     setLoading(true)
     setError(null)
     try {
-      const apiUrl = "http://127.0.0.1:8000"
-      const hostId = 1 // Using integer instead of UUID
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL
+
       const response = await fetch(`${apiUrl}/bookings/host/${hostId}`)
       if (!response.ok) {
         const errorData = await response.json()

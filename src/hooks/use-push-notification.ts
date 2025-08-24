@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { VAPID_PUBLIC_KEY } from '../lib/vapid'; 
-
+import { useAuth } from '@/contexts/auth-context';
 interface Notification {
   id: number;
   user_id: number;
@@ -25,8 +25,9 @@ interface NotificationResponse {
   };
 }
 
-const apiUrl = 'http://127.0.0.1:8000'; // Sử dụng biến môi trường
-const userId = 1; // Lưu ý: Nên lấy userId từ context hoặc auth trong ứng dụng thực tế
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+const user = useAuth().user;
+const userId = parseInt(user?.id || "0");
 
 interface UsePushNotification {
   notifications: Notification[];
