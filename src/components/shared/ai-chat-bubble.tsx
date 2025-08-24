@@ -7,6 +7,7 @@ import { X, Send } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import Image from "next/image"
+import { usePropertyTranslations } from "@/hooks/use-translations"
 
 interface Message {
   id: number
@@ -16,11 +17,12 @@ interface Message {
 }
 
 export function AiChatBubble() {
+  const t = usePropertyTranslations()
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 1,
-      text: "I would be glad to help",
+      text: t('aiChat.welcomeMessage'),
       sender: "ai",
       timestamp: new Date(),
     },
@@ -52,7 +54,7 @@ export function AiChatBubble() {
       setTimeout(() => {
         const aiResponse: Message = {
           id: messages.length + 2,
-          text: "Thank you for your message! I'm here to help you with any questions about Sky-high properties and bookings.",
+          text: t('aiChat.responseMessage'),
           sender: "ai",
           timestamp: new Date(),
         }
@@ -100,7 +102,7 @@ export function AiChatBubble() {
           {/* Header */}
           <div className="bg-gray-800 px-4 py-3 flex items-center justify-between border-b border-gray-700">
             <div className="flex items-center space-x-2">
-              <h3 className="text-white font-medium">Chat with AI</h3>
+              <h3 className="text-white font-medium">{t('aiChat.title')}</h3>
               <div className="w-2 h-2 bg-green-400 rounded-full"></div>
             </div>
             <Button
@@ -143,7 +145,7 @@ export function AiChatBubble() {
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  placeholder="Aa"
+                  placeholder={t('aiChat.placeholder')}
                   className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 rounded-full pr-10 focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>

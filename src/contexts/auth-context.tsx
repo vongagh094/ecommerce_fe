@@ -15,8 +15,8 @@ interface AuthContextType {
   isLoggedIn: boolean
   user: User | null
   isAdmin: boolean
-  login: (userData: User, accessToken?: string) => Promise<void>
-  logout: () => Promise<void>
+  login: (userData: User, accessToken?: string) => Promise<boolean>
+  logout: () => Promise<boolean>
   checkSession: () => Promise<boolean>
   loginAsAdmin: (email: string, password: string) => Promise<boolean>
 }
@@ -104,7 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [isLoggedIn, user, isAdmin, isInitialized])
 
-  const login = async (userData: User, accessToken?: string) => {
+  const login = async (userData: User, accessToken?: string): Promise<boolean> => {
     setIsLoggedIn(true)
     setUser(userData)
     setIsAdmin(userData.role === 'admin')
@@ -114,20 +114,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ accessToken, user: userData })
       })
+      return true
     } catch (error) {
       console.error("Error saving session:", error)
+      return false
     }
   }
 
-  const logout = async () => {
+  const logout = async (): Promise<boolean> => {
     setIsLoggedIn(false)
     setUser(null)
     setIsAdmin(false)
     localStorage.removeItem("sky-high-auth")
     try {
       await fetch('/api/auth/session', { method: 'DELETE' })
+      return true
     } catch (error) {
       console.error("Error deleting session:", error)
+      return false
     }
   }
 
@@ -172,8 +176,8 @@ export function useAuth() {
       isLoggedIn: false,
       user: null,
       isAdmin: false,
-      login: async () => {},
-      logout: async () => {},
+      login: async () => false,
+      logout: async () => false,
       checkSession: async () => false,
       loginAsAdmin: async () => false,
     }

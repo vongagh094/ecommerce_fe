@@ -1,0 +1,67 @@
+{
+  "buttons": {
+    "save": "Lưu",
+    "cancel": "Hủy",
+    "submit": "Gửi",
+    "back": "Quay lại",
+    "next": "Tiếp theo",
+    "previous": "Trước đó",
+    "close": "Đóng",
+    "edit": "Chỉnh sửa",
+    "delete": "Xóa",
+    "confirm": "Xác nhận",
+    "retry": "Thử lại",
+    "loading": "Đang tải...",
+    "viewDetails": "Xem chi tiết",
+    "showMore": "Xem thêm",
+    "showLess": "Ẩn bớt"
+  },
+  "status": {
+    "loading": "Đang tải...",
+    "error": "Lỗi",
+    "success": "Thành công",
+    "pending": "Đang chờ",
+    "completed": "Hoàn thành",
+    "failed": "Thất bại",
+    "expired": "Hết hạn",
+    "active": "Hoạt động",
+    "inactive": "Không hoạt động"
+  },
+  "time": {
+    "days": "ngày",
+    "hours": "giờ",
+    "minutes": "phút",
+    "seconds": "giây",
+    "day": "ngày",
+    "hour": "giờ",
+    "minute": "phút",
+    "second": "giây"
+  },
+  "currency": {
+    "vnd": "₫ VND",
+    "usd": "$ USD"
+  },
+  "validation": {
+    "required": "Trường này là bắt buộc",
+    "invalidEmail": "Vui lòng nhập địa chỉ email hợp lệ",
+    "invalidPhone": "Vui lòng nhập số điện thoại hợp lệ",
+    "minLength": "Phải có ít nhất {min} ký tự",
+    "maxLength": "Không được quá {max} ký tự"
+  },
+  "messages": {
+    "noData": "Không có dữ liệu",
+    "noResults": "Không tìm thấy kết quả",
+    "tryAgain": "Vui lòng thử lại",
+    "contactSupport": "Vui lòng liên hệ hỗ trợ",
+    "sessionExpired": "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.",
+    "networkError": "Lỗi mạng. Vui lòng kiểm tra kết nối.",
+    "unexpectedError": "Đã xảy ra lỗi không mong muốn"
+  },
+  "language": {
+    "switch": "Chuyển ngôn ngữ",
+    "current": "Ngôn ngữ hiện tại",
+    "english": "Tiếng Anh",
+    "vietnamese": "Tiếng Việt",
+    "selectLanguage": "Chọn ngôn ngữ"
+  }
+}

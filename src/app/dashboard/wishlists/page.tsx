@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { PropertyGrid } from "@/components/traveller/property-grid";
+import { PropertyGridDisplay } from "@/components/traveller/property-grid-display";
 import { useWishlist } from "@/hooks/use-wishlist";
 
 const userId = 1; // Temporary hardcoded userId
@@ -50,7 +50,7 @@ export default function WishlistsPage() {
             <p className="text-gray-500 mt-2">Hãy thêm bất động sản vào danh sách yêu thích của bạn!</p>
           </div>
         ) : (
-          <PropertyGrid
+          <PropertyGridDisplay
             properties={properties}
             userId={userId}
             onFavoriteToggle={handleFavoriteToggle}

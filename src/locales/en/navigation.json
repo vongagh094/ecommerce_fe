@@ -1,0 +1,53 @@
+{
+    "header": {
+        "logo": "Sky-high",
+        "tagline": "YOUR HOLIDAY",
+        "switchToHosting": "Switch to hosting",
+        "switchToTravelling": "Switch to travelling",
+        "adminLogin": "Admin Login",
+        "adminDashboard": "Admin Dashboard",
+        "goToAdmin": "Go to Admin"
+    },
+    "menu": {
+        "userInformation": "User information",
+        "notifications": "Notifications",
+        "wishlists": "Wishlists",
+        "yourTrips": "Your trips",
+        "messages": "Messages",
+        "logIn": "Log in",
+        "signUp": "Sign up",
+        "logOut": "Log out"
+    },
+    "footer": {
+        "support": {
+            "title": "Support",
+            "helpCenter": "Help center",
+            "airCover": "Air cover",
+            "antiDiscrimination": "Anti-discrimination",
+            "disabilitySupport": "Disability support",
+            "cancellationOptions": "Cancellation options",
+            "reportConcern": "Report neighbourhood concern"
+        },
+        "hosting": {
+            "title": "Hosting",
+            "airbnbYourHome": "Airbnb your home",
+            "airCoverForHosts": "AirCover for Hosts",
+            "hostingResources": "Hosting resources",
+            "communityForum": "Community forum",
+            "hostingResponsibly": "Hosting responsibly",
+            "joinHostingClass": "Join a free Hosting class"
+        },
+        "company": {
+            "title": "Airbnb",
+            "newsroom": "Newsroom",
+            "newFeatures": "New features",
+            "careers": "Careers",
+            "investors": "Investors",
+            "giftCards": "Gift cards",
+            "emergencyStays": "Airbnb.org emergency stays"
+        },
+        "copyright": "© 2024 Sky-high, Inc. · Privacy · Terms · Sitemap · Company details",
+        "language": "English (US)",
+        "currency": "₫ VND"
+    }
+}

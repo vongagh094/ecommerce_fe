@@ -11,6 +11,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { LoginModal } from "@/components/auth/login-modal"
 import { SignupModal } from "@/components/auth/signup-modal"
 import { useAuth } from "@/contexts/auth-context"
+import { usePropertyTranslations } from "@/hooks/use-translations"
 
 interface SearchBarProps {
   variant?: "default" | "compact"
@@ -32,6 +33,7 @@ export function SearchBar({ variant = "default", className = "", onSearchResults
   const [showLoginModal, setShowLoginModal] = useState(false)
   const [showSignupModal, setShowSignupModal] = useState(false)
   const { isLoggedIn, login } = useAuth()
+  const t = usePropertyTranslations()
 
   const searchRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
@@ -107,16 +109,16 @@ export function SearchBar({ variant = "default", className = "", onSearchResults
 
   const formatGuests = useCallback(() => {
     const total = searchData.guests.adults + searchData.guests.children
-    if (total === 1) return "1 guest"
-    return `${total} guests`
-  }, [searchData.guests])
+    if (total === 1) return `1 ${t('search.guest')}`
+    return `${total} ${t('search.guests')}`
+  }, [searchData.guests, t])
 
   const formatDateRange = useCallback(() => {
-    if (!searchData.checkIn || !searchData.checkOut) return "Add dates"
+    if (!searchData.checkIn || !searchData.checkOut) return t('search.addDates')
     const checkInStr = searchData.checkIn.toLocaleDateString("en-US", { month: "short", day: "numeric" })
     const checkOutStr = searchData.checkOut.toLocaleDateString("en-US", { month: "short", day: "numeric" })
     return `${checkInStr} - ${checkOutStr}`
-  }, [searchData.checkIn, searchData.checkOut])
+  }, [searchData.checkIn, searchData.checkOut, t])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -170,7 +172,7 @@ export function SearchBar({ variant = "default", className = "", onSearchResults
       <div className={`relative ${className}`} ref={searchRef}>
         <div className="flex items-center bg-white border border-gray-300 rounded-full shadow-sm px-6 py-3">
           <div className="text-sm">
-            <span className="font-semibold">{searchData.location || "Anywhere"}</span>
+            <span className="font-semibold">{searchData.location || t('search.anywhere')}</span>
             <span className="mx-2">·</span>
             <span>{formatDateRange()}</span>
             <span className="mx-2">·</span>
@@ -227,8 +229,8 @@ export function SearchBar({ variant = "default", className = "", onSearchResults
             onClick={() => setActiveModal(activeModal === "location" ? null : "location")}
             className="px-6 py-3 text-left hover:bg-gray-50 rounded-l-full transition-colors"
           >
-            <div className="text-xs font-semibold text-gray-800">Where</div>
-            <div className="text-sm text-gray-600 w-32 truncate">{searchData.location || "Search destinations"}</div>
+            <div className="text-xs font-semibold text-gray-800">{t('search.where')}</div>
+            <div className="text-sm text-gray-600 w-32 truncate">{searchData.location || t('search.searchDestinations')}</div>
           </button>
           <EnhancedLocationSearchModal
             isOpen={activeModal === "location"}
@@ -245,11 +247,11 @@ export function SearchBar({ variant = "default", className = "", onSearchResults
           onClick={() => setActiveModal(activeModal === "dates" ? null : "dates")}
           className="px-6 py-3 text-left hover:bg-gray-50 transition-colors"
         >
-          <div className="text-xs font-semibold text-gray-800">Check in</div>
+          <div className="text-xs font-semibold text-gray-800">{t('search.checkIn')}</div>
           <div className="text-sm text-gray-600">
             {searchData.checkIn
               ? searchData.checkIn.toLocaleDateString("en-US", { month: "short", day: "numeric" })
-              : "Add dates"}
+              : t('search.addDates')}
           </div>
         </button>
 
@@ -260,11 +262,11 @@ export function SearchBar({ variant = "default", className = "", onSearchResults
           onClick={() => setActiveModal(activeModal === "dates" ? null : "dates")}
           className="px-6 py-3 text-left hover:bg-gray-50 transition-colors"
         >
-          <div className="text-xs font-semibold text-gray-800">Check out</div>
+          <div className="text-xs font-semibold text-gray-800">{t('search.checkOut')}</div>
           <div className="text-sm text-gray-600">
             {searchData.checkOut
               ? searchData.checkOut.toLocaleDateString("en-US", { month: "short", day: "numeric" })
-              : "Add dates"}
+              : t('search.addDates')}
           </div>
         </button>
 
@@ -276,7 +278,7 @@ export function SearchBar({ variant = "default", className = "", onSearchResults
             onClick={() => setActiveModal(activeModal === "guests" ? null : "guests")}
             className="px-6 py-3 text-left hover:bg-gray-50 transition-colors"
           >
-            <div className="text-xs font-semibold text-gray-800">Who</div>
+            <div className="text-xs font-semibold text-gray-800">{t('search.who')}</div>
             <div className="text-sm text-gray-600">{formatGuests()}</div>
           </button>
           <GuestSelectorModal

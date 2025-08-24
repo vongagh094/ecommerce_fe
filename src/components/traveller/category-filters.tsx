@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter, usePathname, useSearchParams } from "next/navigation"
 import { propertyApi } from "@/lib/api"
-import { getCategoryIconByCode, getCategoryLabelByCode } from "./category-icons"
+import { getCategoryIconByCode, getCategoryLabelByCode, useTranslatedCategoryLabel } from "./category-icons"
 
 interface CategoryItem {
   name: string
@@ -22,6 +22,7 @@ export function CategoryFilters({ onCategoryChange, selectedCategories: propSele
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  const getTranslatedCategoryLabel = useTranslatedCategoryLabel()
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -29,8 +30,8 @@ export function CategoryFilters({ onCategoryChange, selectedCategories: propSele
         const data = await propertyApi.getCategories()
         const normalized: CategoryItem[] = Array.isArray(data)
           ? (typeof (data as any[])[0] === 'string'
-              ? (data as string[]).map(code => ({ name: code, display_name: getCategoryLabelByCode(code) }))
-              : (data as any[]).map((c: any) => ({ name: c.name, display_name: c.display_name ?? getCategoryLabelByCode(c.name) }))
+              ? (data as string[]).map(code => ({ name: code, display_name: getTranslatedCategoryLabel(code) }))
+              : (data as any[]).map((c: any) => ({ name: c.name, display_name: c.display_name ?? getTranslatedCategoryLabel(c.name) }))
             )
           : []
         setCategories(normalized)
@@ -96,7 +97,7 @@ export function CategoryFilters({ onCategoryChange, selectedCategories: propSele
       <div className="flex space-x-8 overflow-x-auto pb-4">
         {categories.map((category) => {
           const IconComp = getCategoryIconByCode(category.name)
-          const displayName = category.display_name || getCategoryLabelByCode(category.name)
+          const displayName = category.display_name || getTranslatedCategoryLabel(category.name)
           const selected = isSelected(category.name)
 
           return (

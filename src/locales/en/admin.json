@@ -1,0 +1,24 @@
+{
+  "dashboard": {
+    "title": "Admin Dashboard",
+    "overview": "System Overview",
+    "users": "User Management",
+    "properties": "Property Management",
+    "analytics": "Analytics",
+    "settings": "Settings"
+  },
+  "users": {
+    "title": "Users",
+    "totalUsers": "Total Users",
+    "activeUsers": "Active Users",
+    "newUsers": "New Users",
+    "bannedUsers": "Banned Users"
+  },
+  "properties": {
+    "title": "Properties",
+    "totalProperties": "Total Properties",
+    "activeProperties": "Active Properties",
+    "pendingApproval": "Pending Approval",
+    "reported": "Reported"
+  }
+}

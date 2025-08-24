@@ -33,6 +33,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Amenity } from "@/types"
+import { usePropertyTranslations } from "@/hooks/use-translations"
 
 interface EnhancedPropertyAmenitiesProps {
     amenities: Amenity[]
@@ -216,12 +217,40 @@ const getCategoryDisplayName = (category: string): string => {
 
 export function EnhancedPropertyAmenities({ amenities }: EnhancedPropertyAmenitiesProps) {
     const [showAllAmenities, setShowAllAmenities] = useState(false)
+    const t = usePropertyTranslations()
+    
+    // Category display names mapping with translations
+    const getCategoryDisplayName = (category: string): string => {
+        const categoryNames: { [key: string]: string } = {
+            'basic': t('amenities.basicAmenities'),
+            'essentials': t('amenities.essentials'),
+            'family': t('amenities.family'),
+            'bedroom_and_laundry': t('amenities.bedroomAndLaundry'),
+            'bedroom': t('amenities.bedroom'),
+            'outdoor': t('amenities.outdoor'),
+            'home_safety': t('amenities.homeSafety'),
+            'safety': t('amenities.safety'),
+            'heating_and_cooling': t('amenities.heatingAndCooling'),
+            'location_features': t('amenities.locationFeatures'),
+            'kitchen_and_dining': t('amenities.kitchenAndDining'),
+            'scenic_views': t('amenities.scenicViews'),
+            'services': t('amenities.services'),
+            'entertainment': t('amenities.entertainment'),
+            'bathroom': t('amenities.bathroom'),
+            'internet': t('amenities.internetAndTechnology'),
+            'parking': t('amenities.parkingAndTransportation'),
+            'pool': t('amenities.poolAndWaterFeatures')
+        }
+
+        const key = category.toLowerCase().replace(/\s+/g, '_')
+        return categoryNames[key] || category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+    }
 
     if (!amenities || amenities.length === 0) {
         return (
             <div className="border-t pt-8">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">What this place offers</h3>
-                <p className="text-gray-500">No amenities information available.</p>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('amenities.whatThisPlaceOffers')}</h3>
+                <p className="text-gray-500">{t('amenities.noAmenitiesAvailable')}</p>
             </div>
         )
     }
@@ -243,7 +272,7 @@ export function EnhancedPropertyAmenities({ amenities }: EnhancedPropertyAmeniti
     return (
         <>
             <div className="border-t pt-8">
-                <h3 className="text-lg font-semibold text-gray-900 mb-6">What this place offers</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-6">{t('amenities.whatThisPlaceOffers')}</h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {displayAmenities.map((amenity) => {
@@ -267,7 +296,7 @@ export function EnhancedPropertyAmenities({ amenities }: EnhancedPropertyAmeniti
                             onClick={() => setShowAllAmenities(true)}
                             className="border-gray-900 text-gray-900 hover:bg-gray-50"
                         >
-                            Show all {amenities.length} amenities
+                            {t('amenities.showAllAmenities').replace('{count}', amenities.length.toString())}
                         </Button>
                     </div>
                 )}
@@ -277,7 +306,7 @@ export function EnhancedPropertyAmenities({ amenities }: EnhancedPropertyAmeniti
             <Dialog open={showAllAmenities} onOpenChange={setShowAllAmenities}>
                 <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
                     <DialogHeader>
-                        <DialogTitle>What this place offers</DialogTitle>
+                        <DialogTitle>{t('amenities.whatThisPlaceOffers')}</DialogTitle>
                     </DialogHeader>
 
                     <div className="space-y-8">

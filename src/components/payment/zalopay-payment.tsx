@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { CreditCard, Shield, Clock, AlertCircle, CheckCircle, LogIn } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -10,6 +10,7 @@ import { paymentApi, paymentUtils, PaymentErrorHandler } from "@/lib/api/payment
 import { v4 as uuidv4 } from 'uuid'
 import { useAuth } from "@/contexts/auth-context"
 import { useAuth0 } from "@/contexts/auth0-context"
+import { usePaymentTranslations, useCommonTranslations } from "@/hooks/use-translations"
 
 // Deterministic date formatter to avoid SSR/CSR locale/timezone mismatches
 const formatDate = (isoDateString: string): string => {
@@ -48,6 +49,8 @@ export function ZaloPayPayment({
   const maxVerificationAttempts = 10
   const { isLoggedIn } = useAuth()
   const { loginWithRedirect } = useAuth0()
+  const t = usePaymentTranslations()
+  const common = useCommonTranslations()
 
   // Check for return from ZaloPay
   useEffect(() => {
@@ -57,7 +60,7 @@ export function ZaloPayPayment({
       setPaymentState('verifying')
       verifyPaymentStatus(urlAppTransId)
     }
-  }, [])
+  }, [paymentState, verifyPaymentStatus])
 
   const handleLogin = () => {
     // Save current URL for return after login
@@ -81,7 +84,7 @@ export function ZaloPayPayment({
     }
 
     if (!paymentUtils.validatePaymentAmount(amount)) {
-      setError('Invalid payment amount')
+      setError(t('errors.invalidAmount'))
       return
     }
 
@@ -149,9 +152,9 @@ export function ZaloPayPayment({
     }
   }
 
-  const verifyPaymentStatus = async (transactionId: string) => {
+  const verifyPaymentStatus = useCallback(async (transactionId: string) => {
     if (verificationAttempts >= maxVerificationAttempts) {
-      setError('Payment verification timeout. Please contact support.')
+      setError(t('errors.verificationTimeout'))
       setPaymentState('failed')
       return
     }
@@ -190,7 +193,7 @@ export function ZaloPayPayment({
           break
           
         default:
-          setError('Unknown payment status. Please contact support.')
+          setError(t('errors.unknownStatus'))
           setPaymentState('failed')
       }
     } catch (error: any) {
@@ -207,7 +210,7 @@ export function ZaloPayPayment({
       // Retry verification after delay
       setTimeout(() => verifyPaymentStatus(transactionId), 5000)
     }
-  }
+  }, [verificationAttempts, maxVerificationAttempts, t, appTransId, onPaymentSuccess, onPaymentError])
 
   const handleRetryPayment = () => {
     setPaymentState('idle')

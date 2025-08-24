@@ -1,0 +1,55 @@
+{
+  "title": "Payment with ZaloPay",
+  "summary": {
+    "title": "Payment Summary",
+    "property": "Property:",
+    "checkIn": "Check-in:",
+    "checkOut": "Check-out:",
+    "nights": "Nights:",
+    "totalAmount": "Total Amount:"
+  },
+  "security": {
+    "title": "Secure Payment",
+    "description": "Your payment will be processed securely through ZaloPay. You will be redirected to ZaloPay's secure payment gateway."
+  },
+  "buttons": {
+    "payWithZaloPay": "Pay with ZaloPay",
+    "cancelPayment": "Cancel Payment",
+    "loginToContinue": "Log In to Continue"
+  },
+  "states": {
+    "authRequired": {
+      "title": "Authentication Required",
+      "description": "You need to be logged in to make a payment. Please log in to continue."
+    },
+    "creating": {
+      "title": "Creating Payment Order",
+      "description": "Please wait while we prepare your payment..."
+    },
+    "redirecting": {
+      "title": "Redirecting to ZaloPay",
+      "description": "You will be redirected to ZaloPay to complete your payment..."
+    },
+    "verifying": {
+      "title": "Verifying Payment",
+      "description": "Please wait while we verify your payment status...",
+      "attempt": "Attempt {current} of {max}"
+    },
+    "completed": {
+      "title": "Payment Successful!",
+      "description": "Your payment has been processed successfully. You will be redirected to your booking confirmation."
+    },
+    "failed": {
+      "title": "Payment Failed"
+    }
+  },
+  "info": {
+    "sessionExpires": "Payment session expires in 15 minutes",
+    "redirectInfo": "After clicking \"Pay with ZaloPay\", you'll be redirected to ZaloPay's secure payment page. Complete your payment there and you'll be brought back to confirm your booking."
+  },
+  "errors": {
+    "invalidAmount": "Invalid payment amount",
+    "verificationTimeout": "Payment verification timeout. Please contact support.",
+    "unknownStatus": "Unknown payment status. Please contact support."
+  }
+}

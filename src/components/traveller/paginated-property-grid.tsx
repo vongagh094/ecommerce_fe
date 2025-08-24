@@ -7,6 +7,7 @@ import { Heart, Star, MapPin } from "lucide-react"
 import { PropertyCard } from "@/types"
 import { formatPrice } from "@/lib/utils"
 import { Pagination } from "@/components/shared/pagination"
+import { usePropertyTranslations } from "@/hooks/use-translations"
 
 interface PaginatedPropertyGridProps {
     properties: PropertyCard[]
@@ -40,6 +41,7 @@ export function PaginatedPropertyGrid({
     className = ""
 }: PaginatedPropertyGridProps) {
     const [favoriteProperties, setFavoriteProperties] = useState<Set<string>>(new Set())
+    const t = usePropertyTranslations()
 
     // Handle favorite toggle
     const handleToggleFavorite = useCallback((propertyId: string, e: React.MouseEvent) => {
@@ -81,7 +83,7 @@ export function PaginatedPropertyGrid({
                         <button
                             onClick={(e) => handleToggleFavorite(property.id, e)}
                             className="absolute top-3 right-3 p-2 hover:scale-110 transition-transform z-10"
-                            aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+                            aria-label={isFavorite ? t('favorites.removeFromFavorites') : t('favorites.addToFavorites')}
                         >
                             <Heart
                                 className={`h-5 w-5 ${isFavorite
@@ -94,7 +96,7 @@ export function PaginatedPropertyGrid({
                         {/* Guest Favorite Badge */}
                         {property.is_guest_favorite && (
                             <div className="absolute top-3 left-3 bg-white px-2 py-1 rounded-full text-xs font-medium">
-                                Guest favorite
+                                {t('favorites.guestFavorite')}
                             </div>
                         )}
 

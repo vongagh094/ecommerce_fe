@@ -1,0 +1,24 @@
+{
+  "dashboard": {
+    "title": "Bảng điều khiển Admin",
+    "overview": "Tổng quan hệ thống",
+    "users": "Quản lý người dùng",
+    "properties": "Quản lý bất động sản",
+    "analytics": "Phân tích",
+    "settings": "Cài đặt"
+  },
+  "users": {
+    "title": "Người dùng",
+    "totalUsers": "Tổng người dùng",
+    "activeUsers": "Người dùng hoạt động",
+    "newUsers": "Người dùng mới",
+    "bannedUsers": "Người dùng bị cấm"
+  },
+  "properties": {
+    "title": "Bất động sản",
+    "totalProperties": "Tổng bất động sản",
+    "activeProperties": "Bất động sản hoạt động",
+    "pendingApproval": "Chờ phê duyệt",
+    "reported": "Được báo cáo"
+  }
+}

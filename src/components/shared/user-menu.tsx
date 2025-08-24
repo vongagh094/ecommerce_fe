@@ -7,6 +7,7 @@ import { LoginModal } from "@/components/auth/login-modal"
 import { SignupModal } from "@/components/auth/signup-modal"
 import { useRouter } from "next/navigation"
 import { useAuth0 } from "@auth0/auth0-react"
+import { useNavigationTranslations } from "@/hooks/use-translations"
 
 export function UserMenu() {
   const [isOpen, setIsOpen] = useState(false)
@@ -15,6 +16,7 @@ export function UserMenu() {
   const menuRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
   const { isAuthenticated, loginWithRedirect, logout } = useAuth0()
+  const t = useNavigationTranslations()
 
   const handleLogout = () => {
     logout({ logoutParams: { returnTo: window.location.origin } })
@@ -64,7 +66,7 @@ export function UserMenu() {
                   }}
                   className="w-full py-3 px-6 bg-white border-2 border-black rounded-full text-black font-semibold hover:bg-gray-50 transition-colors"
                 >
-                  Log in
+                  {t.menu.logIn()}
                 </button>
                 <button
                   onClick={() => {
@@ -73,7 +75,7 @@ export function UserMenu() {
                   }}
                   className="w-full py-3 px-6 bg-white border-2 border-black rounded-full text-black font-semibold hover:bg-gray-50 transition-colors"
                 >
-                  Sign up
+                  {t.menu.signUp()}
                 </button>
               </div>
             ) : (
@@ -87,7 +89,7 @@ export function UserMenu() {
                   className="w-full text-left py-3 px-3 rounded-lg hover:bg-gray-200 transition-colors flex items-center space-x-3"
                 >
                   <User className="h-4 w-4" />
-                  <span>User information</span>
+                  <span>{t.menu.userInformation()}</span>
                 </button>
                 <button
                   onClick={() => {
@@ -97,7 +99,7 @@ export function UserMenu() {
                   className="w-full text-left py-3 px-3 rounded-lg hover:bg-gray-200 transition-colors flex items-center space-x-3"
                 >
                   <Bell className="h-4 w-4" />
-                  <span>Notifications</span>
+                  <span>{t.menu.notifications()}</span>
                 </button>
                 <button
                   onClick={() => {
@@ -107,7 +109,7 @@ export function UserMenu() {
                   className="w-full text-left py-3 px-3 rounded-lg hover:bg-gray-200 transition-colors flex items-center space-x-3"
                 >
                   <Heart className="h-4 w-4" />
-                  <span>Wishlists</span>
+                  <span>{t.menu.wishlists()}</span>
                 </button>
                 <button
                   onClick={() => {
@@ -117,7 +119,7 @@ export function UserMenu() {
                   className="w-full text-left py-3 px-3 rounded-lg hover:bg-gray-200 transition-colors flex items-center space-x-3"
                 >
                   <MapPin className="h-4 w-4" />
-                  <span>Your trips</span>
+                  <span>{t.menu.yourTrips()}</span>
                 </button>
                 <button
                   onClick={() => {
@@ -127,14 +129,14 @@ export function UserMenu() {
                   className="w-full text-left py-3 px-3 rounded-lg hover:bg-gray-200 transition-colors flex items-center space-x-3"
                 >
                   <MessageCircle className="h-4 w-4" />
-                  <span>Messages</span>
+                  <span>{t.menu.messages()}</span>
                 </button>
                 <hr className="my-2 border-gray-300" />
                 <button
                   onClick={handleLogout}
                   className="w-full text-left py-3 px-3 rounded-lg hover:bg-gray-200 transition-colors text-gray-600"
                 >
-                  Log out
+                  {t.menu.logOut()}
                 </button>
               </div>
             )}
