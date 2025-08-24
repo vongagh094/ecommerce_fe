@@ -364,19 +364,6 @@ export function PropertyGallery({ images, onFavoriteToggle, isFavorite }: Proper
                   />
                 </button>
               )}
-              {index === 4 && sortedImages.length > 5 && (
-                <button
-                  onClick={() => setShowAllPhotos(true)}
-                  className="absolute inset-0 bg-black/30 flex items-center justify-center text-white text-lg font-medium"
-                >
-                  Show all photos
-                </button>
-              )}
-              {getImageLoadState(`preview-${image.id}`) === 'loading' && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-10 h-10 border-4 border-white/30 border-t-white rounded-full animate-spin" />
-                </div>
-              )}
             </div>
           ))}
         </div>

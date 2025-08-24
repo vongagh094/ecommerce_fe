@@ -19,6 +19,7 @@ import {AuctionProvider} from "@/contexts/auction-calendar-context"
 import { useAuth } from "@/contexts/auth-context"
 import { useWishlist } from "@/hooks/use-wishlist"
 import { toast } from "@/hooks/use-toast"
+import {WinnerProvider} from "@/contexts/winner-context";
 
 export default function PropertyPage() {
   const params = useParams()
@@ -137,85 +138,93 @@ export default function PropertyPage() {
   return (
     <AuctionProvider>
       <CalendarProvider>
-        <div className="min-h-screen bg-white">
-          {/* Property Header */}
-          <PropertyHeader
-            title={property.title}
-            rating={property.rating.average}
-            reviewCount={property.rating.count}
-            location={`${property.location.city}, ${property.location.state}, ${property.location.country}`}
-            isSuperhost={property.host.is_super_host}
-            isFavorite={isFavorite}
-            onFavoriteToggle={handleFavoriteToggle}
-          />
+        <WinnerProvider>
+            <AuctionProvider>
+            <div className="min-h-screen bg-white">
+              {/* Property Header */}
+              <PropertyHeader
+                title={property.title}
+                rating={property.rating.average}
+                reviewCount={property.rating.count}
+                location={`${property.location.city}, ${property.location.state}, ${property.location.country}`}
+                isSuperhost={property.host.is_super_host}
+                isFavorite={isFavorite}
+                onFavoriteToggle={handleFavoriteToggle}
+              />
 
-          {/* Property Gallery */}
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
-            <PropertyGallery 
-              images={property.images} 
-              onFavoriteToggle={handleFavoriteToggle}
-              isFavorite={isFavorite}
-            />
-          </div>
-
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Main Content */}
-              <div className="lg:col-span-2 space-y-8">
-                {/* Property Details */}
-                <PropertyDetailsComponent
-                  propertyType={property.property_type}
-                  maxGuests={property.max_guests}
-                  bedrooms={property.bedrooms}
-                  bathrooms={property.bathrooms}
-                  description={property.description}
-                  highlights={property.highlights}
+              {/* Property Gallery */}
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+                <PropertyGallery 
+                  images={property.images} 
+                  onFavoriteToggle={handleFavoriteToggle}
+                  isFavorite={isFavorite}
                 />
-
-                {/* Amenities */}
-                <EnhancedPropertyAmenities amenities={property.amenities} />
-                <div className="lg:col-span-2 space-y-12">
-                  <CalenderBidingFeature property_id={Number(property.id)}/>
-                  {/*<HostProfile />*/}
-                </div>
-                {/* Location */}
-                <PropertyLocation
-                  location={property.location}
-                  locationDescriptions={property.location_descriptions}
-                />
-
-                {/* Reviews */}
-                <PropertyReviews
-                  reviews={{
-                    average_rating: property.reviews.average_rating,
-                    total_reviews: property.reviews.total_reviews,
-                    rating_breakdown: {
-                      cleanliness: property.reviews.rating_breakdown.cleanliness,
-                      accuracy: property.reviews.rating_breakdown.accuracy,
-                      location: property.reviews.rating_breakdown.location,
-                      checking: property.reviews.rating_breakdown.checking,
-                      communication: property.reviews.rating_breakdown.communication,
-                      value: property.reviews.rating_breakdown.value,
-                    },
-                    recent_reviews: property.reviews.recent_reviews,
-                  }}
-                  propertyId={property.id}
-                  reviewerId={Number(user?.id ?? 0)}
-                  revieweeId={Number(property.host.id)}
-                /> 
               </div>
 
-              {/* Host Profile */}
-              <div className="lg:col-span-1">
-                <div className="lg:col-span-1 space-y-6">
-                  <SimpleAuctionSelector propertyId={Number(property.id)}/>
-                  {/* <BookingPanel user_id={Number(user?.id)} property_id={Number(property.id)} /> */}
-                  <HostProfile host={property.host} />
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  {/* Main Content */}
+                  <div className="lg:col-span-2 space-y-8">
+                    {/* Property Details */}
+                    <PropertyDetailsComponent
+                      propertyType={property.property_type}
+                      maxGuests={property.max_guests}
+                      bedrooms={property.bedrooms}
+                      bathrooms={property.bathrooms}
+                      description={property.description}
+                      highlights={property.highlights}
+
+                    />
+
+                    {/* Amenities */}
+                    <EnhancedPropertyAmenities amenities={property.amenities} />
+                    <div className="lg:col-span-2 space-y-12">
+                          <CalenderBidingFeature property_id={Number(property.id)}/>
+                        {/*<HostProfile />*/}
+                    </div>
+                    {/* Location */}
+                    <PropertyLocation
+                      location={property.location}
+                      locationDescriptions={property.location_descriptions}
+                    />
+
+
+                    {/* Reviews */}
+                    <PropertyReviews
+                      reviews={{
+                        average_rating: property.reviews.average_rating,
+                        total_reviews: property.reviews.total_reviews,
+                        rating_breakdown: {
+                          cleanliness: property.reviews.rating_breakdown.cleanliness,
+                          accuracy: property.reviews.rating_breakdown.accuracy,
+                          location: property.reviews.rating_breakdown.location,
+                          checking: property.reviews.rating_breakdown.checking,
+                          communication: property.reviews.rating_breakdown.communication,
+                          value: property.reviews.rating_breakdown.value,
+                        },
+                        recent_reviews: property.reviews.recent_reviews,
+                      }}
+                      propertyId={property.id}
+                      reviewerId={Number(user?.id ?? 0)}
+                      revieweeId={Number(property.host.id)}
+                    />
+                  </div>
+
+                    {/* Host Profile */}
+                    <div className="lg:col-span-1">
+                      <div className="lg:col-span-1 space-y-6">
+                            <SimpleAuctionSelector propertyId={Number(property.id)}/>
+                            <BookingPanel user_id={Number(user?.id)}
+                                      property_id={Number(property.id)}
+                            />
+                            <HostProfile host={property.host} />
+                      </div>
+                    </div>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
+          </AuctionProvider>
+        </WinnerProvider>
       </CalendarProvider>
     </AuctionProvider>
   )

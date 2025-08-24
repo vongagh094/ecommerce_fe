@@ -1,5 +1,6 @@
 import {BidData} from "@/types/bidding";
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+// const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+const API_URL ='http://localhost:8000/api';
 export const biddingAPI = {
     async fetch_sending_bid(bidData: BidData) {
         try {

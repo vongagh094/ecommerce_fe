@@ -1,4 +1,4 @@
-import { User, Award, MessageCircle, Home, Users, Bed, Bath, MapPin, Key, Mountain } from "lucide-react"
+import { User, Award, MessageCircle, Home, Users, Bed, Bath, MapPin, Key, Mountain, ArrowLeft } from "lucide-react"
 import { PropertyHighlight } from "@/types"
 import { getPropertyHighlight, type PropertyHighlightMapping } from "../../../property-highlights-mapping"
 
@@ -38,8 +38,11 @@ export function PropertyDetails({
   description,
   highlights
 }: PropertyDetailsProps) {
+
+
   return (
     <div className="space-y-8">
+
       {/* Property Type and Capacity */}
       <div className="flex items-start justify-between">
         <div>
