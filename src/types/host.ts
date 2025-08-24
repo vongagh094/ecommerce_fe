@@ -23,6 +23,13 @@ export interface HostDashboardData {
   properties: HostProperty[]
 }
 
+export interface HostDashboardStats {
+  totalListing: number
+  totalBidActive: number
+  totalBooking: number
+  sales: number
+}
+
 export interface PropertySummary {
   id: string
   name: string

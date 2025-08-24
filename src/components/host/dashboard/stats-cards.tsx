@@ -19,25 +19,25 @@ export function StatsCards({ stats }: StatsCardsProps) {
 
   const statItems = [
     {
-      title: "Total listing",
+      title: "Tổng số listing",
       value: stats.totalListing.toString(),
       icon: "🏠",
       color: "bg-cyan-100 text-cyan-600",
     },
     {
-      title: "Total bid active",
+      title: "Tổng số đấu giá hoạt động",
       value: stats.totalBidActive.toString(),
       icon: "✅",
       color: "bg-green-100 text-green-600",
     },
     {
-      title: "Total booking",
+      title: "Tổng số booking",
       value: stats.totalBooking.toString(),
       icon: "⚡",
       color: "bg-cyan-100 text-cyan-600",
     },
     {
-      title: "Sales",
+      title: "Doanh thu",
       value: formatCurrency(stats.sales),
       icon: "💰",
       color: "bg-cyan-100 text-cyan-600",

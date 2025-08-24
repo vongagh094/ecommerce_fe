@@ -31,15 +31,15 @@ const VisuallyHidden = ({ children }: { children: React.ReactNode }) => {
 
 interface PropertyGalleryProps {
   images: PropertyImage[]
-  onFavoriteToggle?: () => void
-  isFavorite?: boolean
+  onFavoriteToggle: () => void
+  isFavorite: boolean
 }
 
 interface ImageLoadState {
   [key: string]: 'loading' | 'loaded' | 'error'
 }
 
-export function PropertyGallery({ images, onFavoriteToggle, isFavorite = false }: PropertyGalleryProps) {
+export function PropertyGallery({ images, onFavoriteToggle, isFavorite }: PropertyGalleryProps) {
   const [showAllPhotos, setShowAllPhotos] = useState(false)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [imageLoadStates, setImageLoadStates] = useState<ImageLoadState>({})
@@ -275,71 +275,9 @@ export function PropertyGallery({ images, onFavoriteToggle, isFavorite = false }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [showAllPhotos, nextImage, prevImage])
+  }, [showAllPhotos, prevImage, nextImage])
 
-  // Scroll to current thumbnail when index changes
-  useEffect(() => {
-    if (showAllPhotos) {
-      scrollToThumbnail(currentImageIndex)
-    }
-  }, [currentImageIndex, showAllPhotos, scrollToThumbnail])
-
-  // Add touch swipe support for mobile
-  useEffect(() => {
-    if (!showAllPhotos || !modalContentRef.current) return
-    
-    let touchStartX = 0
-    let touchEndX = 0
-    
-    const handleTouchStart = (e: TouchEvent) => {
-      touchStartX = e.changedTouches[0].screenX
-    }
-    
-    const handleTouchEnd = (e: TouchEvent) => {
-      touchEndX = e.changedTouches[0].screenX
-      handleSwipe()
-    }
-    
-    const handleSwipe = () => {
-      // Minimum swipe distance (px)
-      const minSwipeDistance = 50
-      
-      if (touchStartX - touchEndX > minSwipeDistance) {
-        // Swiped left, go to next image
-        nextImage()
-      } else if (touchEndX - touchStartX > minSwipeDistance) {
-        // Swiped right, go to previous image
-        prevImage()
-      }
-    }
-    
-    const element = modalContentRef.current
-    
-    element.addEventListener('touchstart', handleTouchStart)
-    element.addEventListener('touchend', handleTouchEnd)
-    
-    return () => {
-      element.removeEventListener('touchstart', handleTouchStart)
-      element.removeEventListener('touchend', handleTouchEnd)
-    }
-  }, [showAllPhotos, nextImage, prevImage, modalContentRef])
-
-  // Show controls initially when modal opens
-  useEffect(() => {
-    if (showAllPhotos) {
-      setShowControls(true)
-      
-      if (controlsTimeoutRef.current) {
-        clearTimeout(controlsTimeoutRef.current)
-      }
-      
-      controlsTimeoutRef.current = setTimeout(() => {
-        setShowControls(false)
-      }, 3000)
-    }
-  }, [showAllPhotos])
-
-  // Cleanup on unmount
+  // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
       if (controlsTimeoutRef.current) {
@@ -348,179 +286,111 @@ export function PropertyGallery({ images, onFavoriteToggle, isFavorite = false }
     }
   }, [])
 
-  // Handle empty state
-  if (!images || images.length === 0) {
-    return (
-      <div className="w-full rounded-xl overflow-hidden bg-gray-100 aspect-[3/2] flex items-center justify-center">
-        <div className="text-center text-gray-500">
-          <Grid3X3 className="h-8 w-8 mx-auto mb-2 opacity-50" />
-          <p>No images available</p>
-        </div>
-      </div>
-    )
-  }
+  // Scroll to current thumbnail when index changes
+  useEffect(() => {
+    if (showAllPhotos && !isGridView) {
+      scrollToThumbnail(currentImageIndex)
+    }
+  }, [currentImageIndex, showAllPhotos, isGridView, scrollToThumbnail])
+
+  // Default layout for 5 or fewer images
+  const defaultLayout = sortedImages.length <= 5
+  const primaryImage = sortedImages[0]
+
+  // Handle favorite toggle with stopPropagation to prevent gallery interactions
+  const handleFavoriteClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+    e.preventDefault()
+    onFavoriteToggle()
+  }, [onFavoriteToggle])
 
   return (
     <>
-      {/* Main Gallery Grid */}
-      <div 
-        ref={galleryRef}
-        className="relative w-full rounded-xl overflow-hidden cursor-pointer"
-        onMouseEnter={() => setShowControls(true)}
-        onMouseLeave={() => setShowControls(false)}
-      >
-        {/* Desktop Gallery Layout */}
-        <div className="hidden md:grid grid-cols-4 grid-rows-2 gap-2 h-[480px]">
-          {/* Main Large Image */}
-          <div className="col-span-2 row-span-2 relative group overflow-hidden">
+      {/* Default View */}
+      {defaultLayout ? (
+        <div className="grid grid-cols-1 gap-2">
+          <div className="relative aspect-[3/2] rounded-xl overflow-hidden">
             <Image
-              src={sortedImages[0]?.image_url || '/placeholder.svg'}
-              alt={sortedImages[0]?.alt_text || "Main property image"}
+              src={primaryImage?.image_url || '/placeholder.svg'}
+              alt={primaryImage?.alt_text || 'Primary property image'}
               fill
-              className="object-cover transition-transform duration-300 group-hover:scale-105"
-              sizes="(max-width: 768px) 100vw, 50vw"
+              className="object-cover"
+              sizes="100vw"
               priority
-              onClick={() => {
-                setCurrentImageIndex(0)
-                setShowAllPhotos(true)
-              }}
-              onLoadStart={() => updateImageLoadState(`main-${sortedImages[0]?.id}`, 'loading')}
-              onLoad={() => updateImageLoadState(`main-${sortedImages[0]?.id}`, 'loaded')}
-              onError={() => updateImageLoadState(`main-${sortedImages[0]?.id}`, 'error')}
+              onLoad={() => updateImageLoadState(`main-${primaryImage?.id || 'primary'}`, 'loaded')}
+              onError={() => updateImageLoadState(`main-${primaryImage?.id || 'primary'}`, 'error')}
             />
-            {getImageLoadState(`main-${sortedImages[0]?.id}`) === 'loading' && (
-              <div className="absolute inset-0 bg-gray-200 animate-pulse" />
+            <button
+              onClick={handleFavoriteClick}
+              className="absolute top-3 right-3 p-2 hover:scale-110 transition-transform z-10"
+              aria-label={isFavorite ? "Xóa khỏi yêu thích" : "Thêm vào yêu thích"}
+            >
+              <Heart
+                className={`h-5 w-5 ${isFavorite ? 'fill-rose-500 text-rose-500' : 'fill-black/50 text-white stroke-white'}`}
+              />
+            </button>
+            {getImageLoadState(`main-${primaryImage?.id || 'primary'}`) === 'loading' && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-10 h-10 border-4 border-white/30 border-t-white rounded-full animate-spin" />
+              </div>
             )}
           </div>
-
-          {/* Grid of 4 Smaller Images */}
-          {sortedImages.slice(1, 5).map((image, index) => (
-            <div 
-              key={image.id} 
-              className="relative group overflow-hidden"
-              onClick={() => {
-                setCurrentImageIndex(index + 1)
-                setShowAllPhotos(true)
-              }}
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 rounded-xl overflow-hidden">
+          {sortedImages.slice(0, 5).map((image, index) => (
+            <div
+              key={image.id}
+              className={`relative ${index === 0 ? 'col-span-2 row-span-2' : 'aspect-[4/3]'}`}
             >
               <Image
                 src={image.image_url}
-                alt={image.alt_text || `Property image ${index + 2}`}
+                alt={image.alt_text || `Property image ${index + 1}`}
                 fill
-                className="object-cover transition-transform duration-300 group-hover:scale-105"
-                sizes="(max-width: 768px) 50vw, 25vw"
-                onLoadStart={() => updateImageLoadState(image.id, 'loading')}
-                onLoad={() => updateImageLoadState(image.id, 'loaded')}
-                onError={() => updateImageLoadState(image.id, 'error')}
+                className="object-cover"
+                sizes={index === 0 ? '50vw' : '25vw'}
+                priority={index === 0}
+                onLoad={() => updateImageLoadState(`preview-${image.id}`, 'loaded')}
+                onError={() => updateImageLoadState(`preview-${image.id}`, 'error')}
               />
-              {getImageLoadState(image.id) === 'loading' && (
-                <div className="absolute inset-0 bg-gray-200 animate-pulse" />
+              {index === 0 && (
+                <button
+                  onClick={handleFavoriteClick}
+                  className="absolute top-3 right-3 p-2 hover:scale-110 transition-transform z-10"
+                  aria-label={isFavorite ? "Xóa khỏi yêu thích" : "Thêm vào yêu thích"}
+                >
+                  <Heart
+                    className={`h-5 w-5 ${isFavorite ? 'fill-rose-500 text-rose-500' : 'fill-black/50 text-white stroke-white'}`}
+                  />
+                </button>
               )}
-
-              {/* Show "See all photos" on the last image if there are more than 5 */}
-              {index === 3 && sortedImages.length > 5 && (
-                <div className="absolute inset-0 bg-black/30 flex items-center justify-center transition-opacity group-hover:bg-black/40">
-                  <span className="bg-white/90 px-4 py-2 rounded-lg font-medium text-sm">
-                    Show all photos
-                  </span>
+              {index === 4 && sortedImages.length > 5 && (
+                <button
+                  onClick={() => setShowAllPhotos(true)}
+                  className="absolute inset-0 bg-black/30 flex items-center justify-center text-white text-lg font-medium"
+                >
+                  Show all photos
+                </button>
+              )}
+              {getImageLoadState(`preview-${image.id}`) === 'loading' && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-10 h-10 border-4 border-white/30 border-t-white rounded-full animate-spin" />
                 </div>
               )}
             </div>
           ))}
         </div>
+      )}
 
-        {/* Mobile Gallery Layout - Single Image with Carousel */}
-        <div className="md:hidden relative aspect-[4/3]">
-          <Image
-            src={sortedImages[currentImageIndex]?.image_url || '/placeholder.svg'}
-            alt={sortedImages[currentImageIndex]?.alt_text || "Property image"}
-            fill
-            className="object-cover"
-            sizes="100vw"
-            priority
-            onClick={() => setShowAllPhotos(true)}
-            onLoadStart={() => updateImageLoadState(`mobile-${sortedImages[currentImageIndex]?.id}`, 'loading')}
-            onLoad={() => updateImageLoadState(`mobile-${sortedImages[currentImageIndex]?.id}`, 'loaded')}
-            onError={() => updateImageLoadState(`mobile-${sortedImages[currentImageIndex]?.id}`, 'error')}
-          />
-          {getImageLoadState(`mobile-${sortedImages[currentImageIndex]?.id}`) === 'loading' && (
-            <div className="absolute inset-0 bg-gray-200 animate-pulse" />
-          )}
-
-          {/* Mobile Image Counter */}
-          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/60 text-white px-3 py-1.5 rounded-full text-xs font-medium">
-            {currentImageIndex + 1} / {totalImages}
-          </div>
-
-          {/* Mobile Navigation Arrows */}
-          {totalImages > 1 && (
-            <>
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation()
-                  prevImage()
-                }}
-                className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 p-1.5 rounded-full shadow-md z-10"
-                aria-label="Previous image"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation()
-                  nextImage()
-                }}
-                className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 p-1.5 rounded-full shadow-md z-10"
-                aria-label="Next image"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </button>
-            </>
-          )}
-        </div>
-
-        {/* Show All Photos Button */}
-        <button
-          onClick={() => setShowAllPhotos(true)}
-          className={`absolute right-4 bottom-4 bg-white text-black px-3 py-1.5 rounded-lg text-sm font-medium shadow-md flex items-center transition-opacity duration-300 ${
-            showControls ? 'opacity-100' : 'opacity-0 md:opacity-0 md:group-hover:opacity-100'
-          }`}
-        >
-          <Grid3X3 className="h-4 w-4 mr-2" />
-          Show all photos
-        </button>
-
-        {/* Favorite Button */}
-        {onFavoriteToggle && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              onFavoriteToggle()
-            }}
-            className="absolute top-4 right-4 p-2 rounded-full bg-white/80 hover:bg-white shadow-md transition-transform hover:scale-110"
-            aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
-          >
-            <Heart
-              className={`h-5 w-5 ${
-                isFavorite ? 'fill-rose-500 text-rose-500' : 'text-gray-700'
-              }`}
-            />
-          </button>
-        )}
-      </div>
-
-      {/* Full Screen Gallery Modal */}
-      <Dialog open={showAllPhotos} onOpenChange={(open) => { setShowAllPhotos(open); if (!open) setIsGridView(false) }}>
-        <DialogContent 
-          aria-label="Property Image Gallery"
-          className="max-w-[95vw] w-[95vw] h-[95vh] p-0 overflow-hidden bg-black" 
-          onMouseMove={handleMouseMove}
-          onClick={handleMouseMove}
-        >
+      {/* Fullscreen Gallery Modal */}
+      <Dialog open={showAllPhotos} onOpenChange={setShowAllPhotos}>
+        <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 bg-black" aria-describedby={undefined}>
           <DialogTitle className="sr-only">Property Image Gallery</DialogTitle>
           <div 
             ref={modalContentRef}
-            className="relative h-full flex flex-col"
+            className="relative flex flex-col h-[95vh]"
+            onMouseMove={handleMouseMove}
+            onClick={handleMouseMove}
           >
             {/* Top Gradient Overlay with Controls */}
             <div className={`pointer-events-none absolute top-0 left-0 right-0 z-50 transition-opacity duration-300 ${
@@ -549,6 +419,17 @@ export function PropertyGallery({ images, onFavoriteToggle, isFavorite = false }
                 </div>
               </div>
             </div>
+
+            {/* Favorite Button in Modal */}
+            <button
+              onClick={handleFavoriteClick}
+              className="absolute top-3 right-3 p-2 hover:scale-110 transition-transform z-50 pointer-events-auto"
+              aria-label={isFavorite ? "Xóa khỏi yêu thích" : "Thêm vào yêu thích"}
+            >
+              <Heart
+                className={`h-5 w-5 ${isFavorite ? 'fill-rose-500 text-rose-500' : 'fill-black/50 text-white stroke-white'}`}
+              />
+            </button>
 
             {/* Main Image or Grid Display */}
             {isGridView ? (

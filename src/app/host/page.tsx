@@ -4,11 +4,11 @@ import { usePropertyDashboardData } from "@/hooks/use-dashboard-data"
 import { PropertySelector } from "@/components/host/property-selector"
 import { NewSalesOverviewChart } from "@/components/host/dashboard/new-sales-overview-chart"
 import { SummaryCards } from "@/components/host/dashboard/summary-cards"
-import { RatingBarChart } from "@/components/host/dashboard/rating-bar-chart" // Updated import
+// import { RatingBarChart } from "@/components/host/dashboard/rating-bar-chart"
 import { OccupancyChart } from "@/components/host/dashboard/occupancy-chart"
 
 export default function HostDashboard() {
-  const { properties, selectedProperty, setSelectedProperty, loading } = usePropertyDashboardData()
+  const { properties, selectedProperty, setSelectedProperty, loading, error } = usePropertyDashboardData()
 
   if (loading) {
     return (
@@ -24,8 +24,23 @@ export default function HostDashboard() {
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
             <div className="h-64 bg-gray-200 rounded-2xl"></div>
-            <div className="h-64 bg-gray-200 rounded-2xl"></div>
           </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="text-center text-red-600">
+          <p>{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Thử lại
+          </button>
         </div>
       </div>
     )
@@ -35,7 +50,7 @@ export default function HostDashboard() {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="text-center">
-          <p className="text-gray-600">No property selected</p>
+          <p className="text-gray-600">Không có bất động sản nào được chọn</p>
         </div>
       </div>
     )
@@ -76,8 +91,8 @@ export default function HostDashboard() {
 
       {/* Additional Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Rating Bar Chart */}
-        <RatingBarChart data={selectedProperty.ratingsDistribution} />
+        {/* Rating Bar Chart
+        <RatingBarChart data={selectedProperty.ratingsDistribution} /> */}
 
         {/* Occupancy Over Time Chart */}
         <OccupancyChart data={selectedProperty.occupancyData} />

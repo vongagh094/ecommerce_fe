@@ -1,188 +1,269 @@
-"use client";
+import { useState, useCallback, useEffect } from 'react';
+import axios from 'axios';
+import JSONbig from 'json-bigint';
+import { PropertyCard } from '@/types';
 
-import { useState, useCallback, useRef } from "react";
-import { PropertyDisplay, WishlistResponseDTO } from "@/types/index";
+interface WishlistHook {
+  properties: PropertyCard[];
+  error: string | null;
+  isLoading: boolean;
+  fetchProperties: (page: number) => Promise<void>;
+  handleFavoriteToggle: (propertyId: string) => Promise<void>;
+  addToWishlist: (userId: number, propertyId: string) => Promise<void>;
+  removeFromWishlist: (userId: number, propertyId: string) => Promise<void>;
+  checkWishlist: (userId: number) => Promise<boolean>;
+  getWishlistProperties: (userId: number) => Promise<string[]>;
+  currentPage: number;
+  totalPages: number;
+  total: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+}
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+const JSONbigInt = JSONbig({ storeAsString: true });
 
-export function useWishlist(userId: number, wishlistOnly: boolean = false) {
-  const [properties, setProperties] = useState<PropertyDisplay[]>([]);
+const customAxios = axios.create({
+  baseURL: apiUrl,
+  responseType: 'text',
+  transformResponse: [
+    function (data) {
+      if (!data) return data;
+      try {
+        console.log('Raw response data:', data);
+        const parsed = JSONbigInt.parse(data);
+        console.log('Parsed response data:', parsed);
+        return parsed;
+      } catch (err) {
+        console.error('Lỗi parse JSON:', err);
+        throw err;
+      }
+    },
+  ],
+});
+
+export const useWishlist = (userId: number, fetchOnMount: boolean = false): WishlistHook => {
+  const [properties, setProperties] = useState<PropertyCard[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const isFetchingRef = useRef(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [hasNext, setHasNext] = useState(false);
+  const [hasPrev, setHasPrev] = useState(false);
 
-  const fetchProperties = useCallback(async () => {
-    if (isFetchingRef.current) return;
-    isFetchingRef.current = true;
+  const ensureWishlistExists = useCallback(async () => {
+    try {
+      console.log('Checking wishlist existence:', `/wishlist/check?user_id=${userId}`);
+      const response = await customAxios.get(`/wishlist/check?user_id=${userId}`);
+      console.log('Wishlist check response:', response.data);
+      if (!response.data.exists) {
+        console.log('Creating wishlist:', `/wishlist/create?user_id=${userId}`);
+        await customAxios.post(`/wishlist/create?user_id=${userId}`);
+      }
+    } catch (err: any) {
+      setError('Không thể tạo/kiểm tra wishlist: ' + (err.response?.data?.error?.message || err.message));
+      throw err;
+    }
+  }, [userId]);
+
+  const addToWishlist = useCallback(async (userId: number, propertyId: string) => {
+    if (!propertyId) {
+      setError('ID bất động sản không hợp lệ');
+      throw new Error('ID bất động sản không hợp lệ');
+    }
     setIsLoading(true);
     setError(null);
     try {
-      console.log("Checking wishlist existence...");
-      const checkResponse = await fetch(`${apiUrl}/wishlist/check?user_id=${userId}`, {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-      });
-      if (!checkResponse.ok) {
-        const errorData = await checkResponse.json().catch(() => ({}));
-        console.error("Wishlist check error:", errorData);
-        throw new Error(errorData.detail?.detail || `Không thể kiểm tra wishlist: HTTP ${checkResponse.status}`);
-      }
-      const checkData = await checkResponse.json();
-      if (!checkData.exists) {
-        console.log("Wishlist does not exist, creating one...");
-        const createResponse = await fetch(`${apiUrl}/wishlist/create?user_id=${userId}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-        });
-        if (!createResponse.ok) {
-          const errorData = await createResponse.json().catch(() => ({}));
-          console.error("Wishlist creation error:", errorData);
-          throw new Error(errorData.detail?.detail || `Không thể tạo wishlist: HTTP ${createResponse.status}`);
-        }
-        console.log("Wishlist created successfully");
-      }
-
-      console.log("Fetching wishlist property IDs...");
-      const wishlistResponse = await fetch(`${apiUrl}/wishlist/${userId}/properties`, {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-      });
-      let wishlistData: WishlistResponseDTO = { property_ids: [] };
-      if (wishlistResponse.ok) {
-        wishlistData = await wishlistResponse.json();
-      } else {
-        const errorData = await wishlistResponse.json().catch(() => ({}));
-        console.warn("Wishlist fetch error:", errorData);
-      }
-      const wishlistPropertyIds = wishlistData.property_ids || [];
-      console.log("Wishlist property IDs:", wishlistPropertyIds);
-
-      if (wishlistOnly && wishlistPropertyIds.length === 0) {
-        setProperties([]);
-        setError("Danh sách yêu thích trống.");
-        return;
-      }
-
-      console.log("Fetching properties...");
-      const response = await fetch(`${apiUrl}/properties-host/list?limit=${wishlistOnly ? 100 : 12}&offset=0`, {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-      });
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error("Properties fetch error:", errorData);
-        throw new Error(
-          errorData.detail?.detail || `Không thể tải danh sách bất động sản: HTTP ${response.status}`
-        );
-      }
-      const data = await response.json();
-      console.log("Properties response:", data);
-      if (!Array.isArray(data)) {
-        throw new Error("Dữ liệu bất động sản không phải là mảng");
-      }
-      const mappedProperties: PropertyDisplay[] = data
-        .filter((property: any) => property.id && (!wishlistOnly || wishlistPropertyIds.includes(property.id)))
-        .map((property: any) => ({
-          id: property.id.toString(),
-          title: property.title || "Untitled Property",
-          price: `₫${(property.base_price || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`,
-          rating: property.rating?.average.substring(0, 4) || '0',
-          nights: 1,
-          image: property.images?.find((img: any) => img.is_primary)?.image_url || "/placeholder.svg",
-          isFavorite: wishlistPropertyIds.includes(property.id),
-          isGuestFavorite: property.is_guest_favorite || false,
-        }));
-      console.log("Mapped properties:", mappedProperties);
-      setProperties(mappedProperties);
-      if (mappedProperties.length === 0) {
-        setError(wishlistOnly ? "Danh sách yêu thích trống." : "Không tìm thấy bất động sản nào.");
-      }
+      await ensureWishlistExists();
+      const requestUrl = `/wishlist/${userId}/add-property?property_id=${encodeURIComponent(propertyId)}`;
+      console.log('Gửi yêu cầu thêm vào wishlist:', requestUrl, 'with propertyId:', propertyId);
+      await customAxios.post(requestUrl, {});
     } catch (err: any) {
-      console.error("fetchProperties error:", err);
-      setError(err.message || (wishlistOnly ? "Không thể tải danh sách yêu thích." : "Không thể tải bất động sản."));
+      const errorMessage = err.response?.data?.error?.message?.detail || err.response?.data?.detail || err.message;
+      console.error('Lỗi từ server:', errorMessage);
+      if (err.response?.status === 404) {
+        setError('Bất động sản không tồn tại');
+      } else if (err.response?.status === 500) {
+        setError('Lỗi server khi thêm bất động sản: ' + errorMessage);
+      } else {
+        setError('Không thể thêm bất động sản vào wishlist: ' + errorMessage);
+      }
+      throw err;
     } finally {
       setIsLoading(false);
-      isFetchingRef.current = false;
     }
-  }, [userId, wishlistOnly]);
+  }, [ensureWishlistExists]);
 
-  const handleFavoriteToggle = useCallback(
-    async (propertyId: string, isFavorite: boolean) => {
-      try {
-        const endpoint = isFavorite
-          ? `${apiUrl}/wishlist/${userId}/add-property?property_id=${propertyId}`
-          : `${apiUrl}/wishlist/${userId}/remove-property/${propertyId}`;
-        const method = isFavorite ? "POST" : "DELETE";
-        console.log(`Toggling favorite: propertyId=${propertyId}, isFavorite=${isFavorite}`);
-
-        // Optimistic update
-        if (wishlistOnly && !isFavorite) {
-          setProperties((prev) => prev.filter((p) => p.id !== propertyId));
-        } else {
-          setProperties((prev) =>
-            prev.map((p) => (p.id === propertyId ? { ...p, isFavorite } : p))
-          );
-        }
-
-        const response = await fetch(endpoint, {
-          method,
-          headers: { "Content-Type": "application/json" },
-        });
-
-        if (!response.ok) {
-          let errorData;
-          try {
-            errorData = await response.json();
-          } catch (e) {
-            errorData = { detail: { detail: `HTTP ${response.status}` } };
-          }
-          console.error("Favorite toggle error:", errorData);
-          if (
-            errorData.detail?.detail?.includes("Bất động sản đã có trong wishlist") ||
-            errorData.detail?.detail?.includes("đã tồn tại")
-          ) {
-            return; // Property already in wishlist, no need to update
-          }
-          throw new Error(
-            errorData.detail?.detail ||
-              errorData.message ||
-              `Không thể ${isFavorite ? "thêm vào" : "xóa khỏi"} wishlist: HTTP ${response.status}`
-          );
-        }
-
-        const updatedWishlist: WishlistResponseDTO = await response.json();
-        console.log("Updated wishlist:", updatedWishlist);
-
-        // Update properties to reflect the new wishlist state
-        setProperties((prev) =>
-          wishlistOnly
-            ? prev
-                .filter((p) => updatedWishlist.property_ids.includes(parseInt(p.id)))
-                .map((p) => ({
-                  ...p,
-                  isFavorite: true,
-                }))
-            : prev.map((p) => ({
-                ...p,
-                isFavorite: updatedWishlist.property_ids.includes(parseInt(p.id)),
-              }))
-        );
-        setError(null);
-      } catch (error: any) {
-        console.error("handleFavoriteToggle error:", error.message, error);
-        // Refetch to ensure consistency
-        await fetchProperties();
-        throw error; // Re-throw for PropertyGrid to handle
+  const removeFromWishlist = useCallback(async (userId: number, propertyId: string) => {
+    if (!propertyId) {
+      setError('ID bất động sản không hợp lệ');
+      throw new Error('ID bất động sản không hợp lệ');
+    }
+    setIsLoading(true);
+    setError(null);
+    try {
+      const requestUrl = `/wishlist/${userId}/remove-property/${propertyId}`;
+      console.log('Gửi yêu cầu xóa khỏi wishlist:', requestUrl, 'with propertyId:', propertyId);
+      await customAxios.delete(requestUrl);
+      console.log(`Successfully removed property ${propertyId} from wishlist`);
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.error?.message?.detail || err.response?.data?.detail || err.message;
+      console.error('Lỗi từ server:', errorMessage);
+      // Xử lý trường hợp backend trả 500 nhưng chứa '404' hoặc message không tồn tại
+      if (err.response?.status === 404 || errorMessage.includes('404') || errorMessage.includes('Bất động sản không có trong wishlist')) {
+        console.warn(`Property ${propertyId} not in wishlist or already removed, ignoring error`);
+        return; // Bỏ qua lỗi, xem như thành công (property đã không còn)
+      } else if (err.response?.status === 500) {
+        setError('Lỗi server khi xóa bất động sản: ' + errorMessage);
+      } else {
+        setError('Không thể xóa bất động sản khỏi wishlist: ' + errorMessage);
       }
-    },
-    [fetchProperties, userId, wishlistOnly]
-  );
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
-  return {
-    properties,
-    error,
-    isLoading,
-    fetchProperties,
-    handleFavoriteToggle,
+  const checkWishlist = useCallback(async (userId: number): Promise<boolean> => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const requestUrl = `/wishlist/check?user_id=${userId}`;
+      console.log('Kiểm tra wishlist:', requestUrl);
+      const response = await customAxios.get(requestUrl);
+      console.log('Wishlist check response:', response.data);
+      return response.data.exists;
+    } catch (err: any) {
+      setError('Không thể kiểm tra wishlist: ' + (err.response?.data?.error?.message || err.message));
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const getWishlistProperties = useCallback(async (userId: number): Promise<string[]> => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const requestUrl = `/wishlist/${userId}/properties`;
+      console.log('Lấy danh sách bất động sản trong wishlist:', requestUrl);
+      const response = await customAxios.get(requestUrl);
+      const propertyIds = response.data.property_ids || [];
+      console.log('Wishlist property IDs (after parse):', propertyIds);
+      console.log('Wishlist property IDs types:', propertyIds.map((id: any) => typeof id));
+      return propertyIds;
+    } catch (err: any) {
+      console.error('Lỗi khi lấy wishlist:', err);
+      setError('Không thể lấy danh sách bất động sản trong wishlist: ' + (err.response?.data?.error?.message || err.message));
+      return [];
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const fetchProperties = useCallback(async (page: number = 1) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const requestUrl = `/wishlist/${userId}/properties?page=${page}&per_page=20`;
+      console.log('Fetching wishlist properties:', requestUrl);
+      const response = await customAxios.get(requestUrl);
+      console.log('Wishlist properties response:', response.data);
+      const propertyIds: string[] = response.data.property_ids || [];
+      
+      const fetchedProperties: PropertyCard[] = await Promise.all(
+        propertyIds.map(async (id: string) => {
+          try {
+            const propResponse = await customAxios.get(`/properties/${id}`);
+            console.log(`Fetched property details for ID ${id}:`, propResponse.data);
+            return {
+              ...propResponse.data,
+              id: String(propResponse.data.id),
+              isFavorite: true
+            };
+          } catch (fetchErr: any) {
+            console.error(`Error fetching property ${id}:`, fetchErr);
+            return null;
+          }
+        })
+      );
+
+      const validProperties = fetchedProperties.filter((prop): prop is PropertyCard => prop !== null);
+      setProperties(validProperties);
+      setCurrentPage(response.data.current_page || 1);
+      setTotalPages(response.data.total_pages || 1);
+      setTotal(response.data.total || 0);
+      setHasNext(response.data.has_next || false);
+      setHasPrev(response.data.has_prev || false);
+    } catch (err: any) {
+      console.error('Lỗi khi lấy danh sách bất động sản:', err);
+      setError('Không thể lấy danh sách bất động sản: ' + (err.response?.data?.error?.message || err.message));
+      setProperties([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [userId]);
+
+  const handleFavoriteToggle = useCallback(async (propertyId: string) => {
+    if (!propertyId) {
+      setError('ID bất động sản không hợp lệ');
+      throw new Error('ID bất động sản không hợp lệ');
+    }
+    try {
+      const isInWishlist = properties.some(p => p.id === propertyId);
+      if (isInWishlist) {
+        // Thử remove, nhưng nếu lỗi vì đã xóa (404-like), vẫn tiếp tục filter UI
+        try {
+          await removeFromWishlist(userId, propertyId);
+        } catch (removeErr: any) {
+          const errorMessage = removeErr.response?.data?.error?.message?.detail || removeErr.response?.data?.detail || removeErr.message;
+          if (removeErr.response?.status === 404 ||
+              removeErr.response?.status === 500 && (errorMessage.includes('404') || errorMessage.includes('Bất động sản không có trong wishlist'))) {
+            console.warn(`Property ${propertyId} already removed from wishlist, proceeding with UI update`);
+            // Không throw, tiếp tục filter
+          } else {
+            throw removeErr; // Throw lỗi khác để catch bên ngoài xử lý
+          }
+        }
+        // Luôn filter properties sau remove (thành công hoặc đã xóa)
+        setProperties(prev => prev.filter(p => p.id !== propertyId));
+      } else {
+        await addToWishlist(userId, propertyId);
+        // Fetch property details to add to wishlist
+        const response = await customAxios.get(`/properties/${propertyId}`);
+        const newProperty: PropertyCard = {
+          ...response.data,
+          id: String(response.data.id),
+          isFavorite: true
+        };
+        setProperties(prev => [...prev, newProperty]);
+      }
+    } catch (err: any) {
+      throw new Error(err.message || 'Không thể cập nhật wishlist');
+    }
+  }, [properties, addToWishlist, removeFromWishlist, userId]);
+
+  useEffect(() => {
+    if (fetchOnMount) {
+      fetchProperties(1);
+    }
+  }, [fetchProperties, fetchOnMount]);
+
+  return { 
+    properties, 
+    error, 
+    isLoading, 
+    fetchProperties, 
+    handleFavoriteToggle, 
+    addToWishlist, 
+    removeFromWishlist, 
+    checkWishlist, 
+    getWishlistProperties,
+    currentPage,
+    totalPages,
+    total,
+    hasNext,
+    hasPrev
   };
-}
+};
