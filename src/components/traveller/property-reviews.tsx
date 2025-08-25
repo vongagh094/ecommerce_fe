@@ -62,10 +62,10 @@ export function PropertyReviews({
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
     const [submitError, setSubmitError] = useState<string>("")
     const [submitSuccess, setSubmitSuccess] = useState<boolean>(false)
-
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
     // Create fetch function for reviews
     const fetchReviews = useCallback(async (limit: number, offset: number) => {
-        const response = await fetch(`http://localhost:8000/reviews/get_reviews?limit=${limit}&offset=${offset}&property_id=${propertyId}`, {
+        const response = await fetch(`${API_URL}/reviews/get_reviews?limit=${limit}&offset=${offset}&property_id=${propertyId}`, {
             headers: {
                 'accept': 'application/json'
             }
@@ -134,7 +134,7 @@ export function PropertyReviews({
                 reviewData.booking_id = bookingId
             }
 
-            const response = await fetch("http://localhost:8000/reviews/create_review", {
+            const response = await fetch(`${API_URL}/reviews/create_review`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

@@ -22,7 +22,8 @@ const SimpleAuctionSelector: React.FC<SimpleAuctionSelectorProps> = ({ propertyI
     const fetchAuctions = useCallback(async () => {
         try {
             setLoading(true);
-            const response = await fetch(`http://localhost:8000/auctions/property/${propertyId}`);
+            const API_URL = process.env.NEXT_PUBLIC_API_URL;
+            const response = await fetch(`${API_URL}/auctions/property/${propertyId}`);
 
             if (!response.ok) {
                 throw new Error('Failed to fetch auctions');
@@ -47,50 +48,7 @@ const SimpleAuctionSelector: React.FC<SimpleAuctionSelectorProps> = ({ propertyI
             console.error('Error fetching auctions:', error);
 
             // Fallback to mock data nếu API fail - filter by propertyId
-            const mockData = [
-                {
-                    "id": "22222222-2222-2222-2222-222222222222",
-                    "property_id": 11798,
-                    "start_date": "2025-08-18",
-                    "end_date": "2025-08-25",
-                    "min_nights": 3,
-                    "max_nights": 7,
-                    "starting_price": 70,
-                    "bid_increment": 5,
-                    "minimum_bid": 70,
-                    "auction_start_time": "2025-08-12T09:00:00",
-                    "auction_end_time": "2025-08-17T20:00:00",
-                    "objective": "HIGHEST_PER_NIGHT",
-                    "status": "ACTIVE" as const,
-                    "total_bids": 5,
-                    "current_highest_bid": 85,
-                    "created_at": "2025-08-16T01:13:27.182742"
-                },
-                {
-                    "id": "77777777-7777-7777-7777-777777777777",
-                    "property_id": 11798,
-                    "start_date": "2025-09-01",
-                    "end_date": "2025-09-15",
-                    "min_nights": 1,
-                    "max_nights": 5,
-                    "starting_price": 55,
-                    "bid_increment": 5,
-                    "minimum_bid": 55,
-                    "auction_start_time": "2025-08-25T12:00:00",
-                    "auction_end_time": "2025-08-29T18:00:00",
-                    "objective": "HIGHEST_PER_NIGHT",
-                    "status": "PENDING" as const,
-                    "total_bids": 0,
-                    "current_highest_bid": null,
-                    "created_at": "2025-08-16T04:23:24.504521"
-                }
-            ].filter(auction => auction.property_id === propertyId);
-
-            setAuctions(mockData);
-            if (mockData.length > 0 && !selectedAuction) {
-                setSelectedAuction(mockData[0]);
-                onAuctionSelect?.(mockData[0]);
-            }
+            const mockData = []
         } finally {
             setLoading(false);
         }
