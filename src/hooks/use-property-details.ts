@@ -24,6 +24,7 @@ export function usePropertyDetails(propertyId: string): UsePropertyDetailsResult
 
     try {
       const data = await propertyApi.getDetails(propertyId)
+      data.id = propertyId
       setProperty(data)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load property details')

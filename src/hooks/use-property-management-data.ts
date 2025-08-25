@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import axios, { AxiosError } from "axios";
+import axios from "axios";
 import { PropertyDetails } from "@/types/property";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;

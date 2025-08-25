@@ -8,7 +8,7 @@ import { PropertyCard } from "@/types"
 
 export default function WishlistsPage() {
   const { user } = useAuth()
-  const userId = user?.id || 1 
+  const [userId] = useState(Number(user?.id || 1))
   const { 
     properties: wishlistProperties, 
     error, 
@@ -19,7 +19,7 @@ export default function WishlistsPage() {
     total,
     hasNext,
     hasPrev
-  } = useWishlist(Number(userId), true)
+  } = useWishlist(userId, true)
   
   const [page, setPage] = useState(1)
   const [localProperties, setLocalProperties] = useState<PropertyCard[]>(wishlistProperties)

@@ -26,10 +26,12 @@ export default function PropertyPage() {
   const propertyId = params.id as string
   const { property, loading, error, refetch } = usePropertyDetails(propertyId)
   const { user } = useAuth()
-  const userId = user?.id || 1 // Fallback to 1 if auth not available
+  const [userId] = useState(Number(user?.id || 1))
   const { addToWishlist, removeFromWishlist, getWishlistProperties, isLoading: wishlistLoading, error: wishlistError } = useWishlist(Number(userId), false)
   const [isFavorite, setIsFavorite] = useState(false)
   const [wishlistInitialized, setWishlistInitialized] = useState(false)
+
+  console.log("Property ID from params:", property)
 
   // Load wishlist to check if property is in favorite
   useEffect(() => {
@@ -217,7 +219,7 @@ export default function PropertyPage() {
                             <BookingPanel user_id={Number(user?.id)}
                                       property_id={Number(property.id)}
                             />
-                            <HostProfile host={property.host} />
+                            <HostProfile host={property.host} property_id={property.id}/>
                       </div>
                     </div>
                 </div>

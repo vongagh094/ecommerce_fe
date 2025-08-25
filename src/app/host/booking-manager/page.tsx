@@ -23,7 +23,7 @@ export default function BookingManager() {
   const [paymentFilter, setPaymentFilter] = useState("all")
   const [dateFilter, setDateFilter] = useState("all")
   const {user} = useAuth();
-  const [hostId] = useState(user?.id || "")
+  const [hostId] = useState(user?.id || 1);
 
   const fetchBookings = async () => {
     setLoading(true)

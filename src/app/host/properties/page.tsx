@@ -12,6 +12,7 @@ import { DeleteConfirmModal } from "@/components/host/delete-confirm-modal"
 import { AuctionCreationModal } from "@/components/host/auction-creation-modal"
 import { AuctionListModal } from "@/components/host/auction-list-modal"
 import type { PropertyAPI } from "@/types/api"
+import { useAuth } from "@/contexts/auth-context"
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL
 
@@ -62,7 +63,8 @@ export default function HostPropertiesPage() {
   const [hasMore, setHasMore] = useState(true)
   const [totalCount, setTotalCount] = useState(0)
 
-  const hostId = 1 // Mock host ID
+  const { user } = useAuth()
+  const [hostId] = useState(user?.id || 1)
   const propertiesPerPage = 12
 
   const fetchProperties = async (page = 1, append = false) => {
@@ -99,7 +101,7 @@ export default function HostPropertiesPage() {
         bedrooms: prop.bedrooms || 0,
         bathrooms: prop.bathrooms || 0,
         guests: prop.max_guests || 1,
-        hostId: prop.host_id || hostId,
+        hostId: prop.host_id || Number(hostId),
         isAvailable: prop.status === "ACTIVE",
         status: prop.status,
         createdAt: new Date(prop.created_at),

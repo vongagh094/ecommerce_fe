@@ -1,15 +1,28 @@
 "use client"
 
+import JSONbig from 'json-bigint';
 import { Star, Shield, MessageCircle, Calendar } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { HostProfile as HostProfileType } from "@/types"
+import { useAuth } from "@/contexts/auth-context" 
+import { useState } from "react"
+import { useRouter } from "next/navigation"
 
 interface HostProfileProps {
   host: HostProfileType
+  property_id: string
 }
 
-export function HostProfile({ host }: HostProfileProps) {
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+export function HostProfile({ host, property_id }: HostProfileProps) {
+  const { user } = useAuth();
+  const user_id = Number(user?.id || 1);
+  const [isLoading, setIsLoading] = useState(false);
+  const JSONbigInt = JSONbig({ storeAsString: true });
+  const router = useRouter();
+  
   const formatJoinDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -21,14 +34,38 @@ export function HostProfile({ host }: HostProfileProps) {
     return name.split(' ').map(n => n[0]).join('').toUpperCase()
   }
 
-  const handleContactHost = () => {
-    // TODO: Implement contact host functionality
-    console.log('Contact host:', host.id)
+  const handleContactHost = async () => {
+    setIsLoading(true);
+    try {
+      const parsedPropertyId = JSONbigInt.parse(property_id);
+      console.log("Property ID after parsing:", parsedPropertyId);
+      const response = await fetch(`${apiUrl}/conversations/create`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          guest_id: user_id,
+          host_id: host.id,
+          property_id: parsedPropertyId
+        }),
+      });
+      const conversation = await response.json();
+      if (response.ok) {
+        router.push(`/dashboard/messages?conversationId=${conversation.id}&hostId=${host.id}`);
+      }
+
+    } catch (error) {
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
     <div className="border-t pt-8">
-      <h3 className="text-lg font-semibold text-gray-900 mb-6">Meet your host</h3>
+      <h3 className="text-lg font-semibold text-gray-900 mb-6">
+        Meet your host
+      </h3>
 
       <div className="bg-gray-50 rounded-2xl p-6">
         <div className="flex items-start space-x-6">
@@ -93,9 +130,10 @@ export function HostProfile({ host }: HostProfileProps) {
             <Button
               onClick={handleContactHost}
               className="bg-gray-900 text-white hover:bg-gray-800"
+              disabled={isLoading}
             >
               <MessageCircle className="h-4 w-4 mr-2" />
-              Contact host
+              {isLoading ? 'Creating...' : 'Contact host'}
             </Button>
           </div>
         </div>

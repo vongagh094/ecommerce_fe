@@ -7,7 +7,7 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL
 
 export function usePropertyDashboardData() {
   const { user } = useAuth()
-  const hostId = Number(user?.id ?? 0)
+  const [hostId] = useState(Number(user?.id || 1))
   const [properties, setProperties] = useState<HostProperty[]>([])
   const [selectedProperty, setSelectedProperty] = useState<HostProperty | null>(null)
   const [loading, setLoading] = useState(true)

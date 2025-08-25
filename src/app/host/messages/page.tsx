@@ -1,585 +1,42 @@
 "use client"
 
 import type React from "react"
-
-import { useState, useEffect, useRef, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Send, CheckCircle, Circle, Search, ArrowDown } from "lucide-react"
-import Pusher from "pusher-js"
-import Link from "next/link"
-import { useSearchParams } from "next/navigation"
-import type { Conversation, Message } from "@/types"
-
-const apiUrl = process.env.NEXT_PUBLIC_API_URL
+import { useAuth } from "@/contexts/auth-context"
+import { useMessages } from "@/hooks/use-messages"
 
 export default function HostMessagesPage() {
-  const temporaryUserId = 1
+  const { user } = useAuth()
+  const user_id = Number(user?.id || 1)
 
-  const [conversations, setConversations] = useState<Conversation[]>([])
-  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null)
-  const [messages, setMessages] = useState<Message[]>([])
-  const [visibleMessages, setVisibleMessages] = useState<Message[]>([])
-  const [filter, setFilter] = useState<"all" | "unread">("all")
-  const [searchTerm, setSearchTerm] = useState<string>("")
-  const [messageInput, setMessageInput] = useState<string>("")
-  const [messagePage, setMessagePage] = useState<number>(1)
-  const [isLoadingMessages, setIsLoadingMessages] = useState<boolean>(false)
-  const [hasMoreMessages, setHasMoreMessages] = useState<boolean>(true)
-  const [visibleMessageCount, setVisibleMessageCount] = useState<number>(5)
-  const [showScrollButton, setShowScrollButton] = useState<boolean>(false)
-  const [error, setError] = useState<string | null>(null)
-
-  const pusherRef = useRef<Pusher | null>(null)
-  const messagesEndRef = useRef<HTMLDivElement>(null)
-  const messagesContainerRef = useRef<HTMLDivElement>(null)
-  const searchParams = useSearchParams()
-
-  const messagesPerPage = 10
-  const messagesPerRender = 5
-
-  // Sort messages by sent_at in ascending order
-  const sortMessages = (msgs: Message[]): Message[] => {
-    return [...msgs].sort((a, b) => new Date(a.sent_at).getTime() - new Date(b.sent_at).getTime())
-  }
-
-  // Memoized visible messages to ensure re-render
-  const visibleMessagesMemo = useMemo(() => {
-    return sortMessages(visibleMessages)
-  }, [visibleMessages])
-
-  // Initialize Pusher only once
-  useEffect(() => {
-    const initializePusher = async () => {
-      if (pusherRef.current) {
-        console.log("Pusher already initialized, skipping...")
-        return
-      }
-
-      try {
-        let appKey: string, cluster: string
-        if (process.env.NEXT_PUBLIC_PUSHER_KEY && process.env.NEXT_PUBLIC_PUSHER_CLUSTER) {
-          appKey = process.env.NEXT_PUBLIC_PUSHER_KEY
-          cluster = process.env.NEXT_PUBLIC_PUSHER_CLUSTER
-          console.log("Using Pusher environment variables:", { appKey, cluster })
-        } else {
-          console.warn("Pusher environment variables not found, attempting to fetch from API...")
-          try {
-            const response = await fetch(`${apiUrl}/pusher/get`)
-            if (!response.ok) {
-              console.warn("Pusher config API not available, disabling real-time features")
-              return
-            }
-            const config = await response.json()
-            if (!config || !config.app_key || !config.cluster) {
-              console.warn("Invalid Pusher configuration received, disabling real-time features")
-              return
-            }
-            appKey = config.app_key
-            cluster = config.cluster
-          } catch (fetchError) {
-            console.warn("Failed to fetch Pusher config, disabling real-time features:", fetchError)
-            return
-          }
-        }
-
-        try {
-          pusherRef.current = new Pusher(appKey, {
-            cluster,
-            forceTLS: true,
-            enabledTransports: ["ws", "wss"],
-          })
-          console.log("Pusher initialized for user:", temporaryUserId)
-
-          pusherRef.current.connection.bind("connected", () => {
-            console.log("Pusher connected successfully for user:", temporaryUserId)
-            setError(null) // Clear any previous connection errors
-          })
-
-          pusherRef.current.connection.bind("error", (err: any) => {
-            console.warn("Pusher connection error (non-critical):", JSON.stringify(err, null, 2))
-            // Don't set error state for connection issues, just log them
-          })
-
-          pusherRef.current.connection.bind("disconnected", () => {
-            console.log("Pusher disconnected")
-          })
-
-          pusherRef.current.connection.bind("unavailable", () => {
-            console.warn("Pusher connection unavailable, real-time features disabled")
-          })
-        } catch (pusherError) {
-          console.warn("Failed to initialize Pusher client:", pusherError)
-          pusherRef.current = null
-        }
-      } catch (error: any) {
-        console.warn("Pusher initialization failed, continuing without real-time features:", error.message)
-        pusherRef.current = null
-      }
-    }
-
-    initializePusher()
-    fetchConversations()
-
-    // Cleanup when component unmounts
-    return () => {
-      console.log("Disconnecting Pusher for user:", temporaryUserId)
-      if (pusherRef.current) {
-        try {
-          pusherRef.current.allChannels().forEach((channel) => {
-            console.log("Unsubscribing from channel:", channel.name)
-            channel.unbind_all()
-            channel.unsubscribe()
-          })
-          pusherRef.current.disconnect()
-        } catch (cleanupError) {
-          console.warn("Error during Pusher cleanup:", cleanupError)
-        }
-        pusherRef.current = null
-      }
-    }
-  }, [])
-
-  // Handle conversation channel subscription
-  useEffect(() => {
-    if (!selectedConversation) {
-      console.log("No selected conversation, skipping subscription")
-      setMessages([])
-      setVisibleMessages([])
-      setMessagePage(1)
-      setHasMoreMessages(true)
-      setVisibleMessageCount(messagesPerRender)
-      setShowScrollButton(false)
-      return
-    }
-
-    if (!pusherRef.current) {
-      console.log("Pusher not available, skipping real-time subscription for conversation:", selectedConversation.id)
-      fetchMessages(selectedConversation.id, 1).then((data) => {
-        if (data.length > 0) {
-          const sortedMessages = sortMessages(data)
-          setMessages(sortedMessages)
-          setVisibleMessages(sortedMessages.slice(-messagesPerRender))
-          setMessagePage(2)
-          setVisibleMessageCount(messagesPerRender)
-          setHasMoreMessages(data.length === messagesPerPage)
-          setTimeout(() => {
-            messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-          }, 100)
-        } else {
-          setHasMoreMessages(false)
-        }
-      })
-      return
-    }
-
-    const subscribeToChannel = async (conversationId: number) => {
-      console.log("Subscribing to conversation:", conversationId, "user:", temporaryUserId)
-
-      if (pusherRef.current) {
-        pusherRef.current.allChannels().forEach((channel) => {
-          console.log("Unsubscribing from channel:", channel.name)
-          channel.unbind_all()
-          channel.unsubscribe()
-        })
-        pusherRef.current.disconnect()
-        console.log("Pusher disconnected for reset")
-        await new Promise((resolve) => setTimeout(resolve, 500))
-        pusherRef.current.connect()
-        console.log("Pusher reconnected for conversation:", conversationId)
-        await new Promise((resolve) => setTimeout(resolve, 500))
-      }
-
-      const channelName = `conversation-${conversationId}`
-      const existingChannel = pusherRef.current!.channel(channelName)
-      if (existingChannel && existingChannel.subscribed) {
-        console.log("Channel already subscribed:", channelName)
-        return
-      }
-      if (existingChannel && existingChannel.subscriptionPending) {
-        console.log("Channel subscription in progress, waiting:", channelName)
-        await new Promise((resolve) => setTimeout(resolve, 1000))
-      }
-
-      const channel = pusherRef.current!.subscribe(channelName)
-      console.log("Initiating subscription to channel:", channelName)
-
-      channel.bind("pusher:subscription_succeeded", () => {
-        console.log("Successfully subscribed to channel:", channelName)
-        channel.bind("new-message", (data: Message) => {
-          console.log("Received new-message event:", data, "user:", temporaryUserId)
-          setMessages((prev) => {
-            if (!prev.some((msg) => msg.id === data.id)) {
-              const updatedMessages = sortMessages([...prev, data])
-              console.log("Updated messages:", updatedMessages.length)
-              return updatedMessages
-            }
-            console.log("Skipping duplicate message:", data.id)
-            return prev
-          })
-          setVisibleMessages((prev) => {
-            if (!prev.some((msg) => msg.id === data.id)) {
-              const updatedVisible = sortMessages([...prev, data])
-              setVisibleMessageCount((count) => count + 1)
-              console.log("Updated visibleMessages:", updatedVisible.length)
-              return updatedVisible
-            }
-            return prev
-          })
-          setHasMoreMessages(true)
-          if (!showScrollButton) {
-            setTimeout(() => {
-              messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-            }, 100)
-          }
-
-          if (data.sender_id !== temporaryUserId) {
-            markMessageAsRead(conversationId, data.id)
-          }
-        })
-
-        channel.bind("messages-read", (updatedMessages: Message[]) => {
-          console.log("Received messages-read event:", updatedMessages)
-          setMessages((prev) => {
-            const updated = prev.map((msg) => {
-              const updatedMsg = updatedMessages.find((um) => um.id === msg.id)
-              return updatedMsg ? { ...msg, is_read: updatedMsg.is_read } : msg
-            })
-            console.log("Updated messages with is_read:", updated)
-            return sortMessages(updated)
-          })
-          setVisibleMessages((prev) => {
-            const updatedVisible = prev.map((msg) => {
-              const updatedMsg = updatedMessages.find((um) => um.id === msg.id)
-              return updatedMsg ? { ...msg, is_read: updatedMsg.is_read } : msg
-            })
-            console.log("Updated visibleMessages with is_read:", updatedVisible)
-            return sortMessages(updatedVisible)
-          })
-        })
-      })
-
-      channel.bind("pusher:subscription_error", (error: any) => {
-        console.error("Subscription error for channel:", channelName, "error:", JSON.stringify(error, null, 2))
-        setError(`Failed to subscribe to real-time updates for conversation ${conversationId}. Please try again.`)
-      })
-    }
-
-    if (pusherRef.current.connection.state !== "connected") {
-      console.log("Pusher not connected, delaying subscription for conversation:", selectedConversation.id)
-      let retryCount = 0
-      const maxRetries = 10
-      const retrySubscription = setInterval(async () => {
-        console.log("Retry attempt:", retryCount + 1, "for conversation:", selectedConversation.id)
-        if (pusherRef.current && pusherRef.current.connection.state === "connected") {
-          console.log("Pusher connected, proceeding with subscription for conversation:", selectedConversation.id)
-          await subscribeToChannel(selectedConversation.id)
-          clearInterval(retrySubscription)
-        } else if (retryCount >= maxRetries) {
-          console.error("Max retries reached for Pusher connection")
-          setError("Unable to connect to real-time messaging service after multiple attempts.")
-          clearInterval(retrySubscription)
-        }
-        retryCount++
-      }, 5000) // Retry interval 5 seconds
-      return () => clearInterval(retrySubscription)
-    }
-
-    subscribeToChannel(selectedConversation.id).catch((error) => {
-      console.error("Error subscribing to channel:", error)
-      setError(`Failed to subscribe to conversation ${selectedConversation.id}. Please try again.`)
-    })
-
-    fetchMessages(selectedConversation.id, 1).then((data) => {
-      if (data.length > 0) {
-        const sortedMessages = sortMessages(data)
-        setMessages(sortedMessages)
-        setVisibleMessages(sortedMessages.slice(-messagesPerRender))
-        setMessagePage(2)
-        setVisibleMessageCount(messagesPerRender)
-        setHasMoreMessages(data.length === messagesPerPage)
-        setTimeout(() => {
-          messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-        }, 100)
-      } else {
-        setHasMoreMessages(false)
-      }
-    })
-
-    return () => {
-      console.log("Cleaning up channel: conversation-", selectedConversation.id)
-      if (pusherRef.current) {
-        const channel = pusherRef.current.channel(`conversation-${selectedConversation.id}`)
-        if (channel) {
-          console.log("Unsubscribing from channel during cleanup:", channel.name)
-          channel.unbind_all()
-          channel.unsubscribe()
-          setTimeout(() => {}, 500)
-        }
-      }
-    }
-  }, [selectedConversation])
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setShowScrollButton(!entry.isIntersecting)
-      },
-      { root: messagesContainerRef.current, threshold: 0.1 },
-    )
-
-    if (messagesEndRef.current) {
-      observer.observe(messagesEndRef.current)
-    }
-
-    return () => {
-      if (messagesEndRef.current) {
-        observer.unobserve(messagesEndRef.current)
-      }
-    }
-  }, [visibleMessages])
-
-  useEffect(() => {
-    const conversationIdFromUrl = searchParams.get("conversationId")
-    if (conversationIdFromUrl && conversations.length > 0) {
-      const targetConversation = conversations.find((conv) => conv.id === Number.parseInt(conversationIdFromUrl))
-      if (targetConversation) {
-        setSelectedConversation(targetConversation)
-      }
-    }
-  }, [searchParams, conversations])
-
-  const fetchConversations = async () => {
-    try {
-      setError(null)
-      const response = await fetch(`${apiUrl}/conversations/list/${temporaryUserId}`)
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error("Fetch conversations error:", errorText)
-        throw new Error(`Error fetching conversations: ${response.status}`)
-      }
-      const data = await response.json()
-      console.log("Fetched conversations:", data)
-
-      const conversationsWithUnread = await Promise.all(
-        data.map(async (conv: Conversation) => {
-          try {
-            const messagesResponse = await fetch(
-              `${apiUrl}/messages/list/${conv.id}?user_id=${temporaryUserId}&limit=10`,
-            )
-            if (!messagesResponse.ok) {
-              const errorText = await messagesResponse.text()
-              console.error("Fetch messages error for conversation", conv.id, ":", errorText)
-              throw new Error(`Error fetching messages for conversation ${conv.id}`)
-            }
-            const messages = await messagesResponse.json()
-            return {
-              ...conv,
-              has_unread: messages.some((msg: Message) => msg.sender_id !== temporaryUserId && !msg.is_read),
-              name: conv.name || conv.other_user?.full_name || "Unknown User",
-              last_message_at: conv.last_message_at || null,
-            }
-          } catch (error: any) {
-            console.error(`Error fetching messages for conversation ${conv.id}:`, error.message)
-            return {
-              ...conv,
-              has_unread: false,
-              name: conv.other_user?.full_name || "Unknown User",
-              last_message_at: null,
-            }
-          }
-        }),
-      )
-
-      setConversations(conversationsWithUnread)
-      if (conversationsWithUnread.length > 0 && !selectedConversation && !searchParams.get("conversationId")) {
-        setSelectedConversation(null)
-        setTimeout(() => setSelectedConversation(conversationsWithUnread[0]), 0)
-      }
-    } catch (error: any) {
-      console.error("Error fetching conversations:", error)
-      setError("Unable to load conversations. Please try again later.")
-    }
-  }
-
-  const fetchMessages = async (conversationId: number, pageNum: number) => {
-    try {
-      setIsLoadingMessages(true)
-      const response = await fetch(
-        `${apiUrl}/messages/list/${conversationId}?user_id=${temporaryUserId}&limit=${messagesPerPage}&offset=${(pageNum - 1) * messagesPerPage}`,
-      )
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error("Fetch messages error:", errorText)
-        throw new Error(`Error fetching messages: ${response.status}`)
-      }
-      const data = await response.json()
-      console.log("Fetched messages for page", pageNum, ":", data)
-      return sortMessages(data)
-    } catch (error: any) {
-      console.error("Error fetching messages:", error)
-      setError(`Unable to load messages for conversation ${conversationId}. Please try again.`)
-      return []
-    } finally {
-      setIsLoadingMessages(false)
-    }
-  }
-
-  const markMessageAsRead = async (conversationId: number, messageId: number) => {
-    try {
-      console.log("Marking message as read:", { conversationId, messageId })
-      const response = await fetch(`${apiUrl}/messages/update/${messageId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ is_read: true }),
-      })
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error("Mark message as read error:", errorText)
-        throw new Error(`Error marking message as read: ${response.status}`)
-      }
-      const updatedMessage = await response.json()
-      console.log("Mark message as read response:", updatedMessage)
-
-      setMessages((prev) => {
-        const updated = prev.map((msg) => (msg.id === messageId ? { ...msg, is_read: true } : msg))
-        console.log("Updated messages with is_read locally:", updated)
-        return sortMessages(updated)
-      })
-      setVisibleMessages((prev) => {
-        const updatedVisible = prev.map((msg) => (msg.id === messageId ? { ...msg, is_read: true } : msg))
-        console.log("Updated visibleMessages with is_read locally:", updatedVisible)
-        return sortMessages(updatedVisible)
-      })
-
-      await fetch(`${apiUrl}/messages/notify-read`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          conversation_id: conversationId,
-          message_ids: [messageId],
-        }),
-      })
-    } catch (error: any) {
-      console.error("Error marking message as read:", error)
-      setError("Unable to mark message as read. Please try again.")
-    }
-  }
-
-  const handleLoadMore = async () => {
-    if (!selectedConversation) return
-
-    console.log("Loading more messages:", { messagesLength: messages.length, visibleMessageCount, hasMoreMessages })
-    const newVisibleCount = visibleMessageCount + messagesPerRender
-    setVisibleMessageCount(newVisibleCount)
-
-    if (newVisibleCount <= messages.length) {
-      setVisibleMessages(sortMessages(messages.slice(-newVisibleCount)))
-    } else if (hasMoreMessages) {
-      const newMessages = await fetchMessages(selectedConversation.id, messagePage)
-      if (newMessages.length > 0) {
-        const updatedMessages = sortMessages([...messages, ...newMessages])
-        setMessages(updatedMessages)
-        setVisibleMessages(sortMessages(updatedMessages.slice(-newVisibleCount)))
-        setMessagePage((prev) => prev + 1)
-        setHasMoreMessages(newMessages.length === messagesPerPage)
-      } else {
-        setVisibleMessages(sortMessages(messages.slice(-messages.length)))
-        setHasMoreMessages(false)
-      }
-    } else {
-      setVisibleMessages(sortMessages(messages.slice(-messages.length)))
-    }
-  }
-
-  const handleSendMessage = async () => {
-    if (!messageInput.trim() || !selectedConversation) return
-
-    try {
-      const response = await fetch(`${apiUrl}/messages/send`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          conversation_id: selectedConversation.id,
-          sender_id: temporaryUserId,
-          message_text: messageInput,
-        }),
-      })
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error("Send message error:", errorText)
-        throw new Error(`Error sending message: ${response.status}`)
-      }
-      const newMessage: Message = await response.json()
-      console.log("Sent message:", newMessage)
-      setMessages((prev) => {
-        if (!prev.some((msg) => msg.id === newMessage.id)) {
-          return sortMessages([...prev, newMessage])
-        }
-        return prev
-      })
-      setVisibleMessages((prev) => {
-        if (!prev.some((msg) => msg.id === newMessage.id)) {
-          const updatedVisible = sortMessages([...prev, newMessage])
-          setVisibleMessageCount((count) => count + 1)
-          return updatedVisible
-        }
-        return prev
-      })
-      setMessageInput("")
-      setHasMoreMessages(true)
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-      }, 100)
-    } catch (error: any) {
-      console.error("Error sending message:", error)
-      setError("Unable to send message. Please try again.")
-    }
-  }
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") handleSendMessage()
-  }
-
-  const handleScrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }
-
-  const handleConversationSelect = (conversation: Conversation) => {
-    console.log("Selecting conversation:", conversation.id)
-    setSelectedConversation(null)
-    setTimeout(() => setSelectedConversation(conversation), 0)
-  }
-
-  const filteredConversations = conversations.filter((conv) => {
-    const searchLower = searchTerm.toLowerCase()
-    return (
-      (filter === "all" || conv.has_unread) &&
-      (conv.name.toLowerCase().includes(searchLower) ||
-        (conv.property_title && conv.property_title.toLowerCase().includes(searchLower)))
-    )
-  })
-
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return "No messages yet"
-    const date = new Date(dateString)
-    return date.toLocaleDateString("vi-VN", { month: "long", day: "numeric", year: "numeric" })
-  }
-
-  const formatTime = (dateString: string | null) => {
-    if (!dateString) return ""
-    const date = new Date(dateString)
-    return date.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })
-  }
-
-  const isDifferentDay = (prevMessage: Message | null, currentMessage: Message) => {
-    if (!prevMessage) return true
-    const prevDate = new Date(prevMessage.sent_at).toDateString()
-    const currentDate = new Date(currentMessage.sent_at).toDateString()
-    return prevDate !== currentDate
-  }
-
-  const canLoadMore = hasMoreMessages || messages.length > visibleMessageCount
+  const {
+    selectedConversation,
+    visibleMessagesMemo,
+    filter,
+    setFilter,
+    searchTerm,
+    setSearchTerm,
+    messageInput,
+    setMessageInput,
+    isLoadingMessages,
+    showScrollButton,
+    error,
+    messagesEndRef,
+    messagesContainerRef,
+    groupedConversations,
+    formatDate,
+    formatTime,
+    isDifferentDay,
+    canLoadMore,
+    handleLoadMore,
+    handleSendMessage,
+    handleKeyPress,
+    handleScrollToBottom,
+    handleConversationSelect,
+    navigateToProperty,
+  } = useMessages(user_id, true)
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -621,33 +78,52 @@ export default function HostMessagesPage() {
               </div>
             </div>
             <div className="flex-1 overflow-y-auto">
-              {filteredConversations.map((conversation) => (
-                <div
-                  key={conversation.id}
-                  onClick={() => handleConversationSelect(conversation)}
-                  className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors ${
-                    selectedConversation?.id === conversation.id ? "bg-blue-50 border-blue-200" : ""
-                  }`}
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-gray-900 text-sm leading-tight">
-                        {conversation.name + " "}
-                        <Link href={`/property/${conversation.property_id}`} className="text-blue-500 hover:underline">
-                          {conversation.property_title || "Xem chi tiết phòng"}
-                        </Link>
-                      </h3>
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      {conversation.last_message_at && (
-                        <span>
-                          {formatTime(conversation.last_message_at)} - {formatDate(conversation.last_message_at)}
+              {groupedConversations?.map((group) => {
+                console.log(`HostMessagesPage: Rendering group for property_id: ${group.property.id}, Title: ${group.property.title}, Type: ${typeof group.property.id}`)
+                return (
+                  <div key={group.property.id} className="border-b border-gray-200">
+                    <div className="p-2 bg-gray-100 font-semibold text-sm">
+                      {group.property.id ? (
+                        <span
+                          onClick={() => navigateToProperty(group.property.id)}
+                          className="text-blue-500 hover:underline cursor-pointer"
+                        >
+                          {group.property.title}
                         </span>
+                      ) : (
+                        <span className="text-gray-500">{group.property.title}</span>
                       )}
                     </div>
+                    {group.convs.map((conversation) => {
+                      console.log(`HostMessagesPage: Rendering conversation ${conversation.id}, property_id: ${conversation.property_id}, Type: ${typeof conversation.property_id}`)
+                      return (
+                        <div
+                          key={conversation.id}
+                          onClick={() => handleConversationSelect(conversation)}
+                          className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors ${
+                            selectedConversation?.id === conversation.id ? "bg-blue-50 border-blue-200" : ""
+                          }`}
+                        >
+                          <div className="flex items-center space-x-3">
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-medium text-gray-900 text-sm leading-tight">
+                                {conversation.name}
+                              </h3>
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {conversation.last_message_at && (
+                                <span>
+                                  {formatTime(conversation.last_message_at)} - {formatDate(conversation.last_message_at)}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
 
@@ -659,14 +135,17 @@ export default function HostMessagesPage() {
                   <span className="text-sm text-gray-500">
                     {" - hosting "}
                     {selectedConversation.property_id ? (
-                      <Link
-                        href={`/property/${selectedConversation.property_id}`}
-                        className="text-blue-500 hover:underline"
+                      <span
+                        onClick={() => {
+                          console.log(`HostMessagesPage: Navigating to property_id: ${selectedConversation.property_id}, Type: ${typeof selectedConversation.property_id}`)
+                          navigateToProperty(selectedConversation.property_id)
+                        }}
+                        className="text-blue-500 hover:underline cursor-pointer"
                       >
                         {selectedConversation.property_title}
-                      </Link>
+                      </span>
                     ) : (
-                      selectedConversation.property_title
+                      <span className="text-gray-500">{selectedConversation.property_title}</span>
                     )}
                   </span>
                 )}
@@ -688,16 +167,16 @@ export default function HostMessagesPage() {
                   {isDifferentDay(visibleMessagesMemo[index - 1], message) && (
                     <div className="text-center text-xs text-gray-500 my-2">{formatDate(message.sent_at)}</div>
                   )}
-                  <div className={`flex ${message.sender_id === temporaryUserId ? "justify-end" : "justify-start"}`}>
+                  <div className={`flex ${message.sender_id === user_id ? "justify-end" : "justify-start"}`}>
                     <div
                       className={`max-w-xs px-4 py-2 rounded-2xl text-sm ${
-                        message.sender_id === temporaryUserId ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-900"
+                        message.sender_id === user_id ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-900"
                       }`}
                     >
                       <div>{message.message_text}</div>
                       <div
                         className={`text-xs mt-1 flex items-center justify-end space-x-1 ${
-                          message.sender_id === temporaryUserId ? "text-blue-200" : "text-gray-500"
+                          message.sender_id === user_id ? "text-blue-200" : "text-gray-500"
                         }`}
                       >
                         <span>
@@ -706,7 +185,7 @@ export default function HostMessagesPage() {
                             minute: "2-digit",
                           })}
                         </span>
-                        {message.sender_id === temporaryUserId && (
+                        {message.sender_id === user_id && (
                           <span>
                             {message.is_read ? <CheckCircle className="h-3 w-3" /> : <Circle className="h-3 w-3" />}
                           </span>

@@ -27,7 +27,7 @@ interface NotificationResponse {
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 const user = useAuth().user;
-const userId = parseInt(user?.id || "0");
+const userId = Number(user?.id || 1);
 
 interface UsePushNotification {
   notifications: Notification[];
