@@ -85,7 +85,7 @@ export function CalenderBidingFeature({ property_id }: CalendarBidingProps) {
     const [tripSuggestions, setTripSuggestions] = useState<TripSuggestion[]>([])
     const [refreshCount, setRefreshCount] = useState(0)
     const [lastRefresh, setLastRefresh] = useState<Date | null>(null)
-
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
     // Helper function to calculate nights properly
     const calculateNights = (dates: Date[]): number => {
@@ -131,7 +131,7 @@ export function CalenderBidingFeature({ property_id }: CalendarBidingProps) {
 
         try {
             const response = await fetch(
-                `http://localhost:8000/calendar/properties/${property_id}/calendar?auction_id=${selectedAuction.id}&month=${month}&year=${year}`,
+                `${API_URL}/calendar/properties/${property_id}/calendar?auction_id=${selectedAuction.id}&month=${month}&year=${year}`,
                 {
                     method: "GET",
                     headers: {

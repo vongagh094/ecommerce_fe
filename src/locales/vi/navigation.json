@@ -1,0 +1,53 @@
+{
+  "header": {
+    "logo": "Sky-high",
+    "tagline": "KỲ NGHỈ CỦA BẠN",
+    "switchToHosting": "Chuyển sang cho thuê",
+    "switchToTravelling": "Chuyển sang du lịch",
+    "adminLogin": "Đăng nhập Admin",
+    "adminDashboard": "Bảng điều khiển Admin",
+    "goToAdmin": "Đi tới Admin"
+  },
+  "menu": {
+    "userInformation": "Thông tin người dùng",
+    "notifications": "Thông báo",
+    "wishlists": "Danh sách yêu thích",
+    "yourTrips": "Chuyến đi của bạn",
+    "messages": "Tin nhắn",
+    "logIn": "Đăng nhập",
+    "signUp": "Đăng ký",
+    "logOut": "Đăng xuất"
+  },
+  "footer": {
+    "support": {
+      "title": "Hỗ trợ",
+      "helpCenter": "Trung tâm trợ giúp",
+      "airCover": "Bảo hiểm Air",
+      "antiDiscrimination": "Chống phân biệt đối xử",
+      "disabilitySupport": "Hỗ trợ người khuyết tật",
+      "cancellationOptions": "Tùy chọn hủy",
+      "reportConcern": "Báo cáo vấn đề khu vực"
+    },
+    "hosting": {
+      "title": "Cho thuê",
+      "airbnbYourHome": "Cho thuê nhà của bạn",
+      "airCoverForHosts": "AirCover cho chủ nhà",
+      "hostingResources": "Tài nguyên cho thuê",
+      "communityForum": "Diễn đàn cộng đồng",
+      "hostingResponsibly": "Cho thuê có trách nhiệm",
+      "joinHostingClass": "Tham gia lớp học cho thuê miễn phí"
+    },
+    "company": {
+      "title": "Airbnb",
+      "newsroom": "Phòng tin tức",
+      "newFeatures": "Tính năng mới",
+      "careers": "Nghề nghiệp",
+      "investors": "Nhà đầu tư",
+      "giftCards": "Thẻ quà tặng",
+      "emergencyStays": "Lưu trú khẩn cấp Airbnb.org"
+    },
+    "copyright": "© 2024 Sky-high, Inc. · Quyền riêng tư · Điều khoản · Sơ đồ trang · Chi tiết công ty",
+    "language": "Tiếng Việt (VN)",
+    "currency": "₫ VND"
+  }
+}

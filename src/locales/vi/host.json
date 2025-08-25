@@ -1,0 +1,25 @@
+{
+  "dashboard": {
+    "title": "Bảng điều khiển chủ nhà",
+    "welcome": "Chào mừng đến với bảng điều khiển chủ nhà",
+    "overview": "Tổng quan",
+    "properties": "Bất động sản",
+    "bookings": "Đặt phòng",
+    "earnings": "Thu nhập",
+    "reviews": "Đánh giá"
+  },
+  "properties": {
+    "title": "Bất động sản của bạn",
+    "addProperty": "Thêm bất động sản",
+    "editProperty": "Chỉnh sửa bất động sản",
+    "deleteProperty": "Xóa bất động sản",
+    "noProperties": "Chưa có bất động sản nào được niêm yết"
+  },
+  "bookings": {
+    "title": "Đặt phòng",
+    "upcoming": "Sắp tới",
+    "current": "Hiện tại",
+    "past": "Đã qua",
+    "cancelled": "Đã hủy"
+  }
+}

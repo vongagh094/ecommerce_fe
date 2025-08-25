@@ -1,0 +1,28 @@
+{
+  "title": "Bảng điều khiển",
+  "welcome": "Chào mừng trở lại!",
+  "sections": {
+    "overview": "Tổng quan",
+    "trips": "Chuyến đi của bạn",
+    "wishlists": "Danh sách yêu thích",
+    "messages": "Tin nhắn",
+    "notifications": "Thông báo",
+    "winners": "Người thắng đấu giá",
+    "payment": "Thanh toán"
+  },
+  "stats": {
+    "totalTrips": "Tổng chuyến đi",
+    "upcomingTrips": "Chuyến đi sắp tới",
+    "completedTrips": "Chuyến đi đã hoàn thành",
+    "savedProperties": "Bất động sản đã lưu",
+    "unreadMessages": "Tin nhắn chưa đọc",
+    "pendingPayments": "Thanh toán đang chờ"
+  },
+  "emptyStates": {
+    "noTrips": "Chưa có chuyến đi nào",
+    "noWishlists": "Chưa lưu bất động sản nào",
+    "noMessages": "Không có tin nhắn",
+    "noNotifications": "Không có thông báo",
+    "noWinners": "Chưa thắng đấu giá nào"
+  }
+}

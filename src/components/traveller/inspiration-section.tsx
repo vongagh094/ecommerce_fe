@@ -1,53 +1,59 @@
-const inspirationCategories = [
-  {
-    title: "Popular",
-    destinations: [
-      { name: "Canmore", type: "Apartment rentals" },
-      { name: "Benalmádena", type: "Flat rentals" },
-      { name: "Marbella", type: "Holiday rentals" },
-      { name: "Mijas", type: "Holiday rentals" },
-      { name: "Prescott", type: "Holiday rentals" },
-      { name: "Scottsdale", type: "Holiday rentals" },
-    ],
-  },
-  {
-    title: "Arts and Culture",
-    destinations: [
-      { name: "Tucson", type: "Apartment rentals" },
-      { name: "Jasper", type: "Cabin rentals" },
-      { name: "Mountain View", type: "Holiday rentals" },
-      { name: "Devonport", type: "Cottage rentals" },
-      { name: "Mallacoota", type: "Holiday rentals" },
-      { name: "Ibiza", type: "Holiday rentals" },
-    ],
-  },
-  {
-    title: "Outdoors",
-    destinations: [
-      { name: "Anaheim", type: "Beach house rentals" },
-      { name: "Monterey", type: "Apartment rentals" },
-      { name: "Paso Robles", type: "Cottage rentals" },
-      { name: "Santa Barbara", type: "Cottage rentals" },
-      { name: "Sonoma", type: "Cottage rentals" },
-      { name: "Show more", type: "" },
-    ],
-  },
-  {
-    title: "Mountains",
-    destinations: [
-      { name: "Beach", type: "" },
-      { name: "Unique stays", type: "" },
-      { name: "Categories", type: "" },
-      { name: "Things to do", type: "" },
-    ],
-  },
-]
+"use client"
+
+import { usePropertyTranslations } from "@/hooks/use-translations"
 
 export function InspirationSection() {
+  const t = usePropertyTranslations()
+  
+  const inspirationCategories = [
+    {
+      title: t('inspiration.popular'),
+      destinations: [
+        { name: "Canmore", type: t('inspiration.apartmentRentals') },
+        { name: "Benalmádena", type: t('inspiration.flatRentals') },
+        { name: "Marbella", type: t('inspiration.holidayRentals') },
+        { name: "Mijas", type: t('inspiration.holidayRentals') },
+        { name: "Prescott", type: t('inspiration.holidayRentals') },
+        { name: "Scottsdale", type: t('inspiration.holidayRentals') },
+      ],
+    },
+    {
+      title: t('inspiration.artsAndCulture'),
+      destinations: [
+        { name: "Tucson", type: t('inspiration.apartmentRentals') },
+        { name: "Jasper", type: t('inspiration.cabinRentals') },
+        { name: "Mountain View", type: t('inspiration.holidayRentals') },
+        { name: "Devonport", type: t('inspiration.cottageRentals') },
+        { name: "Mallacoota", type: t('inspiration.holidayRentals') },
+        { name: "Ibiza", type: t('inspiration.holidayRentals') },
+      ],
+    },
+    {
+      title: t('inspiration.outdoors'),
+      destinations: [
+        { name: "Anaheim", type: t('inspiration.beachHouseRentals') },
+        { name: "Monterey", type: t('inspiration.apartmentRentals') },
+        { name: "Paso Robles", type: t('inspiration.cottageRentals') },
+        { name: "Santa Barbara", type: t('inspiration.cottageRentals') },
+        { name: "Sonoma", type: t('inspiration.cottageRentals') },
+        { name: t('inspiration.showMore'), type: "" },
+      ],
+    },
+    {
+      title: t('inspiration.mountains'),
+      destinations: [
+        { name: t('inspiration.beach'), type: "" },
+        { name: t('inspiration.uniqueStays'), type: "" },
+        { name: t('inspiration.categories'), type: "" },
+        { name: t('inspiration.thingsToDo'), type: "" },
+      ],
+    },
+  ]
+
   return (
     <div className="bg-gray-50 py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 className="text-2xl font-semibold text-gray-900 mb-8">Inspiration for future getaways</h2>
+        <h2 className="text-2xl font-semibold text-gray-900 mb-8">{t('inspiration.title')}</h2>
 
         <div className="border-b border-gray-200 mb-8">
           <nav className="flex space-x-8">

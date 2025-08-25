@@ -1,0 +1,60 @@
+{
+  "winner": {
+    "congratulations": "Chúc mừng!",
+    "fullWin": "Bạn đã thắng toàn bộ đấu giá cho {nights} đêm",
+    "partialWin": "Bạn đã thắng một phần đêm!",
+    "paymentRequired": "Yêu cầu thanh toán",
+    "paymentDeadline": "Hoàn tất thanh toán trong vòng {time} để bảo đảm đặt phòng",
+    "payNowWithZaloPay": "Thanh toán ngay với ZaloPay",
+    "declineOffer": "Từ chối đề nghị",
+    "paymentDeadlineExpired": "Hết hạn thanh toán",
+    "deadlineExpiredMessage": "Rất tiếc, thời hạn thanh toán cho cuộc đấu giá này đã qua.",
+    "opportunityLost": "Cơ hội đặt phòng này không còn khả dụng và có thể đã được đề nghị cho những người đấu giá khác.",
+    "goBack": "Quay lại"
+  },
+  "notification": {
+    "fullWinTitle": "Chúc mừng! Bạn đã thắng đấu giá!",
+    "partialWinTitle": "Bạn đã thắng một phần đêm!",
+    "secondChanceTitle": "Có cơ hội thứ hai!",
+    "secondChanceMessage": "Đề nghị mới cho {propertyName} - {nights} đêm có sẵn",
+    "bookingConfirmedTitle": "Đặt phòng đã được xác nhận!",
+    "bookingConfirmedMessage": "Đặt phòng của bạn cho {propertyName} từ {checkIn} đến {checkOut} đã được xác nhận.",
+    "paymentExpired": "Thanh toán hết hạn:",
+    "paymentExpiredMessage": "Đề nghị này đã hết hạn và không còn khả dụng. Các đêm có thể đã được đề nghị cho những người đấu giá khác.",
+    "paymentSuccessful": "Thanh toán thành công:",
+    "paymentSuccessfulMessage": "Đặt phòng của bạn đã được xác nhận! Kiểm tra email để biết chi tiết đặt phòng."
+  },
+  "details": {
+    "bookingDetails": "Chi tiết đặt phòng",
+    "checkIn": "Nhận phòng",
+    "checkOut": "Trả phòng",
+    "totalNights": "Tổng số đêm:",
+    "pricePerNight": "Giá mỗi đêm:",
+    "awardedNights": "Đêm được trao:",
+    "showAwardedNights": "Hiển thị chi tiết đêm được trao",
+    "hideAwardedNights": "Ẩn chi tiết đêm được trao",
+    "paymentSummary": "Tóm tắt thanh toán",
+    "totalAmount": "Tổng tiền",
+    "paymentDeadlineLabel": "Hạn thanh toán"
+  },
+  "status": {
+    "pendingPayment": "Yêu cầu thanh toán",
+    "paid": "Đã thanh toán",
+    "expired": "Hết hạn",
+    "fullWin": "Thắng toàn bộ - Tất cả {nights} đêm",
+    "partialWin": "Thắng một phần - {awarded} / {total} đêm"
+  },
+  "importantNotes": {
+    "title": "Ghi chú quan trọng:",
+    "paymentDeadline": "Thanh toán phải được hoàn tất trước thời hạn để bảo đảm đặt phòng",
+    "expiration": "Nếu thanh toán không được hoàn tất đúng thời gian, đề nghị này sẽ hết hạn",
+    "confirmation": "Sau khi thanh toán thành công, bạn sẽ nhận được xác nhận đặt phòng qua email",
+    "hostContact": "Bạn có thể liên hệ với chủ nhà thông qua hệ thống nhắn tin sau khi đặt phòng"
+  },
+  "decline": {
+    "title": "Từ chối đề nghị này?",
+    "message": "Bạn có chắc chắn muốn từ chối đấu giá thắng này không? Hành động này không thể hoàn tác và cơ hội đặt phòng sẽ bị mất.",
+    "confirmButton": "Có, từ chối đề nghị",
+    "processing": "Đang xử lý..."
+  }
+}

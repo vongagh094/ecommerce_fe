@@ -1,0 +1,55 @@
+{
+  "title": "Thanh toán với ZaloPay",
+  "summary": {
+    "title": "Tóm tắt thanh toán",
+    "property": "Bất động sản:",
+    "checkIn": "Nhận phòng:",
+    "checkOut": "Trả phòng:",
+    "nights": "Số đêm:",
+    "totalAmount": "Tổng tiền:"
+  },
+  "security": {
+    "title": "Thanh toán an toàn",
+    "description": "Thanh toán của bạn sẽ được xử lý an toàn thông qua ZaloPay. Bạn sẽ được chuyển hướng đến cổng thanh toán bảo mật của ZaloPay."
+  },
+  "buttons": {
+    "payWithZaloPay": "Thanh toán với ZaloPay",
+    "cancelPayment": "Hủy thanh toán",
+    "loginToContinue": "Đăng nhập để tiếp tục"
+  },
+  "states": {
+    "authRequired": {
+      "title": "Yêu cầu xác thực",
+      "description": "Bạn cần đăng nhập để thực hiện thanh toán. Vui lòng đăng nhập để tiếp tục."
+    },
+    "creating": {
+      "title": "Đang tạo đơn thanh toán",
+      "description": "Vui lòng đợi trong khi chúng tôi chuẩn bị thanh toán của bạn..."
+    },
+    "redirecting": {
+      "title": "Đang chuyển hướng đến ZaloPay",
+      "description": "Bạn sẽ được chuyển hướng đến ZaloPay để hoàn tất thanh toán..."
+    },
+    "verifying": {
+      "title": "Đang xác minh thanh toán",
+      "description": "Vui lòng đợi trong khi chúng tôi xác minh trạng thái thanh toán...",
+      "attempt": "Lần thử {current} / {max}"
+    },
+    "completed": {
+      "title": "Thanh toán thành công!",
+      "description": "Thanh toán của bạn đã được xử lý thành công. Bạn sẽ được chuyển hướng đến xác nhận đặt phòng."
+    },
+    "failed": {
+      "title": "Thanh toán thất bại"
+    }
+  },
+  "info": {
+    "sessionExpires": "Phiên thanh toán hết hạn sau 15 phút",
+    "redirectInfo": "Sau khi nhấp \"Thanh toán với ZaloPay\", bạn sẽ được chuyển hướng đến trang thanh toán bảo mật của ZaloPay. Hoàn tất thanh toán ở đó và bạn sẽ được đưa trở lại để xác nhận đặt phòng."
+  },
+  "errors": {
+    "invalidAmount": "Số tiền thanh toán không hợp lệ",
+    "verificationTimeout": "Hết thời gian xác minh thanh toán. Vui lòng liên hệ hỗ trợ.",
+    "unknownStatus": "Trạng thái thanh toán không xác định. Vui lòng liên hệ hỗ trợ."
+  }
+}

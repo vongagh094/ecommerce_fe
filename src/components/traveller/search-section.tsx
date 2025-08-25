@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
 import { LoginModal } from "@/components/auth/login-modal"
 import { SignupModal } from "@/components/auth/signup-modal"
+import { usePropertyTranslations } from "@/hooks/use-translations"
 
 type SearchSectionProps = {
   onSearchResults: (results: any) => void
@@ -20,6 +21,7 @@ export function SearchSection({onSearchResults}: SearchSectionProps) {
   const [showSignupModal, setShowSignupModal] = useState(false)
   const router = useRouter()
   const { isLoggedIn, login } = useAuth()
+  const t = usePropertyTranslations()
 
   const handleUserTypeToggle = () => {
     if (!isLoggedIn) {
@@ -70,7 +72,7 @@ export function SearchSection({onSearchResults}: SearchSectionProps) {
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
           <div className="flex items-center cursor-pointer caret-transparent select-none" onClick={() => router.push("/")}>
-            <h1 className="text-2xl font-bold text-blue-800 font-serif">Sky-high</h1>
+            <h1 className="text-2xl font-bold text-blue-800 font-serif">{t('header.logo')}</h1>
           </div>
 
           {/* Search Bar */}
@@ -81,7 +83,7 @@ export function SearchSection({onSearchResults}: SearchSectionProps) {
           {/* Right Side */}
           <div className="flex items-center space-x-4">
             <Button variant="ghost" className="text-sm font-semibold" onClick={handleUserTypeToggle}>
-              {userType === "traveller" ? "Become a host" : "Switch to travelling"}
+              {userType === "traveller" ? t('header.becomeHost') : t('header.switchToTravelling')}
             </Button>
             {isLoggedIn && <NotificationDropdown />}
             <UserMenu />

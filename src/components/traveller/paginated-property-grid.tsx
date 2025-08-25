@@ -7,6 +7,7 @@ import { Heart, Star, MapPin } from "lucide-react"
 import { PropertyCard } from "@/types"
 import { formatPrice } from "@/lib/utils"
 import { Pagination } from "@/components/shared/pagination"
+import { usePropertyTranslations } from "@/hooks/use-translations"
 import { useWishlist } from "@/hooks/use-wishlist"
 import { useAuth } from "@/contexts/auth-context"
 import { toast } from "@/hooks/use-toast"
@@ -46,6 +47,7 @@ export function PaginatedPropertyGrid({
     const userId = user?.id || 1 // Fallback to 1 if auth not available
     const { getWishlistProperties, addToWishlist, removeFromWishlist, isLoading: wishlistLoading, error: wishlistError } = useWishlist(Number(userId), false)
     const [favoriteProperties, setFavoriteProperties] = useState<Set<string>>(new Set())
+    const t = usePropertyTranslations()
     const [wishlistInitialized, setWishlistInitialized] = useState(false)
 
     useEffect(() => {
@@ -90,54 +92,42 @@ export function PaginatedPropertyGrid({
             try {
                 const propertyExists = properties.some(p => p.id === propertyId)
                 if (!propertyExists) {
-                    console.error(`Property ${propertyId} không tồn tại trong danh sách properties`)
-                    toast({
-                        title: "Lỗi",
-                        description: `Bất động sản với ID ${propertyId} không tồn tại`,
-                        variant: "destructive",
-                        duration: 3000,
-                    })
+                    console.error("Bất động sản không tồn tại trong danh sách:", propertyId)
                     return
                 }
 
-                if (favoriteProperties.has(propertyId)) {
+                const isCurrentlyFavorite = favoriteProperties.has(propertyId)
+                console.log(`Property ${propertyId} is currently favorite: ${isCurrentlyFavorite}`)
+
+                if (isCurrentlyFavorite) {
                     await removeFromWishlist(Number(userId), propertyId)
                     setFavoriteProperties(prev => {
                         const newSet = new Set(prev)
                         newSet.delete(propertyId)
                         return newSet
                     })
-                    toast({
-                        title: "Đã xóa",
-                        description: "Bất động sản đã được xóa khỏi danh sách yêu thích",
-                        duration: 2000,
-                    })
+                    console.log(`Removed ${propertyId} from favorites`)
                 } else {
                     await addToWishlist(Number(userId), propertyId)
-                    setFavoriteProperties(prev => {
-                        const newSet = new Set(prev)
-                        newSet.add(propertyId)
-                        return newSet
-                    })
-                    toast({
-                        title: "Đã thêm",
-                        description: "Bất động sản đã được thêm vào danh sách yêu thích",
-                        duration: 2000,
-                    })
+                    setFavoriteProperties(prev => new Set([...prev, propertyId]))
+                    console.log(`Added ${propertyId} to favorites`)
                 }
-                onToggleFavorite?.(propertyId)
-            } catch (err: any) {
-                console.error('Lỗi khi toggle wishlist:', err)
+
+                // Call the parent's onToggleFavorite if provided
+                if (onToggleFavorite) {
+                    onToggleFavorite(propertyId)
+                }
+            } catch (err) {
+                console.error("Lỗi khi thay đổi trạng thái yêu thích:", err)
                 toast({
                     title: "Lỗi",
-                    description: wishlistError || "Không thể cập nhật wishlist",
+                    description: "Không thể thay đổi trạng thái yêu thích. Vui lòng thử lại.",
                     variant: "destructive",
                     duration: 3000,
                 })
-                onToggleFavorite?.(propertyId)
             }
         },
-        [favoriteProperties, addToWishlist, removeFromWishlist, onToggleFavorite, userId, properties, wishlistError]
+        [favoriteProperties, addToWishlist, removeFromWishlist, userId, properties, onToggleFavorite]
     )
 
     const renderPropertyCard = useMemo(() => {
@@ -160,10 +150,11 @@ export function PaginatedPropertyGrid({
                                 loading="lazy"
                             />
 
+                            {/* Favorite Button */}
                             <button
                                 onClick={(e) => handleToggleFavorite(propertyId, e)}
                                 className="absolute top-3 right-3 p-2 hover:scale-110 transition-transform z-10"
-                                aria-label={isFavorite ? "Xóa khỏi yêu thích" : "Thêm vào yêu thích"}
+                                aria-label={isFavorite ? t('favorites.removeFromFavorites') : t('favorites.addToFavorites')}
                             >
                                 <Heart
                                     className={`h-5 w-5 ${isFavorite
@@ -173,9 +164,10 @@ export function PaginatedPropertyGrid({
                                 />
                             </button>
 
+                            {/* Guest Favorite Badge */}
                             {property.is_guest_favorite && (
                                 <div className="absolute top-3 left-3 bg-white px-2 py-1 rounded-full text-xs font-medium">
-                                    Yêu thích của khách
+                                    {t('favorites.guestFavorite')}
                                 </div>
                             )}
 
@@ -225,7 +217,7 @@ export function PaginatedPropertyGrid({
                 </div>
             )
         }
-    }, [favoriteProperties, handleToggleFavorite])
+    }, [favoriteProperties, handleToggleFavorite, t])
 
     const renderLoadingSkeleton = () => (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

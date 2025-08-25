@@ -1,0 +1,28 @@
+{
+  "title": "Dashboard",
+  "welcome": "Welcome back!",
+  "sections": {
+    "overview": "Overview",
+    "trips": "Your Trips",
+    "wishlists": "Wishlists",
+    "messages": "Messages",
+    "notifications": "Notifications",
+    "winners": "Auction Winners",
+    "payment": "Payment"
+  },
+  "stats": {
+    "totalTrips": "Total Trips",
+    "upcomingTrips": "Upcoming Trips",
+    "completedTrips": "Completed Trips",
+    "savedProperties": "Saved Properties",
+    "unreadMessages": "Unread Messages",
+    "pendingPayments": "Pending Payments"
+  },
+  "emptyStates": {
+    "noTrips": "No trips yet",
+    "noWishlists": "No saved properties",
+    "noMessages": "No messages",
+    "noNotifications": "No notifications",
+    "noWinners": "No auction wins"
+  }
+}

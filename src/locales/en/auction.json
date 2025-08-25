@@ -1,0 +1,60 @@
+{
+  "winner": {
+    "congratulations": "Congratulations!",
+    "fullWin": "You won the entire bid for {nights} night{plural}",
+    "partialWin": "You won partial nights!",
+    "paymentRequired": "Payment Required",
+    "paymentDeadline": "Complete payment within {time} to secure your booking",
+    "payNowWithZaloPay": "Pay Now with ZaloPay",
+    "declineOffer": "Decline Offer",
+    "paymentDeadlineExpired": "Payment Deadline Expired",
+    "deadlineExpiredMessage": "Unfortunately, the payment deadline for this auction has passed.",
+    "opportunityLost": "This booking opportunity is no longer available and may have been offered to other bidders.",
+    "goBack": "Go Back"
+  },
+  "notification": {
+    "fullWinTitle": "Congratulations! You won the auction!",
+    "partialWinTitle": "You won partial nights!",
+    "secondChanceTitle": "Second chance offer available!",
+    "secondChanceMessage": "New offer for {propertyName} - {nights} nights available",
+    "bookingConfirmedTitle": "Booking confirmed!",
+    "bookingConfirmedMessage": "Your booking for {propertyName} from {checkIn} to {checkOut} is confirmed.",
+    "paymentExpired": "Payment Expired:",
+    "paymentExpiredMessage": "This offer has expired and is no longer available. The nights may have been offered to other bidders.",
+    "paymentSuccessful": "Payment Successful:",
+    "paymentSuccessfulMessage": "Your booking has been confirmed! Check your email for booking details."
+  },
+  "details": {
+    "bookingDetails": "Booking Details",
+    "checkIn": "Check-in",
+    "checkOut": "Check-out",
+    "totalNights": "Total nights:",
+    "pricePerNight": "Price per night:",
+    "awardedNights": "Awarded Nights:",
+    "showAwardedNights": "Show awarded nights details",
+    "hideAwardedNights": "Hide awarded nights details",
+    "paymentSummary": "Payment Summary",
+    "totalAmount": "Total Amount",
+    "paymentDeadlineLabel": "Payment deadline"
+  },
+  "status": {
+    "pendingPayment": "Payment Required",
+    "paid": "Paid",
+    "expired": "Expired",
+    "fullWin": "Full Win - All {nights} nights",
+    "partialWin": "Partial Win - {awarded} of {total} nights"
+  },
+  "importantNotes": {
+    "title": "Important Notes:",
+    "paymentDeadline": "Payment must be completed before the deadline to secure your booking",
+    "expiration": "If payment is not completed in time, this offer will expire",
+    "confirmation": "After successful payment, you'll receive booking confirmation via email",
+    "hostContact": "You can contact the host through our messaging system after booking"
+  },
+  "decline": {
+    "title": "Decline This Offer?",
+    "message": "Are you sure you want to decline this winning bid? This action cannot be undone, and the booking opportunity will be lost.",
+    "confirmButton": "Yes, Decline Offer",
+    "processing": "Processing..."
+  }
+}

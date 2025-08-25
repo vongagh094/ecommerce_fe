@@ -1,0 +1,25 @@
+{
+  "dashboard": {
+    "title": "Host Dashboard",
+    "welcome": "Welcome to your hosting dashboard",
+    "overview": "Overview",
+    "properties": "Properties",
+    "bookings": "Bookings",
+    "earnings": "Earnings",
+    "reviews": "Reviews"
+  },
+  "properties": {
+    "title": "Your Properties",
+    "addProperty": "Add Property",
+    "editProperty": "Edit Property",
+    "deleteProperty": "Delete Property",
+    "noProperties": "No properties listed yet"
+  },
+  "bookings": {
+    "title": "Bookings",
+    "upcoming": "Upcoming",
+    "current": "Current",
+    "past": "Past",
+    "cancelled": "Cancelled"
+  }
+}

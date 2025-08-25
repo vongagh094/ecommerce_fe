@@ -8,10 +8,12 @@ import { ZaloPayPayment } from "@/components/payment/zalopay-payment"
 import { auctionWinnerApi } from "@/lib/api/auction-winners"
 import { AuctionDetails, BidDetails } from "@/types/auction-winners"
 import { BookingDetails } from "@/types/payment"
+import { useAuth } from "@/contexts/auth-context"
 
-export default function FullWinConfirmationPage({ params }: { params: { auctionId: string } }) {
+export default async function FullWinConfirmationPage({ params }: { params: Promise<{ auctionId: string }> }) {
   const router = useRouter()
-  const { auctionId } = params
+  const { auctionId } = await params
+  const { user } = useAuth()
   
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -52,18 +54,23 @@ export default function FullWinConfirmationPage({ params }: { params: { auctionI
         propertyId: winningBid.property.id,
         startDate: winningBid.checkIn,
         endDate: winningBid.checkOut,
-        status: "COMPLETED"
+        startingPrice: 0, // Default value since we don't have this info
+        currentHighestBid: winningBid.bidAmount,
+        status: "COMPLETED",
+        objective: "HIGHEST_TOTAL" // Default value
       })
       
       // Set the bid details
       setBidDetails({
-        id: winningBid.bidId,
+        id: winningBid.id,
         auctionId: winningBid.auctionId,
-        userId: winningBid.userId,
+        userId: user?.id || 'unknown',
         checkIn: winningBid.checkIn,
         checkOut: winningBid.checkOut,
         pricePerNight: winningBid.bidAmount / winningBid.awardedNights.length,
-        totalAmount: winningBid.bidAmount
+        totalAmount: winningBid.bidAmount,
+        allowPartial: false, // Default value
+        status: 'ACTIVE' // Default value
       })
       
       // Set the property details
@@ -111,7 +118,7 @@ export default function FullWinConfirmationPage({ params }: { params: { auctionI
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <LoadingSpinner size="lg" />
+        <LoadingSpinner />
       </div>
     )
   }
@@ -162,7 +169,8 @@ export default function FullWinConfirmationPage({ params }: { params: { auctionI
       selectedNights: Array.from({ length: bidDetails.totalAmount / bidDetails.pricePerNight }, (_, i) => 
         new Date(new Date(bidDetails.checkIn).getTime() + i * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
       ),
-      guestCount: property.max_guests
+      guestCount: property.max_guests,
+      redirectParams: 'default' // Default redirect parameters
     }
 
     return (

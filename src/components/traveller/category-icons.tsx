@@ -29,6 +29,7 @@ import {
   Bath,
   Sparkles,
 } from "lucide-react"
+import { usePropertyTranslations } from "@/hooks/use-translations"
 
 export const CATEGORY_ICON_MAP: Record<string, React.ComponentType<any>> = {
   CHECK_IN: CheckCircle,
@@ -115,4 +116,27 @@ export function getCategoryLabelByCode(code?: string): string {
   const key = typeof code === 'string' ? code : ''
   if (CATEGORY_LABEL_MAP[key]) return CATEGORY_LABEL_MAP[key]
   return key ? key.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase()) : 'Category'
+}
+
+// Hook-based function for translated category labels
+export function useTranslatedCategoryLabel() {
+  const t = usePropertyTranslations()
+  
+  return (code?: string): string => {
+    if (!code) return 'Category'
+    
+    // Try to get translation first
+    const translatedLabel = t(`categories.${code}`)
+    if (translatedLabel && translatedLabel !== `categories.${code}`) {
+      return translatedLabel
+    }
+    
+    // Fallback to original English labels
+    if (CATEGORY_LABEL_MAP[code]) {
+      return CATEGORY_LABEL_MAP[code]
+    }
+    
+    // Final fallback to formatted code
+    return code.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase())
+  }
 } 

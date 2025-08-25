@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { propertyApi } from "@/lib/api"
 import { useDebounce } from "@/hooks/use-performance-optimization"
+import { usePropertyTranslations } from "@/hooks/use-translations"
 
 interface LocationSuggestionItem {
   id: string
@@ -75,6 +76,7 @@ export function EnhancedLocationSearchModal({
   onSelect, 
   selectedLocation 
 }: EnhancedLocationSearchModalProps) {
+  const t = usePropertyTranslations()
   const [searchInput, setSearchInput] = useState("")
   const [suggestions, setSuggestions] = useState<LocationSuggestionItem[]>([])
   const [loading, setLoading] = useState(false)
@@ -221,7 +223,7 @@ export function EnhancedLocationSearchModal({
           <Input
             value={searchInput}
             onChange={(e) => handleSearchChange(e.target.value)}
-            placeholder="Search destinations"
+            placeholder={t('search.searchDestinations')}
             className="pl-10 h-12 border-gray-200 rounded-full"
             autoFocus
           />
@@ -239,7 +241,7 @@ export function EnhancedLocationSearchModal({
         {loading && (
           <div className="flex items-center justify-center py-8">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
-            <span className="ml-2 text-sm text-gray-600">Searching...</span>
+            <span className="ml-2 text-sm text-gray-600">{t('search.searching')}</span>
           </div>
         )}
 
@@ -253,7 +255,7 @@ export function EnhancedLocationSearchModal({
               onClick={() => fetchSuggestions(searchInput)}
               className="mt-2"
             >
-              Try Again
+              {t('search.tryAgain')}
             </Button>
           </div>
         )}
@@ -261,7 +263,7 @@ export function EnhancedLocationSearchModal({
         {/* Static Matches */}
         {!loading && staticMatches.length > 0 && (
           <div>
-            <h3 className="text-sm font-semibold text-gray-900 mb-3">Matching destinations</h3>
+            <h3 className="text-sm font-semibold text-gray-900 mb-3">{t('search.matchingDestinations')}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-72 overflow-y-auto pr-1">
               {staticMatches.map((m) => (
                 <button
@@ -283,7 +285,7 @@ export function EnhancedLocationSearchModal({
         {/* Search Suggestions (API) */}
         {!loading && searchInput && suggestions.length > 0 && (
           <div>
-            <h3 className="text-sm font-semibold text-gray-900 mb-3">Suggestions</h3>
+            <h3 className="text-sm font-semibold text-gray-900 mb-3">{t('search.suggestions')}</h3>
             <div className="space-y-1 max-h-72 overflow-y-auto pr-1">
               {suggestions.map((suggestion) => (
                 <button
@@ -302,7 +304,7 @@ export function EnhancedLocationSearchModal({
                       {suggestion.full_name}
                       {suggestion.property_count && (
                         <span className="ml-2">
-                          • {suggestion.property_count} properties
+                          • {suggestion.property_count} {t('search.properties')}
                         </span>
                       )}
                     </div>
@@ -321,7 +323,7 @@ export function EnhancedLocationSearchModal({
           <div>
             <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
               <Clock className="h-4 w-4 mr-2" />
-              Recent searches
+              {t('search.recentSearches')}
             </h3>
             <div className="space-y-1">
               {recentSearches.map((search, index) => (
@@ -341,7 +343,7 @@ export function EnhancedLocationSearchModal({
         {/* Popular Destinations Grid */}
         {!searchInput && (
           <div>
-            <h3 className="text-sm font-semibold text-gray-900 mb-3">Popular destinations</h3>
+            <h3 className="text-sm font-semibold text-gray-900 mb-3">{t('search.popularDestinations')}</h3>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
               {STATIC_DESTINATIONS.slice(0, 9).map((d) => (
                 <Button

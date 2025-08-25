@@ -1,0 +1,67 @@
+{
+  "buttons": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "submit": "Submit",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "close": "Close",
+    "edit": "Edit",
+    "delete": "Delete",
+    "confirm": "Confirm",
+    "retry": "Try Again",
+    "loading": "Loading...",
+    "viewDetails": "View Details",
+    "showMore": "Show More",
+    "showLess": "Show Less"
+  },
+  "status": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "pending": "Pending",
+    "completed": "Completed",
+    "failed": "Failed",
+    "expired": "Expired",
+    "active": "Active",
+    "inactive": "Inactive"
+  },
+  "time": {
+    "days": "days",
+    "hours": "hours",
+    "minutes": "minutes",
+    "seconds": "seconds",
+    "day": "day",
+    "hour": "hour",
+    "minute": "minute",
+    "second": "second"
+  },
+  "currency": {
+    "vnd": "₫ VND",
+    "usd": "$ USD"
+  },
+  "validation": {
+    "required": "This field is required",
+    "invalidEmail": "Please enter a valid email address",
+    "invalidPhone": "Please enter a valid phone number",
+    "minLength": "Must be at least {min} characters",
+    "maxLength": "Must be no more than {max} characters"
+  },
+  "messages": {
+    "noData": "No data available",
+    "noResults": "No results found",
+    "tryAgain": "Please try again",
+    "contactSupport": "Please contact support",
+    "sessionExpired": "Your session has expired. Please log in again.",
+    "networkError": "Network error. Please check your connection.",
+    "unexpectedError": "An unexpected error occurred"
+  },
+  "language": {
+    "switch": "Switch Language",
+    "current": "Current Language",
+    "english": "English",
+    "vietnamese": "Vietnamese",
+    "selectLanguage": "Select Language"
+  }
+}

@@ -72,8 +72,8 @@ export default function WinnersDashboardPage() {
       const query = searchQuery.toLowerCase()
       filtered = filtered.filter(bid =>
         bid.property.title.toLowerCase().includes(query) ||
-        bid.property.city.toLowerCase().includes(query) ||
-        bid.property.state.toLowerCase().includes(query)
+        (bid.property.location.city?.toLowerCase().includes(query) || false) ||
+        (bid.property.location.state?.toLowerCase().includes(query) || false)
       )
     }
 

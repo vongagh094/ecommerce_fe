@@ -31,7 +31,7 @@ export const SimpleCountdown: React.FC<SimpleCountdownProps> = ({
     // Ref để track xem đã update status chưa
     const hasUpdatedStatus = useRef(false);
     const previousIsEnded = useRef(false);// Thêm vào đầu componen
-
+    const previousIsStarted = useRef(false);
 
     // Format time với leading zero
     const formatTime = (value: number): string => {
@@ -65,30 +65,37 @@ export const SimpleCountdown: React.FC<SimpleCountdownProps> = ({
 
     // có alart ui
     const { showWinnerAlert } = useWinner();
-    const handleWinner = async () => {
+    const handleWinner = () => {
         showWinnerAlert(auction_id);
-        const result = await auctionAPI.updateAuctionStatus(auction_id, "COMPLETED");
-        console.log(result);
     };
-    // const handleWinner = async () => {
-    //
-    // }
-    // Effect để theo dõi khi auction kết thúc
+
     useEffect(() => {
         // Chỉ update khi isEnded thay đổi từ false sang true
-        if (isEnded && !previousIsEnded.current) {
+        if (isEnded && !previousIsEnded.current && !hasUpdatedStatus.current) {
             handleUpdateStatus("COMPLETED");
             handleWinner();
         }
 
+        hasUpdatedStatus.current = true;
         previousIsEnded.current = isEnded;
-    }, [isEnded, auction_id]);
+    }, [isEnded,auction_id]);
+
+
+    useEffect(() => {
+        if (isStarted && !previousIsStarted.current && !hasUpdatedStatus.current) {
+            handleUpdateStatus("ACTIVE");
+        }
+        hasUpdatedStatus.current = true;
+        previousIsStarted.current = isStarted;
+    }, [isStarted, auction_id]);
 
     // Reset hasUpdatedStatus khi auction_id thay đổi
     useEffect(() => {
         hasUpdatedStatus.current = false;
         previousIsEnded.current = false;
+        previousIsStarted.current = false;
     }, [auction_id]);
+
     // Format display time
     const formatDisplayTime = (): string => {
         if (isEnded) return "Ended";

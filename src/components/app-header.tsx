@@ -4,16 +4,19 @@ import { Button } from "@/components/ui/button"
 import { UserMenu } from "@/components/shared/user-menu"
 import { NotificationDropdown } from "@/components/shared/notification-dropdown"
 import { SearchBar } from "@/components/shared/search-bar"
+import { LanguageSwitcher } from "@/components/shared/language-switcher"
 import { useRouter, usePathname } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
 import { useState } from "react"
 import { AdminLoginModal } from "@/components/admin/admin-login-modal"
+import { useNavigationTranslations } from "@/hooks/use-translations"
 
 export function AppHeader() {
   const router = useRouter()
   const pathname = usePathname()
   const { isLoggedIn, isAdmin } = useAuth()
   const [showAdminLogin, setShowAdminLogin] = useState(false)
+  const t = useNavigationTranslations()
 
   const handleHostToggle = () => {
     if (pathname.startsWith("/host")) {
@@ -33,7 +36,6 @@ export function AppHeader() {
 
   const isHostPage = pathname.startsWith("/host")
   const isSearchPage = pathname.startsWith("/search")
-  const isPropertyPage = pathname.startsWith("/property")
   const isAdminPage = pathname.startsWith("/admin")
 
   return (
@@ -42,8 +44,8 @@ export function AppHeader() {
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
           <div className="flex items-center cursor-pointer caret-transparent select-none" onClick={() => router.push("/")}>
-            <h1 className="text-2xl font-bold text-blue-800 font-serif">Sky-high</h1>
-            {!isHostPage && <p className="text-xs text-gray-500 ml-2 mt-1">YOUR HOLIDAY</p>}
+            <h1 className="text-2xl font-bold text-blue-800 font-serif">{t.header.logo()}</h1>
+            {!isHostPage && <p className="text-xs text-gray-500 ml-2 mt-1">{t.header.tagline()}</p>}
           </div>
 
           {/* Search Bar - Show on all pages except host pages */}
@@ -56,7 +58,7 @@ export function AppHeader() {
           {/* Right Side */}
           <div className="flex items-center space-x-4">
             <Button variant="ghost" className="text-sm font-semibold" onClick={handleHostToggle}>
-              {isHostPage ? "Switch to travelling" : "Switch to hosting"}
+              {isHostPage ? t.header.switchToTravelling() : t.header.switchToHosting()}
             </Button>
             
             {/* Admin Button */}
@@ -65,8 +67,11 @@ export function AppHeader() {
               className="text-sm font-semibold" 
               onClick={handleAdminClick}
             >
-              {isAdmin ? (isAdminPage ? "Admin Dashboard" : "Go to Admin") : "Admin Login"}
+              {isAdmin ? (isAdminPage ? t.header.adminDashboard() : t.header.goToAdmin()) : t.header.adminLogin()}
             </Button>
+            
+            {/* Language Switcher */}
+            <LanguageSwitcher />
             
             {isLoggedIn && <NotificationDropdown />}
             <UserMenu />
